@@ -1,0 +1,23 @@
+/* Print / "Save as PDF" (arch/15 week 0: send the final PDF to Seva).
+   Every <details> is opened by doc.ts before printing. */
+@media print {
+  @page { size: A4; margin: 14mm 12mm 16mm; }
+  html { font-size: 11px; }
+  body { background: #fff; }
+  .nav, .topbar, .nav-scrim, .hud, .skip { display: none !important; }
+  .shell { display: block; }
+  .main { padding: 0; }
+  .main-inner { max-width: none; }
+  .section { padding: 0 0 8mm; border: 0; break-before: page; }
+  .section:first-of-type { break-before: auto; }
+  .doc-head { padding-bottom: 6mm; }
+  .figure, .card, .dcard, .rulecard, .icard, .adr, table, .wf-fig, .login, .stage, .vg, .exc { break-inside: avoid; }
+  .block-title, .sm-title, h4 { break-after: avoid; }
+  .figure, .card, .dcard, .rulecard, .icard, .stat-row, .stack, .tiles { box-shadow: none !important; }
+  .figure-canvas, .table-wrap, .dt-wrap { overflow: visible !important; }
+  .figure-canvas > svg { min-width: 0 !important; }
+  details.disclose > summary .chev { display: none; }
+  a { color: inherit; text-decoration: none; }
+  .takeaway, .pill, .chip, .dt th.win, .dt td.win, .rd-src, .core, .ta-zero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

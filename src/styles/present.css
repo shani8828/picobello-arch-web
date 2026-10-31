@@ -10,7 +10,11 @@ html.present .shell { grid-template-columns: 1fr; }
 html.present .nav, html.present .topbar, html.present .nav-scrim { display: none; }
 html.present .main { padding: 0 clamp(32px, 6vw, 112px); }
 html.present .main-inner { max-width: 1320px; }
-html.present .doc-head { display: none; }
+html.present .doc-head { padding: 56px 0 0; margin: 0; border: 0; }
+html.present .doc-head .lede, html.present .doc-head .legend { display: none; }
+html.present .doc-head h1 { font-size: 1.75rem; max-width: none; letter-spacing: -0.02em; }
+html.present .doc-head .kicker { margin-bottom: 8px; }
+html.present .section:first-of-type { padding-top: 40px; }
 html.present .section {
   min-height: 100vh; padding: 72px 0 120px; border-bottom: 0;
   scroll-margin-top: 0;

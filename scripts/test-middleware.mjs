@@ -1,4 +1,4 @@
-// Exercises middleware.ts with real Request objects (no Vercel needed).
+// Exercises middleware.js with real Request objects (no Vercel needed).
 // Run: npm run test:auth   (reads SITE_PASSWORD from .env.local)
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 const env = readFileSync('.env.local', 'utf8').match(/^SITE_PASSWORD=(.*)$/m);
 assert.ok(env, '.env.local must define SITE_PASSWORD');
 process.env.SITE_PASSWORD = env[1].trim();
-const { default: middleware } = await import('../middleware.ts');
+const { default: middleware } = await import('../middleware.js');
 
 const base = 'https://arch.example.test';
 const passes = (r) => r.headers.get('x-middleware-next') === '1';
@@ -43,6 +43,12 @@ await t('wrong password -> 401 with clear error, no cookie', async () => {
 });
 
 let cookie;
+await t('empty password -> clear error, no crash', async () => {
+  const r = await middleware(form({ password: '', next: '/' }, '10.0.0.4'));
+  assert.equal(r.status, 401);
+  assert.match(await r.text(), /That password is not correct/);
+});
+
 await t('correct password -> 303 + HttpOnly Secure SameSite=Lax 30-day cookie with a hash', async () => {
   const r = await middleware(form({ password: process.env.SITE_PASSWORD, next: '/#api' }));
   assert.equal(r.status, 303);
@@ -107,7 +113,7 @@ await t('missing SITE_PASSWORD fails closed (503, nothing served)', async () => 
 });
 
 await t('password is not in the source code', async () => {
-  for (const f of ['middleware.ts', 'middleware-lib/login-page.ts']) {
+  for (const f of ['middleware.js']) {
     assert.ok(!readFileSync(f, 'utf8').includes(process.env.SITE_PASSWORD), f);
   }
 });

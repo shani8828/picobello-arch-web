@@ -33,6 +33,7 @@ function update() {
   lastIdx = idx;
   const s = sections[idx];
   links.forEach((a, id) => a.setAttribute('aria-current', String(id === s.id)));
+  keepInNavView(links.get(s.id));
   const title = s.querySelector('h2')?.textContent ?? '';
   hudCount.textContent = `${String(idx + 1).padStart(2, '0')} / ${sections.length}`;
   hudTitle.textContent = title;
@@ -40,6 +41,25 @@ function update() {
   prevBtn.disabled = idx === 0;
   nextBtn.disabled = idx === sections.length - 1;
 }
+// The section list is taller than short screens: keep the active link
+// visible by scrolling the sidebar itself (never the page).
+function keepInNavView(link?: HTMLElement) {
+  const nav = link?.closest<HTMLElement>('.nav');
+  if (!link || !nav || nav.scrollHeight <= nav.clientHeight) return;
+  const r = link.getBoundingClientRect(), n = nav.getBoundingClientRect();
+  if (r.top < n.top + 96 || r.bottom > n.bottom - 140) {
+    nav.scrollTo({ top: nav.scrollTop + (r.top - n.top) - nav.clientHeight / 2, behavior: 'auto' });
+  }
+}
+
+// Print / Save as PDF: show every collapsed block, then restore.
+let closedForPrint: HTMLDetailsElement[] = [];
+window.addEventListener('beforeprint', () => {
+  closedForPrint = Array.from(document.querySelectorAll<HTMLDetailsElement>('details:not([open])'));
+  closedForPrint.forEach((d) => (d.open = true));
+});
+window.addEventListener('afterprint', () => { closedForPrint.forEach((d) => (d.open = false)); closedForPrint = []; });
+
 let ticking = false;
 window.addEventListener('scroll', () => {
   if (ticking) return;
@@ -58,7 +78,10 @@ function goTo(idx: number) {
   target = Math.max(0, Math.min(sections.length - 1, idx));
   targetAt = Date.now();
   const el = sections[target];
-  el.scrollIntoView({ behavior: root.classList.contains('present') ? 'instant' : 'smooth', block: 'start' });
+  const behavior: ScrollBehavior = root.classList.contains('present') ? 'instant' : 'smooth';
+  // The first section starts at the very top, so the document title shows too.
+  if (target === 0) window.scrollTo({ top: 0, behavior });
+  else el.scrollIntoView({ behavior, block: 'start' });
   history.replaceState(null, '', `#${el.id}`);
   lastIdx = -1;
   update();
@@ -81,7 +104,11 @@ function setPresent(on: boolean) {
   store.set('arch-present', on ? '1' : null);
   lastIdx = -1;
   // Keep the same section in view after the layout changes.
-  requestAnimationFrame(() => { sections[idx].scrollIntoView({ behavior: 'instant', block: 'start' }); update(); });
+  requestAnimationFrame(() => {
+    if (idx === 0) window.scrollTo({ top: 0, behavior: 'instant' });
+    else sections[idx].scrollIntoView({ behavior: 'instant', block: 'start' });
+    update();
+  });
 }
 document.querySelectorAll('[data-present-toggle]').forEach((b) =>
   b.addEventListener('click', () => setPresent(!root.classList.contains('present'))),
