@@ -1,0 +1,196 @@
+---
+// 10 Security, roles and data protection. Source: arch/10-security-roles-privacy.txt
+import Takeaway from '../components/Takeaway.astro';
+import Pill from '../components/Pill.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+import Box from '../components/diagram/Box.astro';
+import Arrow from '../components/diagram/Arrow.astro';
+
+const logins = [
+  { who: 'Guest / friend', app: 'Guest App', method: 'Personal stay link', icon: 'link-2', steps: [
+    ['Open guest.picobello.ch/s/<token>', 'token: 32 random bytes; only its SHA-256 hash is stored'],
+    ['Token exchanged for a session cookie', 'HttpOnly, Secure, SameSite=Lax; the token is not sent with every request'],
+    ['Valid for one stay only', 'from invite until departure + 1 day'],
+    ['Then locked', 'back office can revoke and re-send; rate limit, no hint whether a token exists'],
+  ] },
+  { who: 'Owner', app: 'Owner Portal', method: 'Magic link + optional passkey', icon: 'mail-check', steps: [
+    ['Enter email', ''],
+    ['Magic link by email', 'valid 15 minutes, one use'],
+    ['Session 30 days on that device', 'Better Auth handles sessions, magic links, passkeys'],
+    ['Add a passkey', 'one-tap login next time'],
+  ] },
+  { who: 'Picobello staff', app: 'Back Office', method: 'Password + 2FA or passkey', icon: 'fingerprint', steps: [
+    ['Email + password', ''],
+    ['2FA (TOTP) or passkey', 'mandatory for all staff roles'],
+    ['Session 12 hours', ''],
+    ['Re-auth for sensitive actions', 'refunds, settings, users'],
+  ] },
+];
+
+type P = 'Y' | 'O' | 'O*' | 'O**' | 'R' | '-';
+const roles = ['guest', 'owner', 'backoffice', 'bookkeeping', 'admin'];
+const matrix: [string, P[]][] = [
+  ['View stay', ['O', 'O*', 'Y', 'R', 'Y']],
+  ['Check-in', ['O', 'O**', 'Y', '-', 'Y']],
+  ['Pay (Stripe)', ['O', '-', '-', '-', '-']],
+  ['Extend / change dates', ['O', 'O*', 'Y', '-', 'Y']],
+  ['Request late check-in/out', ['O', '-', '-', '-', '-']],
+  ['Approve late check-in/out', ['-', '-', 'Y', '-', 'Y']],
+  ['Unit calendar', ['-', 'O', 'Y', 'R', 'Y']],
+  ['Reserve own use / friends', ['-', 'O', 'Y', '-', 'Y']],
+  ['Cancel own reservation', ['-', 'O', 'Y', '-', 'Y']],
+  ['Owner account balance', ['-', 'O', 'Y', 'Y', 'Y']],
+  ['Ledger entries', ['-', '-', 'R', 'Y', 'Y']],
+  ['Manual ledger adjustment', ['-', '-', '-', 'Y', 'Y']],
+  ['Refund', ['-', '-', 'Y', 'Y', 'Y']],
+  ['Edit listings', ['-', '-', 'Y', '-', 'Y']],
+  ['Confirm manual sync', ['-', '-', 'Y', '-', 'Y']],
+  ['Owners / ownerships', ['-', '-', 'Y', 'R', 'Y']],
+  ['Settings (prices, rules)', ['-', '-', 'R', 'R', 'Y']],
+  ['Integrations (view / retry)', ['-', '-', 'Y', '-', 'Y']],
+  ['Audit log', ['-', '-', 'R', 'R', 'Y']],
+  ['Users and roles', ['-', '-', '-', '-', 'Y']],
+  ['Archipex import', ['-', '-', '-', '-', 'Y']],
+];
+const cellClass = (p: P) => (p === 'Y' ? 'y' : p.startsWith('O') ? 'o' : p === 'R' ? 'r' : 'n');
+const cellText = (p: P) => (p === 'Y' ? 'Yes' : p === 'R' ? 'Read' : p === '-' ? '' : 'Own' + p.slice(1));
+---
+<Takeaway>Permissions are enforced in the API, in every request and every repository query, never only hidden in the UI. Every row of the permission matrix has an automated test.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">How each user logs in · decided</h3>
+  <div class="logins">
+    {logins.map((l) => (
+      <article class="login">
+        <header>
+          <span class="lg-icon"><Icon name={l.icon} size={22} /></span>
+          <div><h4>{l.who}</h4><p>{l.app} · <b>{l.method}</b></p></div>
+        </header>
+        <ol>
+          {l.steps.map(([t, d], i) => (
+            <li><span class="n tnum">{i + 1}</span><div><b>{t}</b>{d && <span>{d}</span>}</div></li>
+          ))}
+        </ol>
+      </article>
+    ))}
+  </div>
+  <p class="internal"><Icon name="server-cog" size={18} /> <span><b>Internal:</b> Cloud Scheduler calls carry a Google-signed OIDC token; webhooks are verified per provider (Stripe signature; Lodgify secret path + re-fetch).</span></p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Permission matrix · Phase 1</h3>
+  <div class="table-wrap">
+    <table class="perm">
+      <thead><tr><th>Action</th>{roles.map((r) => <th>{r}</th>)}</tr></thead>
+      <tbody>
+        {matrix.map(([a, cells]) => (
+          <tr><td class="act">{a}</td>{cells.map((c) => <td><span class={`pc pc-${cellClass(c)}`}>{c === '-' ? <span class="sr-only">no</span> : cellText(c)}</span></td>)}</tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <div class="perm-notes">
+    <span><b>Own*</b> owner sees own-use and friends stays of their unit fully; guest stays only as "occupied" (dates, no guest personal data)</span>
+    <span><b>Own**</b> owner check-in only for own stays with per-stay tourist tax</span>
+    <span><b>Roles:</b> guest = one stay · owner = own units (ownerships valid today) · backoffice / bookkeeping = houses assigned (null = all) · admin = everything</span>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Where data lives</h3>
+  <Figure label="All personal data lives in Google Cloud Zurich; the global CDN serves only static app code" minWidth={880}>
+    <svg viewBox="0 0 1200 450" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="20" width="660" height="290" rx="16" class="grp" />
+      <text x="44" y="52" class="grp-label">Switzerland · Google Cloud Zurich</text>
+      <text x="44" y="78" class="svg-note">All personal data: database, files, logs</text>
+      <Box x={44} y={112} w={196} h={78} title="Database" sub={['Cloud SQL', 'encrypted at rest']} icon="database" variant="app" />
+      <Box x={262} y={112} w={196} h={78} title="Files" sub={['Cloud Storage', 'signed URLs']} icon="hard-drive" variant="app" />
+      <Box x={480} y={112} w={176} h={78} title="Logs" sub={['Zurich log bucket', 'no PII (redacted)']} icon="scroll-text" variant="app" />
+      <Box x={44} y={212} w={612} h={70} title="API + worker · Cloud Run" sub="the only code that reads or writes personal data" icon="server" />
+
+      <rect x="830" y="20" width="350" height="290" rx="16" class="grp-plain" />
+      <text x="854" y="52" class="grp-label muted">Global CDN · Cloudflare Pages</text>
+      <text x="854" y="78" class="svg-note">Static app code only, no personal data</text>
+      <Box x={854} y={112} w={302} h={50} title="Guest App" icon="smartphone" variant="ext" />
+      <Box x={854} y={172} w={302} h={50} title="Owner Portal" icon="laptop" variant="ext" />
+      <Box x={854} y={232} w={302} h={50} title="Back Office" icon="monitor" variant="ext" />
+
+      <Box x={650} y={364} w={200} h={60} title="Browser" sub="guest, owner, staff" icon="globe" variant="ext" />
+      <Arrow d="M700 364 V336 H350 V310" label="API calls: personal data, HTTPS, TLS 1.2+" lx={530} ly={328} />
+      <Arrow d="M800 364 V336 H1005 V310" muted={true} label="loads app code" lx={910} ly={328} />
+    </svg>
+  </Figure>
+  <div class="processors">
+    <span class="eyebrow">Processors with data processing agreements</span>
+    <div class="chips">{['Google Cloud', 'Cloudflare', 'Stripe', 'Postmark', 'Sentry (EU region)', 'Lodgify', 'Feratel', 'SALTO / Immer AG'].map((p) => <span class="chip">{p}</span>)}</div>
+  </div>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 sec-split">
+    <div>
+      <h3 class="block-title">Data protection · revDSG</h3>
+      <ul class="list">
+        <li>Data minimisation: ID document number only if legally required; deleted by the nightly retention job after the legal period <Pill kind="verify" text="Verify period" /></li>
+        <li>Marketing consent: separate, optional, with timestamp and revocation.</li>
+        <li>Guest links expire after the stay. Owners never see guests' personal data.</li>
+        <li>Right of access / deletion: export per person; deletion anonymises personal fields but keeps ledger amounts (legal retention).</li>
+        <li>No personal data in logs (pino redaction of names, emails, birth dates, tokens); Sentry PII scrubbing on.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="block-title">Application security</h3>
+      <ul class="list">
+        <li>HTTPS only (HSTS), TLS 1.2+; CSP (Stripe domains allowed), X-Frame-Options, Referrer-Policy; CORS only for our three app domains.</li>
+        <li>Zod validation on every endpoint; parameterised SQL only (Drizzle). Rate limits on login, magic link, guest link and quote endpoints.</li>
+        <li>Uploads via signed URLs with type and size checks; images re-encoded by sharp.</li>
+        <li>Secrets in Secret Manager, none in Git (gitleaks in CI); Renovate + dependency audit in CI. Card data never touches our servers.</li>
+        <li>Least privilege: separate DB users (API has no ledger UPDATE/DELETE); one service account per Cloud Run service. Audit log for every write.</li>
+        <li>OWASP ASVS level 1 checklist before go-live; external pen-test recommended before Phase 2 <Pill kind="open" text="Open: budget" /></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<style>
+  .logins { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); }
+  @media (max-width: 1023px) { .logins { grid-template-columns: 1fr; } }
+  .login { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--e-1); overflow: hidden; }
+  .login header { display: flex; gap: 12px; padding: var(--s-5); border-bottom: 1px solid var(--line); background: var(--surface-2); }
+  .lg-icon { color: var(--primary-600); padding-top: 2px; }
+  .login h4 { font-size: 1.125rem; font-weight: 700; }
+  .login header p { font-size: 14.5px; color: var(--ink-muted); margin-top: 2px; }
+  .login header b { color: var(--ink); font-weight: 600; }
+  .login ol { list-style: none; margin: 0; padding: var(--s-5); display: grid; gap: 0; }
+  .login li { position: relative; display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding-bottom: var(--s-4); }
+  .login li:last-child { padding-bottom: 0; }
+  .login li:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 2px; width: 2px; background: var(--primary-100); }
+  .login .n { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--primary-50); color: var(--primary-800); font-size: 13px; font-weight: 700; box-shadow: inset 0 0 0 1.5px var(--primary-500); }
+  .login li:last-child .n { background: var(--primary-600); color: #fff; box-shadow: none; }
+  .login b { display: block; font-weight: 600; font-size: 15.5px; line-height: 1.4; padding-top: 3px; word-break: break-word; }
+  .login li span { display: block; font-size: 14px; color: var(--ink-muted); line-height: 1.45; margin-top: 2px; }
+  .internal { display: flex; gap: 10px; align-items: flex-start; margin-top: var(--s-4); font-size: var(--fs-ui); color: var(--ink-muted); max-width: var(--measure); }
+  .internal :global(svg) { flex: none; color: var(--ink-muted); margin-top: 2px; }
+  .internal b { color: var(--ink); }
+
+  table.perm { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .perm th { position: sticky; top: 0; text-align: center; font-weight: 500; font-size: 13.5px; color: var(--ink-muted); background: var(--surface-2); padding: 10px 8px; border-bottom: 1px solid var(--line-strong); font-family: var(--font-mono); }
+  .perm th:first-child { text-align: left; font-family: var(--font-body); padding-left: 16px; }
+  .perm td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: center; }
+  .perm td.act { text-align: left; padding-left: 16px; white-space: nowrap; }
+  .perm tr:last-child td { border-bottom: 0; }
+  .perm tbody tr:hover td { background: var(--primary-50); }
+  .pc { display: inline-grid; place-items: center; min-width: 64px; height: 26px; padding: 0 8px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+  .pc-y { background: var(--success-soft); color: var(--success-text); }
+  .pc-o { background: var(--primary-50); color: var(--primary-800); box-shadow: inset 0 0 0 1px var(--primary-100); }
+  .pc-r { background: var(--info-soft); color: var(--info-text); }
+  .pc-n::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); }
+  .perm-notes { display: grid; gap: 4px; margin-top: var(--s-4); font-size: 14.5px; color: var(--ink-muted); line-height: 1.5; max-width: 88ch; }
+  .perm-notes b { color: var(--ink); font-weight: 600; margin-right: 4px; }
+
+  .processors { display: grid; gap: var(--s-3); margin-top: var(--s-5); }
+  .processors .chip { font-size: 14px; }
+  .sec-split { gap: var(--s-8); align-items: start; }
+  li :global(.pill) { font-size: 12.5px; margin-left: 4px; }
+</style>

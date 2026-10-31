@@ -1,0 +1,131 @@
+---
+// 14 Why this over that. Source: arch/14-why-this-over-that.txt
+import Takeaway from '../components/Takeaway.astro';
+import Pill from '../components/Pill.astro';
+import { decisions } from '../data/decisions';
+import { stack } from '../data/stack';
+
+// "+++ (one DB tx)" -> { r: 3, note: 'one DB tx' }; "- (x)" -> { r: -1 };
+// plain text stays text. "[Verify ...]" inside a note becomes a pill.
+function parse(cell: string) {
+  const m = cell.match(/^(\+{1,3}|-{1,2})(?:\s+(.*))?$/);
+  if (!m) return { r: null as number | null, note: cell };
+  const r = m[1].startsWith('+') ? m[1].length : -m[1].length;
+  const note = (m[2] ?? '').replace(/^\(|\)$/g, '');
+  return { r, note };
+}
+function splitVerify(s: string) {
+  const v = s.match(/\[(Verify[^\]]*)\]/);
+  return v ? { text: s.replace(v[0], '').replace(/\(\s*\)|\s+\)/g, ')').replace(/\(\)/, '').trim(), verify: v[1] } : { text: s, verify: null as string | null };
+}
+const labels: Record<string, string> = { '3': 'excellent', '2': 'good', '1': 'okay', '-1': 'weak', '-2': 'poor' };
+---
+<Takeaway>Every choice was weighed on the same Picobello fit: correct money data, Swiss data location, speed of delivery to 10 Jan, cost, ease for a small team, and room to grow.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">Stack at a glance</h3>
+  <ol class="glance">
+    {stack.flatMap((g) => g.items).map((it) => (
+      <li><a href={`#d${it.d}`}><span class="gl-l">{it.layer}</span><span class="gl-c">{it.choice}</span></a></li>
+    ))}
+  </ol>
+</div>
+
+<div class="block">
+  <div class="legend-row">
+    <span class="eyebrow">Rating scale</span>
+    <span class="lg"><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i></span>excellent</span>
+    <span class="lg"><span class="dots"><i class="on"></i><i class="on"></i><i></i></span>good</span>
+    <span class="lg"><span class="dots"><i class="on"></i><i></i><i></i></span>okay</span>
+    <span class="lg"><span class="neg">−</span>weak</span>
+    <span class="lg"><span class="neg">−−</span>poor</span>
+    <span class="lg"><span class="win-sw"></span>chosen option</span>
+  </div>
+
+  <div class="dcards">
+    {decisions.map((d) => (
+      <article class="dcard" id={`d${d.n}`}>
+        <header>
+          <span class="dn mono">D{d.n}</span>
+          <h4>{d.title}</h4>
+          {d.open && <Pill kind="open" text="Decision for Seva, 5 Nov" />}
+        </header>
+        <div class="dt-wrap">
+          <table class="dt">
+            <thead>
+              <tr><th class="crit">Criteria</th>{d.options.map((o, i) => <th class={i === d.winner ? 'win' : ''}>{o}</th>)}</tr>
+            </thead>
+            <tbody>
+              {d.rows.map(([crit, ...cells]) => (
+                <tr>
+                  <td class="crit">{crit}</td>
+                  {cells.map((c, i) => {
+                    const p = parse(c);
+                    const v = splitVerify(p.note);
+                    return (
+                      <td class={i === d.winner ? 'win' : ''}>
+                        {p.r !== null && (p.r > 0
+                          ? <span class="dots" title={labels[String(p.r)]}><i class={p.r >= 1 ? 'on' : ''}></i><i class={p.r >= 2 ? 'on' : ''}></i><i class={p.r >= 3 ? 'on' : ''}></i><span class="sr-only">{labels[String(p.r)]}</span></span>
+                          : <span class="neg" title={labels[String(p.r)]}>{p.r === -1 ? '−' : '−−'}<span class="sr-only">{labels[String(p.r)]}</span></span>)}
+                        {v.text && <span class={p.r === null ? 'txt' : 'note'}>{v.text}</span>}
+                        {v.verify && <Pill kind="verify" text={v.verify} />}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <footer>
+          <p class="choice"><span>Choice</span>{d.choice}</p>
+          {d.why && <p class="why">{d.why}</p>}
+        </footer>
+      </article>
+    ))}
+  </div>
+</div>
+
+<style>
+  .glance { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: var(--r-card); overflow: hidden; background: var(--surface); box-shadow: var(--e-1); }
+  .glance li { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 -1px -1px 0; }
+  .glance a { display: grid; gap: 2px; padding: 12px 16px; text-decoration: none; color: inherit; height: 100%; transition: background var(--t-fast) var(--ease); }
+  .glance a:hover { background: var(--primary-50); }
+  .gl-l { font-size: var(--fs-caption); color: var(--ink-muted); font-weight: 500; }
+  .gl-c { font-size: 15px; font-weight: 600; line-height: 1.35; }
+
+  .legend-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; margin-bottom: var(--s-5); font-size: var(--fs-ui); color: var(--ink-muted); }
+  .lg { display: inline-flex; align-items: center; gap: 8px; }
+  .win-sw { width: 16px; height: 16px; border-radius: 4px; background: var(--primary-50); box-shadow: inset 0 2px 0 var(--primary-600), inset 0 0 0 1px var(--primary-100); }
+
+  .dots { display: inline-flex; gap: 3px; vertical-align: middle; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+  .dots i.on { background: var(--ink-muted); box-shadow: none; }
+  .win .dots i.on, .legend-row .dots i.on { background: var(--primary-600); }
+  .neg { display: inline-block; min-width: 22px; font-weight: 700; color: var(--danger-text); letter-spacing: 1px; font-size: 16px; line-height: 1; vertical-align: middle; }
+
+  .dcards { display: grid; gap: var(--s-5); }
+  @media (min-width: 1800px) { .dcards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .dcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--e-1); scroll-margin-top: var(--s-8); overflow: hidden; }
+  .dcard:target { box-shadow: 0 0 0 3px var(--primary-100), var(--e-2); }
+  .dcard header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: var(--s-4) var(--s-5); }
+  .dn { display: inline-grid; place-items: center; min-width: 40px; height: 26px; padding: 0 8px; border-radius: 6px; background: var(--primary-50); color: var(--primary-800); font-size: 13px; font-weight: 700; }
+  .dcard h4 { font-size: 1.125rem; font-weight: 700; }
+  .dcard header :global(.pill) { font-size: 12.5px; }
+  .dt-wrap { overflow-x: auto; border-top: 1px solid var(--line); }
+  table.dt { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 560px; }
+  .dt th { text-align: left; font-weight: 600; font-size: 14px; padding: 10px 14px; background: var(--surface-2); color: var(--ink); border-bottom: 1px solid var(--line-strong); vertical-align: bottom; }
+  .dt th.win { background: var(--primary-600); color: #fff; }
+  .dt th.crit { color: var(--ink-muted); font-weight: 500; width: 26%; }
+  .dt td { padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .dt tr:last-child td { border-bottom: 0; }
+  .dt td.win { background: var(--primary-50); }
+  .dt td.crit { color: var(--ink-muted); }
+  .dt .note { display: block; margin-top: 3px; font-size: 13px; color: var(--ink-muted); line-height: 1.35; }
+  .dt .txt { font-size: 14px; color: var(--ink); }
+  .dt :global(.pill) { font-size: 11.5px; margin-top: 4px; }
+  .dcard footer { display: grid; gap: 6px; padding: var(--s-4) var(--s-5); border-top: 1px solid var(--line); }
+  .choice { font-weight: 600; font-size: var(--fs-label); line-height: 1.45; }
+  .choice span { display: inline-block; margin-right: 10px; padding: 1px 8px; border-radius: 5px; background: var(--primary-600); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; vertical-align: 0.12em; }
+  .why { font-size: 15px; color: var(--ink-muted); line-height: 1.55; max-width: 92ch; }
+</style>

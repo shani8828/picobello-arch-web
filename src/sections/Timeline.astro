@@ -1,0 +1,177 @@
+---
+// 15 Phase 1 timeline. Source: arch/15-phase1-timeline.txt
+import Takeaway from '../components/Takeaway.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+import Gantt from '../components/diagram/Gantt.astro';
+
+const milestones: [string, string, string][] = [
+  ['M0', '5 Nov', 'Architecture approved'],
+  ['M1', '15 Nov', 'Staff can log in on staging and see both houses and all units'],
+  ['M2', '29 Nov', 'A real booking in Lodgify (test property) appears in the Back Office within a minute; an owner reservation appears as a block in Lodgify'],
+  ['M3', '13 Dec', 'On staging, a test guest checks in, a friend pays by card / TWINT (test mode) and an extension updates Lodgify'],
+  ['M4', '20 Dec', 'Full guest journey on staging, including guest card and badge (vendor test systems); the Apartments tab works'],
+  ['M5', '5 Jan', 'Dress rehearsal passed, sign-off from Seva'],
+  ['M6', '10 Jan', 'Phase 1 delivered and live'],
+];
+
+// Needed-by dates from the file. The file gives no delivery status, so the
+// colour shows urgency by date only.
+const deps: [string, string, number][] = [
+  ['Domain / DNS access (picobello.ch)', '15 Nov', 1],
+  ['Lodgify API key + test property', '16 Nov', 1],
+  ['Stripe restricted key (test + live)', '30 Nov', 2],
+  ['Real fee values and texts for emails', '30 Nov', 2],
+  ['Feratel / LST interface docs + test access', '7 Dec', 2],
+  ['SALTO / Immer AG API access + test site', '7 Dec', 2],
+  ['Listing content (photos, texts) to migrate', '14 Dec', 3],
+  ['Archipex export (trial)', '14 Dec', 3],
+  ['Production keys for all systems', '28 Dec', 3],
+  ['Archipex final export', '31 Dec', 3],
+  ['Staff available for training', '6-8 Jan', 3],
+];
+
+const weeks: { w: string; d: string; m?: string; groups: [string, string[]][] }[] = [
+  { w: 'Week 0', d: '5 Nov (Thu) · architecture review', m: 'M0', groups: [
+    ['Review meeting with Seva', ['Walk through the architecture (this web page, screen share)', 'Decide open questions (file 12, part F) and database host (Cloud SQL vs Supabase)', 'Confirm Phase 1 scope and who builds what']],
+    ['After the meeting', ['Record decisions with date in file 12 (part F); update affected files to v1.1', 'Send the final PDF to Seva', 'Request access from Picobello: Lodgify, Stripe, Feratel/LST, SALTO/Immer AG, domain/DNS, Archipex export']],
+  ] },
+  { w: 'Week 1', d: '6-15 Nov · foundation', m: 'M1', groups: [
+    ['Repository and tooling', ['Monorepo (pnpm + Turborepo), apps/ and packages/', 'TypeScript strict, ESLint, Prettier, dependency-cruiser', 'Commit conventions, PR template, CODEOWNERS']],
+    ['CI/CD and environments', ['GitHub Actions on every PR', 'Terraform: GCP staging project, Cloudflare Pages projects', 'Workload Identity Federation; auto-deploy main → staging; preview URLs']],
+    ['Database, backend, auth', ['Drizzle + first migrations; seed: 2 houses, 22 units, demo owners', 'Hono API with OpenAPI, errors, pipeline, logging, Sentry; worker with pg-boss', 'Better Auth: staff login + 2FA, owner magic link; guest stay-token design']],
+    ['Design system and Back Office basics', ['Tokens, self-hosted fonts, base components, app shells', 'Houses, units, owners, ownerships, settings, audit log screens']],
+  ] },
+  { w: 'Weeks 2-3', d: '16-29 Nov · Lodgify + Owner Portal', m: 'M2', groups: [
+    ['Integrations backbone', ['inbox_events, outbox, integration_status', 'Integrations page; port + fake adapter pattern; recorded payloads']],
+    ['Lodgify read + stays', ['Map 22 units; webhook + re-fetch; booking → stay mapping; nightly reconciliation', 'Ledger: booking_amounts; stays list, detail, calendar; exclusion constraint']],
+    ['Rule engine + Owner Portal', ['Checks C1-C8, quota, costs; 100 % unit tests with contract examples', 'Magic link, overview, quota bars, calendar, reserve flow, my reservations, balance']],
+    ['Lodgify write + ledger', ['Own-use block and friends booking within 5 minutes; failure → retry + alert', 'accounts, transactions, entries; append-only triggers; owner_charge transactions']],
+  ] },
+  { w: 'Weeks 4-5', d: '30 Nov-13 Dec · Guest App + payments', m: 'M3', groups: [
+    ['Guest App foundation + invitations', ['PWA, offline cache, personal link, locked page, home, DE/FR/EN, arrival info', 'Email templates (Postmark); invite 3 days before arrival; resend']],
+    ['Online check-in', ['Main guest, companions, arrival time, consent, done', 'Extra-persons detection; owner check-in in the portal']],
+    ['Stripe', ['Restricted key, Embedded Checkout, signed webhook, idempotency', 'Friends pay inside check-in; extra persons; ledger entries; nightly reconciliation']],
+    ['Extensions, date changes, requests', ['Live availability + night holds; pay → apply; failure path with refund offer', 'Late check-in / check-out: request, approve / decline with price']],
+  ] },
+  { w: 'Week 6', d: '14-20 Dec · guest card, access, Apartments', m: 'M4', groups: [
+    ['Feratel + SALTO adapters', ['Registration after check-in, guest cards back, update / cancel; manual fallback', 'Access 16:00 → 10:00, doors per unit, extend / revoke; access screen']],
+    ['Apartments tab + Today view', ['Listing editor, photo pipeline, sync rules + per-field states, push or copy + confirm, "What\'s missing"', 'Arrivals, departures, missing check-ins, unpaid friends, failed integrations, open requests']],
+    ['Archipex + production infrastructure', ['Import screen, validation report, trial import on staging', 'Terraform prod, Cloud SQL HA, load balancer, domains, certificates, alerts, backups']],
+  ] },
+  { w: 'Weeks 7-8', d: '21 Dec-5 Jan · hardening + dress rehearsal (also the buffer)', m: 'M5', groups: [
+    ['Quality', ['Playwright E2E for the 5 key flows; permission-matrix tests', 'Accessibility, performance (bundle < 200 KB, API p95), OWASP ASVS L1, secrets + dependency scans']],
+    ['Polish and data', ['All empty / loading / error states; copy review DE/FR/EN by a native speaker', 'Final settings confirmed; units mapped in production; Archipex final import on 31.12']],
+    ['Go-live preparation + dress rehearsal', ['Production keys, webhooks, backups + restore test, alerts, runbooks', 'Test booking → invite → check-in → payment (real CHF, refund) → guest card → badge → extension → ledger; owner reservation → block → owner check-in']],
+  ] },
+  { w: 'Week 9', d: '6-10 Jan · delivery', m: 'M6', groups: [
+    ['Training and go-live', ['Back Office walkthrough (recorded), short user guides DE/EN', 'Switch on invites, send owner invitations, monitor closely']],
+    ['Delivery package (10 Jan)', ['Live URLs: guest / owner / admin / api', 'Architecture docs v2 (as built), ADRs, runbooks', 'Access handed to Picobello / Bernis: GitHub, GCP, Cloudflare, Stripe webhooks, Postmark, Sentry', 'Known limitations + Phase 2 plan']],
+  ] },
+];
+
+const dod = [
+  'Code reviewed and merged, all checks green',
+  'Unit / integration tests written (rules and money: 100 %)',
+  'Works in DE / FR / EN where user-facing',
+  'Deployed to staging and tested there',
+  'Audit log and error handling in place',
+  'Matches the design system, incl. loading, empty, error states and mobile layout',
+];
+const urg = ['', 'urgent', 'soon', 'later'];
+const urgLabel = ['', 'by mid-Nov', 'by early Dec', 'mid-Dec or later'];
+---
+<Takeaway>Phase 1 is delivered on Sunday 10 January 2027 in seven blocks, each ending in a milestone Picobello can see working; 21 Dec to 5 Jan doubles as the buffer.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">Gantt · 6 Nov to 10 Jan</h3>
+  <Figure label="Gantt chart of the seven work blocks from 5 Nov 2026 to 10 Jan 2027 with milestones and the Christmas buffer" minWidth={960}>
+    <Gantt label="Phase 1 timeline" />
+  </Figure>
+</div>
+
+<div class="block">
+  <h3 class="block-title">What Picobello can see at each milestone</h3>
+  <ol class="ms">
+    {milestones.map(([m, d, t], i) => (
+      <li class={i === milestones.length - 1 ? 'last' : ''}>
+        <span class="ms-dot" aria-hidden="true"></span>
+        <div class="ms-h"><span class="mono">{m}</span><b class="tnum">{d}</b></div>
+        <p>{t}</p>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 tl-split">
+    <div>
+      <h3 class="block-title">Dependencies on Picobello</h3>
+      <div class="table-wrap">
+        <table class="data deps">
+          <thead><tr><th>Item</th><th>Needed by</th><th>Urgency</th></tr></thead>
+          <tbody>{deps.map(([a, b, u]) => <tr><td>{a}</td><td class="tnum nowrap">{b}</td><td><span class={`light l-${urg[u]}`}>{urgLabel[u]}</span></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">Colour shows urgency by the date needed. The file does not record delivery status yet; track it after 5 Nov.</p>
+    </div>
+    <div>
+      <h3 class="block-title">Definition of done · every task</h3>
+      <ul class="dod">{dod.map((d) => <li><Icon name="check" size={16} />{d}</li>)}</ul>
+      <h3 class="block-title after">After go-live · 11 Jan onwards</h3>
+      <ul class="list">
+        <li><b>Hypercare, 2 weeks:</b> daily check of integrations, failed jobs and ledger balance; fast fixes.</li>
+        <li><b>Phase 2 kick-off</b> (target April 2027): WhatsApp, cleaning (PicobelloAI), repairs + DocuSign, statements, bank, Bexio, VAT, tourist-tax reconciliation, ZWG report, partner offers.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Week by week</h3>
+  {weeks.map((w) => (
+    <details class="disclose wk">
+      <summary><span class="wk-w">{w.w}</span><span class="count">{w.d}</span>{w.m && <span class="wk-m mono">→ {w.m}</span>}<Icon name="chevron-right" size={18} class="chev" /></summary>
+      <div class="disclose-body">
+        <div class="wk-groups">
+          {w.groups.map(([g, items]) => (
+            <div><h5>{g}</h5><ul class="list compact">{items.map((it) => <li>{it}</li>)}</ul></div>
+          ))}
+        </div>
+      </div>
+    </details>
+  ))}
+</div>
+
+<style>
+  .ms { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; position: relative; }
+  .ms::before { content: ""; position: absolute; left: 8px; right: 8px; top: 8px; border-top: 2px solid var(--primary-100); }
+  .ms li { position: relative; padding: 28px 14px 0 0; display: grid; gap: 6px; align-content: start; }
+  .ms-dot { position: absolute; top: 0; left: 0; width: 18px; height: 18px; transform: rotate(45deg) scale(.8); background: var(--surface); border: 2px solid var(--primary-700); border-radius: 3px; }
+  .ms li.last .ms-dot { background: var(--accent-500); border-color: var(--surface); box-shadow: 0 0 0 1px var(--accent-500); }
+  .ms-h { display: flex; align-items: baseline; gap: 8px; }
+  .ms-h .mono { font-size: 13px; font-weight: 700; color: var(--primary-700); }
+  .ms li.last .ms-h .mono { color: var(--accent-700); }
+  .ms-h b { font-size: 16px; font-weight: 600; }
+  .ms p { font-size: 14.5px; color: var(--ink-muted); line-height: 1.45; }
+  @media (max-width: 1279px) { .ms { grid-template-columns: 1fr; gap: 14px; } .ms::before { left: 8px; right: auto; top: 8px; bottom: 8px; border-top: 0; border-left: 2px solid var(--primary-100); } .ms li { padding: 0 0 0 34px; } }
+
+  .tl-split { gap: var(--s-8); align-items: start; }
+  @media (max-width: 1279px) { .tl-split { grid-template-columns: 1fr; } }
+  td.nowrap { white-space: nowrap; }
+  .light { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; white-space: nowrap; }
+  .light::before { content: ""; width: 9px; height: 9px; border-radius: 50%; }
+  .l-urgent { color: var(--danger-text); } .l-urgent::before { background: var(--danger-vivid); }
+  .l-soon { color: var(--warning-text); } .l-soon::before { background: var(--warning-vivid); }
+  .l-later { color: var(--success-text); } .l-later::before { background: var(--success-vivid); }
+  .note { margin-top: var(--s-3); font-size: 14px; color: var(--ink-muted); line-height: 1.5; }
+  .dod { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .dod li { display: grid; grid-template-columns: 24px 1fr; gap: 8px; font-size: 15.5px; line-height: 1.45; }
+  .dod :global(svg) { color: var(--success-vivid); margin-top: 3px; }
+  .after { margin-top: var(--s-8); }
+  .wk-w { min-width: 92px; }
+  .wk-m { margin-left: 4px; font-size: 13px; font-weight: 700; color: var(--primary-700); }
+  .wk-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5) var(--s-8); }
+  @media (max-width: 767px) { .wk-groups { grid-template-columns: 1fr; } }
+  .wk-groups h5 { margin: 0 0 8px; font-family: var(--font-head); font-size: 15.5px; font-weight: 700; }
+</style>

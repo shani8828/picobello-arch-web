@@ -1,0 +1,17 @@
+---
+// Wrapper for a diagram: scrolls sideways on phones instead of shrinking
+// labels below a readable size.
+interface Props { caption?: string; minWidth?: number; label: string; flat?: boolean }
+const { caption, minWidth = 860, label, flat = false } = Astro.props;
+---
+<figure class={`figure${flat ? ' figure-flat' : ''}`}>
+  <div class="figure-canvas" style={`--min-w:${minWidth}px`} role="img" aria-label={label}>
+    <slot />
+  </div>
+  {(caption || Astro.slots.has('legend')) && (
+    <figcaption>
+      <slot name="legend" />
+      {caption && <span class="figure-caption">{caption}</span>}
+    </figcaption>
+  )}
+</figure>

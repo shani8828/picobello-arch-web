@@ -1,0 +1,247 @@
+---
+// 11 Infrastructure, deployment and operations.
+// Source: arch/11-infrastructure-and-deployment.txt
+import Takeaway from '../components/Takeaway.astro';
+import Pill from '../components/Pill.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+import Box from '../components/diagram/Box.astro';
+import Arrow from '../components/diagram/Arrow.astro';
+
+const setup: [string, string, string][] = [
+  ['Back Office · Owner Portal · Guest App', 'Cloudflare Pages', 'admin. / owner. / guest.picobello.ch'],
+  ['API', 'Cloud Run "api"', 'min 1 instance (no cold start), max 10, 1 vCPU, 512 MB'],
+  ['Worker', 'Cloud Run "worker"', 'min 1, max 3, always-on CPU'],
+  ['Load balancer', 'Global external Application LB + serverless NEG', 'api.picobello.ch, managed TLS, Cloud Armor (WAF, rate limits)'],
+  ['Database', 'Cloud SQL PostgreSQL 16', '2 vCPU / 8 GB, 20 GB SSD auto-grow, HA (regional) from go-live, private IP'],
+  ['Files', 'Cloud Storage (Zurich)', 'buckets: listing-photos, documents (private), backups'],
+  ['Secrets', 'Secret Manager', 'per environment'],
+  ['Cron', 'Cloud Scheduler (Zurich)', 'calls /internal/cron/*'],
+  ['Container images', 'Artifact Registry (Zurich)', ''],
+  ['Logs / metrics', 'Cloud Logging + Monitoring', 'Zurich log bucket'],
+  ['Errors', 'Sentry (EU region)', ''],
+  ['Uptime', 'Cloud Monitoring uptime checks', '/health every 1 min, alert email + SMS'],
+  ['Email', 'Postmark', 'domain picobello.ch'],
+  ['DNS', 'Cloudflare', 'all records'],
+];
+
+const stages = [
+  { name: 'Pull request', sub: 'every PR', icon: 'git-pull-request', items: ['Install (pnpm, cached)', 'Lint + format check', 'Type check', 'Unit tests: rules, state machines', 'Integration tests: Testcontainers Postgres, permission matrix, recorded webhooks', 'Module boundary check', 'gitleaks + dependency audit', 'Build apps + Docker image', 'Cloudflare preview deploy'], gate: 'Merge only if all green + 1 review' },
+  { name: 'Staging', sub: 'on merge to main', icon: 'flask-conical', items: ['Build + push image (tag = git SHA)', 'DB migrations as a Cloud Run job', 'Deploy api + worker', 'Deploy frontends (staging branch)', 'E2E (Playwright): check-in, friends pay, extension, owner reservation, listing edit', 'Notify'], gate: 'Vendor test keys only' },
+  { name: 'Release tag v*', sub: 'production', icon: 'shield-check', items: ['Manual approval in GitHub (environment protection)', 'Same image as tested on staging, no rebuild', 'DB migrations (prod)'], gate: 'Approval required' },
+  { name: 'Production', sub: 'canary', icon: 'rocket', items: ['10 % traffic → check errors for 5 min → 100 %', 'Automatic rollback if the error rate goes up', 'Deploy frontends (production branch)', 'Smoke test: /health, guest link test stay'], gate: 'GitHub → GCP via Workload Identity Federation' },
+];
+
+const envs = [
+  { n: 'local', d: 'docker compose: Postgres 16 + fake adapters; pnpm dev with hot reload; seed = prototype demo data (two houses, 22 units)' },
+  { n: 'preview', d: 'each pull request: frontend preview URL on Cloudflare Pages (fake API mode)' },
+  { n: 'staging', d: 'full copy of production on GCP, smaller, no HA; vendor test keys; auto-deploy on every merge to main' },
+  { n: 'production', d: 'real keys, real data; deploy only by release tag + manual approval' },
+];
+
+const alerts: [string, string][] = [
+  ['Uptime /health failing 2 min', 'SMS + email'],
+  ['API 5xx rate > 2 % for 5 min', 'email'],
+  ['Failed jobs > 0, or oldest pending job > 15 min', 'email'],
+  ['Integration failing (any provider)', 'email + Integrations page red'],
+  ['Ledger daily balance check ≠ 0', 'email (critical)'],
+  ['DB CPU > 80 % / storage > 80 %', 'email'],
+];
+
+const checklist = [
+  'Production keys from Picobello: Lodgify, Stripe, Feratel, SALTO, Postmark',
+  'Units mapped to Lodgify properties and SALTO doors',
+  'Settings (fees, rules) reviewed by Picobello',
+  'Archipex final import applied (cutoff 31.12.2026)',
+  'Webhooks registered in Lodgify and Stripe (production URLs)',
+  'Dress rehearsal on production: booking → check-in → guest card → badge → tourist tax → ledger',
+  'Friends-pay and extension flows tested with a real CHF payment and refund',
+  'Backups verified, alerts tested',
+  'Staff trained on Back Office; owner portal invitation emails ready',
+  'Rollback plan agreed',
+];
+
+const costs: [string, string][] = [
+  ['Cloud SQL (HA, 2 vCPU / 8 GB)', '150–200'],
+  ['Cloud Run api + worker (min 1)', '40–80'],
+  ['Load balancer + Cloud Armor', '25–40'],
+  ['Storage, logging, scheduler', '10–20'],
+  ['Staging environment (small)', '40–60'],
+  ['Cloudflare Pages', '0–20'],
+  ['Sentry team plan', '~25'],
+  ['Postmark', '~15'],
+];
+---
+<Takeaway>Backend and personal data run on fully managed services in Google Cloud Zurich, with no servers to patch; Cloud Run runs normal Docker containers, so the same image runs on any container host.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">Deployment</h3>
+  <Figure label="Deployment: users reach Cloudflare for app code and the Google Cloud load balancer for the API; inside Zurich, Cloud Run api and worker, Cloud SQL, storage, scheduler and secrets" minWidth={960}>
+    <svg viewBox="0 0 1200 560" xmlns="http://www.w3.org/2000/svg">
+      <Box x={20} y={40} w={270} h={90} title="Cloudflare CDN + Pages" sub={['3 frontends, static', 'admin / owner / guest']} icon="cloud" variant="ext" />
+      <Box x={20} y={240} w={170} h={90} title="Users" sub={['guests, owners,', 'staff']} icon="users" variant="ext" />
+      <Arrow d="M95 240 V130" label="app code" lx={105} ly={190} anchor="start" />
+
+      <rect x="320" y="20" width="700" height="520" rx="16" class="grp" />
+      <text x="342" y="50" class="grp-label">Google Cloud · Zurich (europe-west6)</text>
+      <Box x={340} y={70} w={196} h={60} title="Cloud Scheduler" icon="clock" />
+      <Box x={552} y={70} w={150} h={60} title="Storage" icon="hard-drive" />
+      <Box x={712} y={70} w={192} h={60} title="Secret Manager" icon="lock-keyhole" />
+      <Box x={912} y={70} w={98} h={60} title="Images" sub="Registry" />
+
+      <Box x={345} y={240} w={195} h={90} title="Load balancer" sub={['+ Cloud Armor', 'api.picobello.ch']} icon="shield" variant="app" />
+      <Box x={580} y={240} w={180} h={90} title="Cloud Run: api" sub={['min 1 · max 10', '1 vCPU, 512 MB']} icon="server" variant="app" />
+      <Box x={800} y={240} w={212} h={90} title="Cloud Run: worker" sub={['min 1 · max 3', 'always-on CPU']} icon="workflow" variant="app" />
+      <Box x={345} y={410} w={150} h={70} title="Logging" sub="+ Monitoring" icon="activity" />
+      <Box x={600} y={410} w={260} h={90} title="Cloud SQL Postgres 16" sub={['HA (regional) · private IP', '2 vCPU / 8 GB']} icon="database" />
+
+      <Arrow d="M190 285 H345" label="HTTPS" lx={268} ly={275} />
+      <Arrow d="M540 285 H580" />
+      <Arrow d="M670 330 V410" />
+      <Arrow d="M840 330 V410" />
+      <Arrow d="M640 240 V130" label="signed URLs" lx={632} ly={190} anchor="end" />
+      <Arrow d="M440 130 V240" label="/internal/cron" lx={432} ly={190} anchor="end" />
+      <Arrow d="M770 130 V200 H700 V240" dashed={true} muted={true} />
+      <Arrow d="M830 130 V200 H900 V240" dashed={true} muted={true} label="secrets" lx={866} ly={192} />
+
+      <Box x={1050} y={240} w={140} h={150} title="Outside" sub={['Lodgify', 'Stripe', 'Feratel', 'SALTO', 'Postmark']} variant="ext" />
+      <Arrow d="M1012 285 H1050" />
+      <Arrow d="M1120 390 V522 H520 V330" label="webhooks" lx={800} ly={516} />
+    </svg>
+  </Figure>
+</div>
+
+<div class="block">
+  <h3 class="block-title">From laptop to live · CI/CD (GitHub Actions)</h3>
+  <ol class="pipeline">
+    {stages.map((s, i) => (
+      <li class={`stage s${i}`}>
+        <header><Icon name={s.icon} size={20} /><div><b>{s.name}</b><span>{s.sub}</span></div></header>
+        <ul>{s.items.map((it) => <li>{it}</li>)}</ul>
+        {i === 3 && <div class="canary" aria-hidden="true"><span class="c10">10 %</span><span class="c100">100 %</span></div>}
+        <footer>{s.gate}</footer>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Environments</h3>
+  <ol class="ladder">
+    {envs.map((e, i) => <li style={`--step:${i}`}><b class="mono">{e.n}</b><span>{e.d}</span></li>)}
+  </ol>
+  <p class="note">Separate GCP projects <code>picobello-staging</code> and <code>picobello-prod</code>: data, keys and permissions isolated. Terraform describes all GCP and Cloudflare resources; a new environment is one <code>terraform apply</code>.</p>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 infra-split">
+    <div>
+      <h3 class="block-title">Alerts</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>When</th><th>Who is told</th></tr></thead>
+          <tbody>{alerts.map(([a, b]) => <tr><td>{a}</td><td class="muted">{b}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h3 class="block-title">Recovery and availability</h3>
+      <div class="targets">
+        <div><span class="tv">5<small>min</small></span><span class="tl">RPO · max data loss</span></div>
+        <div><span class="tv">4<small>h</small></span><span class="tl">RTO · time to restore</span></div>
+        <div><span class="tv">99.9<small>%</small></span><span class="tl">monthly target</span></div>
+      </div>
+      <ul class="list compact">
+        <li>Cloud SQL daily backups kept 30 days + point-in-time recovery 7 days.</li>
+        <li>Monthly pg_dump to a locked bucket, kept 10 years (accounting records).</li>
+        <li>Restore test every quarter on staging. HA Cloud SQL + Cloud Run across zones in Zurich.</li>
+        <li>Runbooks: integration down, failed payment applied, restore database, rotate a key, lock a guest link.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 infra-split">
+    <div>
+      <h3 class="block-title">Go-live checklist · ~10 Jan 2027</h3>
+      <ul class="checklist">{checklist.map((c) => <li><span class="box" aria-hidden="true"></span>{c}</li>)}</ul>
+    </div>
+    <div>
+      <h3 class="block-title">Monthly cost, rough <Pill kind="verify" text="Verify with GCP pricing calculator" /></h3>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Item</th><th class="num">CHF / month</th></tr></thead>
+          <tbody>
+            {costs.map(([a, b]) => <tr><td>{a}</td><td class="num">{b}</td></tr>)}
+            <tr class="total"><td>Total</td><td class="num">~ 300–460</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">From public list prices. Can start cheaper without HA until go-live. Stripe fees are per transaction (not included).</p>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <details class="disclose">
+    <summary>Production setup<span class="count">14 components</span><Icon name="chevron-right" size={18} class="chev" /></summary>
+    <div class="disclose-body">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Component</th><th>Service</th><th>Config (start)</th></tr></thead>
+          <tbody>{setup.map(([a, b, c]) => <tr><td><strong>{a}</strong></td><td>{b}</td><td class="muted">{c}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note"><Pill kind="open" text="Open" /> Confirm picobello.ch subdomains with Picobello. Alternatives considered: AWS Zurich, Azure Switzerland North, Infomaniak / Exoscale, Cloudflare-only (see section 14, D9).</p>
+    </div>
+  </details>
+</div>
+
+<style>
+  .pipeline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1.25fr 1.15fr 0.9fr 1fr; gap: 28px; }
+  @media (max-width: 1279px) { .pipeline { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 767px) { .pipeline { grid-template-columns: 1fr; } }
+  .stage { position: relative; display: grid; grid-template-rows: auto 1fr auto auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--e-1); }
+  .stage + .stage::before { content: ""; position: absolute; left: -24px; top: 34px; width: 18px; border-top: 1.75px solid var(--primary-600); }
+  .stage + .stage::after { content: ""; position: absolute; left: -10px; top: 30px; border: 4.5px solid transparent; border-left: 6px solid var(--primary-600); border-right: 0; }
+  @media (max-width: 1279px) { .stage + .stage::before, .stage + .stage::after { display: none; } }
+  .stage header { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .stage header :global(svg) { color: var(--primary-600); flex: none; }
+  .stage header b { display: block; font-weight: 600; font-size: var(--fs-label); }
+  .stage header span { font-size: 13px; color: var(--ink-muted); }
+  .s3 { border-color: var(--primary-100); box-shadow: inset 0 3px 0 var(--primary-600), var(--e-1); }
+  .stage ul { list-style: none; margin: 0; padding: 12px 16px; display: grid; gap: 6px; align-content: start; }
+  .stage ul li { position: relative; padding-left: 16px; font-size: 14.5px; line-height: 1.45; }
+  .stage ul li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 6px; height: 6px; border-radius: 2px; background: var(--primary-500); }
+  .canary { display: flex; margin: 0 16px 12px; height: 26px; border-radius: 6px; overflow: hidden; font-size: 12px; font-weight: 600; }
+  .c10 { flex: 0 0 22%; display: grid; place-items: center; background: var(--primary-600); color: #fff; }
+  .c100 { flex: 1; display: grid; place-items: center; background: var(--primary-100); color: var(--primary-800); }
+  .stage footer { padding: 10px 16px; border-top: 1px solid var(--line); background: var(--surface-2); font-size: 13.5px; font-weight: 500; color: var(--ink-muted); border-radius: 0 0 var(--r-card) var(--r-card); }
+
+  .ladder { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: end; }
+  .ladder li { display: grid; gap: 6px; align-content: start; padding: 16px; min-height: calc(140px + var(--step) * 36px); background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--primary-100); border-radius: var(--r-control); }
+  .ladder li:nth-child(3) { border-top-color: var(--primary-500); }
+  .ladder li:nth-child(4) { border-top-color: var(--primary-600); background: var(--primary-50); }
+  .ladder b { font-size: 16px; color: var(--primary-900); }
+  .ladder span { font-size: 14.5px; color: var(--ink-muted); line-height: 1.5; }
+  @media (max-width: 1023px) { .ladder { grid-template-columns: 1fr 1fr; } .ladder li { min-height: 0; } }
+  @media (max-width: 560px) { .ladder { grid-template-columns: 1fr; } }
+  .note { margin-top: var(--s-4); font-size: var(--fs-ui); color: var(--ink-muted); line-height: 1.55; max-width: var(--measure); }
+  .note :global(.pill) { font-size: 12.5px; margin-right: 4px; }
+  code { color: var(--primary-800); font-size: 0.9em; }
+
+  .infra-split { gap: var(--s-8); align-items: start; }
+  td.muted { color: var(--ink-muted); }
+  .targets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: var(--s-5); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); }
+  .targets div { display: grid; gap: 4px; padding: 14px 16px; border-left: 1px solid var(--line); }
+  .targets div:first-child { border-left: 0; }
+  .tv { font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .tv small { font-size: 0.5em; color: var(--ink-muted); font-weight: 500; margin-left: 3px; }
+  .tl { font-size: 13.5px; color: var(--ink-muted); }
+  .checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .checklist li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 15.5px; line-height: 1.45; }
+  .checklist .box { width: 18px; height: 18px; margin-top: 2px; border: 1.5px solid var(--line-strong); border-radius: 5px; background: var(--surface); }
+  .block-title :global(.pill) { font-size: 12.5px; margin-left: 8px; vertical-align: 0.2em; }
+  tr.total td { font-weight: 600; border-top: 2px solid var(--ink); }
+</style>

@@ -1,0 +1,75 @@
+---
+import Doc from '../layouts/Doc.astro';
+import Section from '../components/Section.astro';
+import Pill from '../components/Pill.astro';
+import { sections } from '../data/sections';
+import Overview from '../sections/Overview.astro';
+import Scope from '../sections/Scope.astro';
+import Context from '../sections/Context.astro';
+import Containers from '../sections/Containers.astro';
+import Frontend from '../sections/Frontend.astro';
+import Api from '../sections/Api.astro';
+import Database from '../sections/Database.astro';
+import Logic from '../sections/Logic.astro';
+import Integrations from '../sections/Integrations.astro';
+import Money from '../sections/Money.astro';
+import Security from '../sections/Security.astro';
+import Infrastructure from '../sections/Infrastructure.astro';
+import Decisions from '../sections/Decisions.astro';
+import Comparisons from '../sections/Comparisons.astro';
+import Timeline from '../sections/Timeline.astro';
+import Design from '../sections/Design.astro';
+import Open from '../sections/Open.astro';
+
+// Sections without an entry still show their heading + "arrives in step N".
+const body: Record<string, any> = {
+  overview: Overview,
+  scope: Scope,
+  context: Context,
+  containers: Containers,
+  frontend: Frontend,
+  api: Api,
+  database: Database,
+  logic: Logic,
+  integrations: Integrations,
+  money: Money,
+  security: Security,
+  infrastructure: Infrastructure,
+  decisions: Decisions,
+  comparisons: Comparisons,
+  timeline: Timeline,
+  design: Design,
+  open: Open,
+};
+---
+<Doc title="Picobello Architecture" description="Architecture of the Picobello Platform, for the review on 5 Nov 2026.">
+  <header class="doc-head">
+    <div class="kicker">
+      <span>Architecture review · 5 Nov 2026</span>
+      <span aria-hidden="true">·</span>
+      <span>Phase 1 go-live ~10 Jan 2027</span>
+    </div>
+    <h1>Picobello Platform architecture</h1>
+    <p class="lede">
+      Picobello manages 22 holiday apartments in two houses in Lenk (Switzerland) for their owners.
+      This document describes the one platform that connects owners, units, rules, check-in,
+      guest cards, door access, money records and listing content.
+    </p>
+    <dl class="legend">
+      <div><dt><Pill kind="open" /></dt><dd>A decision still to be made</dd></div>
+      <div><dt><Pill kind="verify" /></dt><dd>To check in the vendor's own docs once we have access</dd></div>
+    </dl>
+  </header>
+
+  {sections.map((s) => {
+    const Body = body[s.id];
+    return Body ? <Section meta={s}><Body /></Section> : <Section meta={s} />;
+  })}
+</Doc>
+
+<style>
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 32px; margin: var(--s-6) 0 0; font-size: var(--fs-ui); color: var(--ink-muted); }
+  .legend div { display: flex; align-items: center; gap: 10px; }
+  .legend dt, .legend dd { margin: 0; }
+  .legend :global(.pill) { font-size: 14px; }
+</style>

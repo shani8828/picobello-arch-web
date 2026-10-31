@@ -1,0 +1,404 @@
+---
+// 07 Business logic, rule engine and state machines.
+// Source: arch/07-business-logic-and-states.txt (example error: arch/05;
+// receipt amounts: arch/09 example A)
+import Takeaway from '../components/Takeaway.astro';
+import Pill from '../components/Pill.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+import States from '../components/diagram/States.astro';
+
+const settings: [string, string, boolean?][] = [
+  ['own_use.max_days_per_year', '120'],
+  ['own_use.max_days_high_season', '40'],
+  ['own_use.max_weeks_per_high_season', '3'],
+  ['own_use.short_notice_min_nights', '4'],
+  ['own_use.guarantee_days_ahead', '366'],
+  ['own_use.cancel_fee_rappen', '5000'],
+  ['own_use.cancel_fee_days_before', '90'],
+  ['guest.max_days_ahead', '365'],
+  ['times.checkin / times.checkout', '"16:00" / "10:00"'],
+  ['high_season.periods', '12-24 to 01-01 · 02-01 to 03-15 · 07-01 to 08-15 (full Sat-Sat weeks)'],
+  ['fees.cleaning_rappen', 'by unit_type'],
+  ['fees.laundry_per_person_rappen', '3500'],
+  ['fees.consumables_per_guest_rappen', '250 (guests only)'],
+  ['tourist_tax.adult_per_night_rappen', '500 (age 16+)'],
+  ['tourist_tax.child_per_night_rappen', '250 (age 6-15)'],
+  ['tourist_tax.child_free_below_age', '6'],
+  ['extension.price_source', '"lodgify_rate"', true],
+  ['vat.accommodation_bp / vat.standard_bp', '380 / 810'],
+];
+
+const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
+  ['C1', 'Dates valid', 'pass'],
+  ['C2', 'Unit free', 'pass'],
+  ['C3', 'Yearly quota: used + nights ≤ 120', 'pass'],
+  ['C4', 'High-season days: ≤ 40', 'pass'],
+  ['C5', 'High-season weeks: ≤ 3 in this period', 'fail', 'Max 3 weeks per high season, already 3 used'],
+  ['C6', 'High season only in full weeks Sat to Sat', 'pass'],
+  ['C7', 'Short notice: min 4 nights', 'pass'],
+  ['C8', 'Guests may be booked max 365 days ahead', 'info'],
+];
+---
+<Takeaway>Every rule returns a decision and its reasons, so the Owner Portal can explain a rejection and the audit log can show why. All numbers come from dated settings, never from code.</Takeaway>
+
+<div class="block">
+  <div class="grid grid-2 logic-split">
+    <div>
+      <h3 class="block-title">Where logic lives · decided</h3>
+      <p class="lead-p"><code>packages/domain</code> is pure TypeScript: no database, no network, no system clock (the caller passes "now").</p>
+      <div class="chips domain">
+        <span class="chip chip-soft">Rule engine (own use)</span><span class="chip chip-soft">Pricing and fees</span>
+        <span class="chip chip-soft">Tourist tax</span><span class="chip chip-soft">State machines</span>
+      </div>
+      <p class="muted-p">Covered by unit tests with the contract examples; target 100 % of rules.</p>
+    </div>
+    <div>
+      <h3 class="block-title">Settings resolution</h3>
+      <div class="resolve">
+        <code class="fn">getSetting(key, unitId, date)</code>
+        <ol class="order">
+          <li><span>unit set</span></li><li><span>house set</span></li><li><span>global set</span></li>
+        </ol>
+        <p>Newest <code>valid_from</code> ≤ date wins. A rule change from 1.7.2027 doesn't change reservations made under the old rule.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Rule check · owner reservation</h3>
+  <p class="block-sub">All checks run and all failures are returned. Example below uses the rejection from the API error example in section 05.</p>
+  <article class="rulecard">
+    <header class="rc-head">
+      <div>
+        <span class="eyebrow">Example request</span>
+        <p class="rc-title">Own use, 7 nights in a high-season period</p>
+      </div>
+      <span class="pill pill-danger rc-result">Not allowed</span>
+    </header>
+    <div class="rc-body">
+      <ul class="rc-checks">
+        {checks.map(([c, t, s, reason]) => (
+          <li class={`rc-${s}`}>
+            <span class="rc-icon">{s === 'pass' ? <Icon name="check" size={16} /> : s === 'fail' ? <Icon name="x" size={16} /> : <Icon name="info" size={16} />}</span>
+            <span class="rc-c mono">{c}</span>
+            <span class="rc-t">{t}{c === 'C5' && <Pill kind="open" text="Open: per period or per winter/summer?" />}{reason && <span class="rc-reason">{reason}</span>}</span>
+          </li>
+        ))}
+      </ul>
+      <div class="rc-side">
+        <span class="eyebrow">Quota after</span>
+        <div class="q"><span class="ql">Year</span><span class="qv tnum">34 / 120</span><span class="qb"><i style="width:28.3%"></i></span></div>
+        <div class="q"><span class="ql">High-season days</span><span class="qv tnum">14 / 40</span><span class="qb"><i style="width:35%"></i></span></div>
+        <div class="q full"><span class="ql">High-season weeks, this period</span><span class="qv tnum">3 / 3</span><span class="qb"><i style="width:100%"></i></span></div>
+        <pre class="code rc-code">{`{ "allowed": false,
+  "reasons": [ { "code": "OWN_USE_HS_WEEKS",
+                 "used": 3, "max": 3 } ] }`}</pre>
+      </div>
+    </div>
+    <footer class="rc-foot">
+      <span><b>≥ 366 days ahead:</b> guaranteed</span>
+      <span><b>&lt; 366 days:</b> possible, Picobello confirms</span>
+      <span>Friends stays count to quota exactly like own use</span>
+    </footer>
+  </article>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 logic-split">
+    <div>
+      <h3 class="block-title">Price and cost calculation</h3>
+      <dl class="calc">
+        <div><dt>Tourist tax</dt><dd>Σ persons: nights × rate (age at arrival): 16+ 5.00 · 6-15 2.50 · under 6 free</dd></div>
+        <div><dt>Owner own stay</dt><dd>cleaning (unit type) + laundry × persons, + tourist tax only if mode = per stay. Charged to the owner account.</dd></div>
+        <div><dt>Friends stay</dt><dd>cleaning + laundry × persons + tourist tax. Payer: owner (account) or friends (Stripe, before check-in).</dd></div>
+        <div><dt>Extra persons</dt><dd>extra-nights price per person from the Lodgify quote + tourist tax (direct bookings)</dd></div>
+        <div><dt>Extension</dt><dd>nightly price for new nights (Lodgify rate quote) + tourist tax for all persons</dd></div>
+        <div><dt>Date change</dt><dd>new price − old price: pay the difference or refund <Pill kind="open" text="Open: refund rules" /></dd></div>
+      </dl>
+      <p class="muted-p">All amounts are integers in Rappen; rounding only at the end of each line, to 5 Rappen where shown as cash amounts <Pill kind="verify" text="Verify with Picobello" /></p>
+    </div>
+    <div>
+      <h3 class="block-title">Example · friends stay</h3>
+      <div class="receipt">
+        <div class="r-head">
+          <span class="r-title">Friends stay</span>
+          <span class="r-meta">unit 3.5 · 3 adults · 7 nights</span>
+        </div>
+        <div class="r-line"><span>Cleaning <em>unit type 3.5</em></span><span class="r-amt"><small>CHF</small>180.00</span></div>
+        <div class="r-line"><span>Laundry <em>3 × 35.00</em></span><span class="r-amt"><small>CHF</small>105.00</span></div>
+        <div class="r-line"><span>Tourist tax <em>3 × 7 nights × 5.00</em></span><span class="r-amt"><small>CHF</small>105.00</span></div>
+        <div class="r-total"><span>Total</span><span class="r-amt"><small>CHF</small>390.00</span></div>
+        <p class="r-note">No 10 % fee and no consumables for friends (decided 29 Oct). Cleaning amount per unit type comes from settings; 180.00 is the illustration used in file 09.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">State machines</h3>
+  <p class="block-sub">Explicit transition tables in <code>packages/domain</code>. Any transition not in the table is rejected and logged.</p>
+
+  <h4 class="sm-title">Stay <span>all kinds</span></h4>
+  <Figure label="Stay state machine" minWidth={980}>
+    <States label="Stay" width={1200} height={400}
+      start={{ x: 85, y: 70, to: 'booked' }}
+      nodes={[
+        { id: 'booked', x: 20, y: 110, w: 130, label: 'booked' },
+        { id: 'invited', x: 290, y: 110, w: 130, label: 'invited' },
+        { id: 'pp', x: 400, y: 20, w: 170, label: 'payment_pending', tone: 'warning' },
+        { id: 'checked_in', x: 580, y: 110, w: 140, label: 'checked_in' },
+        { id: 'card_issued', x: 870, y: 110, w: 150, label: 'card_issued' },
+        { id: 'access_ready', x: 870, y: 320, w: 150, label: 'access_ready' },
+        { id: 'in_stay', x: 580, y: 320, w: 140, label: 'in_stay', tone: 'primary' },
+        { id: 'ended', x: 290, y: 320, w: 130, label: 'ended', tone: 'muted' },
+        { id: 'locked', x: 20, y: 320, w: 130, label: '(locked)', tone: 'muted' },
+        { id: 'cancelled', x: 1060, y: 215, w: 120, label: 'cancelled', tone: 'danger' },
+      ]}
+      edges={[
+        { from: 'booked', to: 'invited', label: 'invite sent', lx: 220, ly: 121 },
+        { d: 'M380 110 V40 H400', label: 'friends pay', lx: 372, ly: 72, anchor: 'end' },
+        { d: 'M570 40 H650 V110', label: 'PaymentSucceeded', lx: 660, ly: 72, anchor: 'start' },
+        { from: 'invited', to: 'checked_in', label: 'check-in submitted', lx: 500, ly: 170 },
+        { from: 'checked_in', to: 'card_issued', label: 'all guest cards', lx: 795, ly: 170 },
+        { from: 'card_issued', to: 'access_ready', label: ['SALTO grant', 'active'], lx: 955, ly: 228, anchor: 'start' },
+        { from: 'access_ready', to: 'in_stay', label: 'arrival 16:00', lx: 795, ly: 331 },
+        { from: 'in_stay', to: 'ended', label: 'departure 10:00', lx: 500, ly: 331 },
+        { from: 'ended', to: 'locked', label: 'link stops', lx: 220, ly: 331 },
+        { d: 'M1120 165 V215', label: ['any state', 'before ended'], lx: 1120, ly: 128, muted: true },
+        { d: 'M85 150 V270 H900 V320', dashed: true, muted: true, label: 'own use with yearly-flat tourist tax: no check-in, no guest card', lx: 492, ly: 262 },
+      ]}
+    />
+    <Fragment slot="legend">
+      <span class="legend-item"><Icon name="info" size={16} /> card_issued and access_ready run in parallel after check-in; the stay shows the lowest finished step, the timeline shows both.</span>
+    </Fragment>
+  </Figure>
+
+  <div class="sm-grid">
+    <div>
+      <h4 class="sm-title">Payment request</h4>
+      <Figure label="Payment request state machine" minWidth={620}>
+        <States label="Payment" width={760} height={310}
+          nodes={[
+            { id: 'open', x: 20, y: 120, w: 90, label: 'open' },
+            { id: 'pending', x: 170, y: 120, w: 110, label: 'pending', tone: 'info' },
+            { id: 'paid', x: 350, y: 120, w: 90, label: 'paid', tone: 'success' },
+            { id: 'refunded', x: 540, y: 50, w: 120, label: 'refunded', tone: 'muted' },
+            { id: 'partial', x: 540, y: 190, w: 200, label: 'partially_refunded', tone: 'muted' },
+            { id: 'failed', x: 150, y: 220, w: 100, label: 'failed', tone: 'danger' },
+            { id: 'expired', x: 290, y: 220, w: 110, label: 'expired', tone: 'warning' },
+          ]}
+          edges={[
+            { from: 'open', to: 'pending', label: 'session opened', lx: 140, ly: 108 },
+            { from: 'pending', to: 'paid' },
+            { d: 'M440 140 H490 V70 H540' },
+            { d: 'M490 140 V210 H540', noArrow: false },
+            { d: 'M210 160 V220' },
+            { d: 'M255 160 V190 H345 V220' },
+            { d: 'M345 260 V285 H65 V160', dashed: true, muted: true, label: 'guest tries again: new Stripe session', lx: 205, ly: 302 },
+            { d: 'M200 260 V285', dashed: true, muted: true, noArrow: true },
+          ]}
+        />
+      </Figure>
+    </div>
+    <div>
+      <h4 class="sm-title">Extension / date change</h4>
+      <Figure label="Extension and date change state machine" minWidth={620}>
+        <States label="Extension" width={760} height={310}
+          nodes={[
+            { id: 'quoted', x: 20, y: 100, w: 100, label: 'quoted', tone: 'info' },
+            { id: 'pp', x: 160, y: 100, w: 170, label: 'payment_pending', tone: 'warning' },
+            { id: 'paid', x: 370, y: 100, w: 80, label: 'paid', tone: 'success' },
+            { id: 'applying', x: 490, y: 100, w: 110, label: 'applying', tone: 'info' },
+            { id: 'applied', x: 640, y: 100, w: 100, label: 'applied', tone: 'success' },
+            { id: 'apply_failed', x: 490, y: 210, w: 140, label: 'apply_failed', tone: 'danger' },
+            { id: 'expired', x: 20, y: 210, w: 100, label: 'expired', tone: 'muted' },
+          ]}
+          edges={[
+            { from: 'quoted', to: 'pp' },
+            { from: 'pp', to: 'paid' },
+            { from: 'paid', to: 'applying', label: ['Lodgify + SALTO', '+ Feratel jobs'], lx: 470, ly: 62 },
+            { from: 'applying', to: 'applied' },
+            { from: 'applying', to: 'apply_failed', label: 'after retries', lx: 555, ly: 186, anchor: 'start' },
+            { from: 'quoted', to: 'expired', label: 'hold timeout, nights released', lx: 80, ly: 186, anchor: 'start' },
+          ]}
+        />
+      </Figure>
+      <p class="sm-note">Quote holds the nights for 10 minutes. apply_failed → refund offered + back office alert.</p>
+    </div>
+    <div>
+      <h4 class="sm-title">Owner reservation</h4>
+      <Figure label="Owner reservation state machine" minWidth={620}>
+        <States label="Owner reservation" width={760} height={310}
+          nodes={[
+            { id: 'checking', x: 20, y: 110, w: 100, label: 'checking' },
+            { id: 'rejected', x: 170, y: 20, w: 100, label: 'rejected', tone: 'danger' },
+            { id: 'needs', x: 170, y: 110, w: 180, label: 'needs_confirmation', tone: 'warning' },
+            { id: 'declined', x: 400, y: 20, w: 100, label: 'declined', tone: 'danger' },
+            { id: 'confirmed', x: 400, y: 110, w: 110, label: 'confirmed', tone: 'success' },
+            { id: 'lp', x: 560, y: 110, w: 160, label: 'lodgify_pending', tone: 'info' },
+            { id: 'blocked', x: 560, y: 230, w: 180, label: 'blocked_in_lodgify', tone: 'success' },
+            { id: 'cancelled', x: 380, y: 230, w: 110, label: 'cancelled', tone: 'muted' },
+          ]}
+          edges={[
+            { d: 'M70 110 V40 H170', label: 'reasons', lx: 62, ly: 76, anchor: 'end' },
+            { from: 'checking', to: 'needs' },
+            { d: 'M300 110 V40 H400' },
+            { from: 'needs', to: 'confirmed', label: 'Picobello confirms', lx: 375, ly: 100 },
+            { from: 'confirmed', to: 'lp' },
+            { from: 'lp', to: 'blocked', label: '≤ 5 min', lx: 648, ly: 196, anchor: 'start' },
+            { d: 'M70 150 V195 H430 V150', label: '≥ 366 days ahead: guaranteed', lx: 250, ly: 214 },
+            { d: 'M470 150 V230' },
+            { d: 'M560 250 H490' },
+          ]}
+        />
+      </Figure>
+      <p class="sm-note">Below 366 days the request waits for Picobello. Cancelling costs CHF 50 if less than 90 days before arrival.</p>
+    </div>
+    <div>
+      <h4 class="sm-title">Listing field × channel</h4>
+      <Figure label="Listing field and channel sync state machine" minWidth={620}>
+        <States label="Listing sync" width={760} height={310}
+          nodes={[
+            { id: 'in_sync', x: 30, y: 120, w: 100, label: 'in_sync', tone: 'success' },
+            { id: 'pending_push', x: 240, y: 30, w: 140, label: 'pending_push', tone: 'info' },
+            { id: 'push_failed', x: 540, y: 30, w: 130, label: 'push_failed', tone: 'danger' },
+            { id: 'manual_needed', x: 240, y: 210, w: 150, label: 'manual_needed', tone: 'warning' },
+            { id: 'manual_done', x: 540, y: 210, w: 140, label: 'manual_done', tone: 'done-outline' },
+          ]}
+          edges={[
+            { d: 'M60 120 V44 H240', label: 'edited, mode auto', lx: 150, ly: 36 },
+            { d: 'M240 60 H100 V120', label: 'pushed', lx: 170, ly: 84 },
+            { d: 'M380 44 H540', label: 'push fails', lx: 460, ly: 36 },
+            { d: 'M540 60 H380', dashed: true, label: 'retry', lx: 460, ly: 84 },
+            { d: 'M80 160 V224 H240', label: 'edited, mode manual', lx: 160, ly: 216 },
+            { d: 'M390 224 H540', label: 'staff ticks "entered"', lx: 465, ly: 216 },
+            { d: 'M540 240 H390', dashed: true, label: 'edited again: hash changed', lx: 465, ly: 268 },
+          ]}
+        />
+      </Figure>
+      <p class="sm-note">Colours follow the listing sync states in the design system.</p>
+    </div>
+  </div>
+
+  <details class="disclose sm-more">
+    <summary>Three smaller machines<span class="count">late request, Feratel registration, access grant</span><Icon name="chevron-right" size={18} class="chev" /></summary>
+    <div class="disclose-body">
+      <dl class="mini-sm">
+        <div><dt>Late check-in / check-out request</dt><dd><code>open</code> → <code>approved</code> (with price, optional payment) | <code>declined</code> · <code>approved</code> → <code>paid</code> (if price &gt; 0)</dd></div>
+        <div><dt>Feratel registration</dt><dd><code>pending</code> → <code>sent</code> → <code>accepted</code> (cards received) | <code>failed</code> → (retry) <code>sent</code> · <code>accepted</code> → <code>updated</code> (stay changed) | <code>cancelled</code></dd></div>
+        <div><dt>Access grant</dt><dd><code>pending</code> → <code>active</code> → <code>changed</code> (extension) → <code>active</code> · <code>active</code> → <code>revoked</code> (cancelled / ended + grace) · <code>pending</code> → <code>failed</code> → (retry) <code>pending</code></dd></div>
+      </dl>
+    </div>
+  </details>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 logic-split">
+    <div>
+      <h3 class="block-title">Concurrency and consistency</h3>
+      <ul class="list">
+        <li>Night holds (UNIQUE unit + night) stop two guests paying for the same night; holds expire after 10 minutes.</li>
+        <li>Before confirming an extension or date change, availability is re-checked live in Lodgify.</li>
+        <li>Exclusion constraint on stays prevents overlapping stays in our DB.</li>
+        <li>Optimistic locking (version column) on all editable objects.</li>
+        <li>Every state change and its events are one DB transaction.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="block-title">Settings keys · Phase 1</h3>
+      <details class="disclose">
+        <summary>Contract values as data<span class="count">{settings.length} keys, one global set today</span><Icon name="chevron-right" size={18} class="chev" /></summary>
+        <div class="disclose-body">
+          <table class="ep-like">
+            <tbody>{settings.map(([k, v, open]) => <tr><td class="mono k">{k}</td><td>{v}{open && <> <Pill kind="open" text="Open: confirm" /></>}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<style>
+  .logic-split { gap: var(--s-8); align-items: start; }
+  .lead-p { font-size: var(--fs-label); line-height: 1.55; margin-bottom: var(--s-4); }
+  .muted-p { margin-top: var(--s-4); font-size: var(--fs-ui); color: var(--ink-muted); line-height: 1.55; }
+  .muted-p :global(.pill), .calc :global(.pill) { font-size: 12.5px; margin-left: 4px; }
+  code { color: var(--primary-800); font-size: 0.9em; }
+  .resolve { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
+  .resolve .fn { font-size: 15px; font-weight: 600; }
+  .order { list-style: none; margin: 0; padding: 0; display: flex; gap: 28px; }
+  .order li { position: relative; }
+  .order li span { display: inline-block; padding: 4px 12px; border-radius: var(--r-chip); background: var(--primary-50); color: var(--primary-800); font-size: var(--fs-ui); font-weight: 600; }
+  .order li + li::before { content: "→"; position: absolute; left: -20px; top: 4px; color: var(--primary-600); }
+  .resolve p { font-size: var(--fs-ui); color: var(--ink-muted); line-height: 1.55; }
+
+  .rulecard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--e-2); overflow: hidden; }
+  .rc-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s-4); padding: var(--s-5) var(--s-6); border-bottom: 1px solid var(--line); }
+  .rc-title { font-family: var(--font-head); font-weight: 700; font-size: 1.125rem; margin-top: 2px; }
+  .rc-result { font-size: 15px; padding: 4px 14px 4px 12px; }
+  .rc-body { display: grid; grid-template-columns: 1.3fr 1fr; }
+  .rc-checks { list-style: none; margin: 0; padding: var(--s-4) var(--s-6); display: grid; gap: 2px; }
+  .rc-checks li { display: grid; grid-template-columns: 24px 34px 1fr; align-items: start; gap: 8px; padding: 8px 0; font-size: var(--fs-label); border-bottom: 1px solid var(--line); }
+  .rc-checks li:last-child { border-bottom: 0; }
+  .rc-icon { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; margin-top: 1px; }
+  .rc-pass .rc-icon { background: var(--success-soft); color: var(--success-text); }
+  .rc-fail .rc-icon { background: var(--danger-soft); color: var(--danger-text); }
+  .rc-info .rc-icon { background: var(--info-soft); color: var(--info-text); }
+  .rc-c { font-size: 13px; font-weight: 600; color: var(--ink-muted); padding-top: 3px; }
+  .rc-t { line-height: 1.45; }
+  .rc-t :global(.pill) { font-size: 12px; margin-left: 8px; }
+  .rc-fail .rc-t { font-weight: 600; }
+  .rc-reason { display: block; margin-top: 4px; font-weight: 500; color: var(--danger-text); font-size: var(--fs-ui); }
+  .rc-side { display: grid; gap: var(--s-4); align-content: start; padding: var(--s-5) var(--s-6); background: var(--surface-2); border-left: 1px solid var(--line); }
+  .q { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; }
+  .ql { font-size: var(--fs-ui); color: var(--ink-muted); }
+  .qv { font-size: 1.25rem; font-weight: 600; }
+  .qb { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--surface); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+  .qb i { display: block; height: 100%; background: var(--sun-500); border-radius: 4px; }
+  .q.full .qb i { background: var(--danger-vivid); }
+  .q.full .qv { color: var(--danger-text); }
+  .rc-code { font-size: 13px; padding: 12px 14px; white-space: pre-wrap; }
+  .rc-foot { display: flex; flex-wrap: wrap; gap: 6px 28px; padding: 14px var(--s-6); border-top: 1px solid var(--line); font-size: var(--fs-ui); color: var(--ink-muted); }
+  .rc-foot b { color: var(--ink); font-weight: 600; }
+  @media (max-width: 1023px) { .rc-body { grid-template-columns: 1fr; } .rc-side { border-left: 0; border-top: 1px solid var(--line); } }
+
+  .calc { margin: 0; display: grid; border-top: 1px solid var(--line); }
+  .calc div { display: grid; grid-template-columns: 130px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-label); line-height: 1.5; }
+  .calc dt { font-weight: 600; }
+  .calc dd { margin: 0; color: var(--ink-muted); }
+
+  .receipt { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card) var(--r-card) 0 0; padding: var(--s-6) var(--s-6) var(--s-8); box-shadow: var(--e-1); max-width: 460px; }
+  .receipt::after { content: ""; position: absolute; left: -1px; right: -1px; bottom: -10px; height: 10px; background: radial-gradient(circle at 8px 0, transparent 7px, var(--surface) 7.5px) 0 0 / 16px 10px repeat-x; filter: drop-shadow(0 1px 0 var(--line)); }
+  .r-head { display: grid; gap: 2px; padding-bottom: var(--s-4); border-bottom: 1px dashed var(--line-strong); margin-bottom: var(--s-2); }
+  .r-title { font-family: var(--font-head); font-weight: 700; font-size: 1.125rem; }
+  .r-meta { font-size: var(--fs-ui); color: var(--ink-muted); }
+  .r-line, .r-total { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 10px 0; font-size: var(--fs-label); }
+  .r-line em { display: block; font-style: normal; font-size: 14px; color: var(--ink-muted); }
+  .r-amt { font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
+  .r-amt small { font-size: 13px; color: var(--ink-muted); margin-right: 4px; font-weight: 400; }
+  .r-total { border-top: 2px solid var(--ink); margin-top: var(--s-2); padding-top: var(--s-4); font-weight: 600; }
+  .r-total .r-amt { font-size: 2rem; font-weight: 600; letter-spacing: -0.01em; }
+  .r-note { margin-top: var(--s-4); font-size: 14px; color: var(--ink-muted); line-height: 1.5; }
+
+  .sm-title { display: flex; align-items: baseline; gap: 10px; margin: var(--s-6) 0 var(--s-3); font-size: 1.125rem; font-weight: 700; }
+  .sm-title span { font-family: var(--font-body); font-size: var(--fs-ui); font-weight: 500; color: var(--ink-muted); }
+  .sm-grid { display: grid; grid-template-columns: 1fr; gap: 0 var(--s-6); }
+  .sm-grid :global(.figure-canvas > svg) { max-width: 860px; }
+  @media (min-width: 1800px) { .sm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .sm-note { margin-top: 8px; font-size: 14px; color: var(--ink-muted); line-height: 1.5; }
+  .sm-more { margin-top: var(--s-8); }
+  .mini-sm { margin: 0; display: grid; }
+  .mini-sm div { display: grid; grid-template-columns: 260px 1fr; gap: 16px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.6; }
+  .mini-sm div:first-child { border-top: 0; }
+  .mini-sm dt { font-weight: 600; }
+  .mini-sm dd { margin: 0; color: var(--ink-muted); }
+  .mini-sm code { font-size: 13.5px; }
+  @media (max-width: 767px) { .mini-sm div { grid-template-columns: 1fr; gap: 2px; } }
+  .ep-like { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .ep-like td { padding: 7px 8px; border-top: 1px solid var(--line); vertical-align: baseline; }
+  .ep-like tr:first-child td { border-top: 0; }
+  .ep-like .k { font-size: 13.5px; color: var(--primary-800); width: 55%; word-break: break-word; }
+  .ep-like :global(.pill) { font-size: 12px; }
+</style>

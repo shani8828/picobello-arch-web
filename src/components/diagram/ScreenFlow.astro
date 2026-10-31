@@ -1,0 +1,73 @@
+---
+// Screen-flow diagram for one app: entry -> hub screen -> screens on a
+// rail; screens with sub-steps (or follow-up screens) get a chain to the
+// right. Layout is computed, so the data stays readable.
+import Box from './Box.astro';
+import Arrow from './Arrow.astro';
+
+export interface FlowNode { title: string; sub?: string | string[] }
+export interface FlowItem extends FlowNode {
+  chain?: FlowNode[];        // sub-steps or next screens, left to right
+  chainNote?: string;        // small note above the chain
+  variant?: 'default' | 'muted' | 'accent';
+  optional?: number[];       // indexes in chain drawn dashed (conditional)
+}
+interface Props { entry: FlowNode; hub: FlowNode; items: FlowItem[]; label: string; icon?: string }
+const { entry, hub, items } = Astro.props;
+
+const IX = 428, IW = 228, IH = 58;            // item boxes
+const CX = 690, CW = 162, CH = 58, CG = 12;   // chain boxes
+const PER_ROW = 3, ROW = 72, CROW = CH + 12;
+
+let y = 24;
+const placed = items.map((it) => {
+  const n = it.chain?.length ?? 0;
+  const rows = Math.ceil(n / PER_ROW);
+  const noteH = it.chainNote ? 22 : 0;
+  const h = Math.max(ROW, noteH + rows * CROW + 10);
+  const p = { it, y, h, rows, noteH };
+  y += h;
+  return p;
+});
+const H = y + 10;
+const firstMid = placed[0].y + IH / 2;
+const lastMid = placed[placed.length - 1].y + IH / 2;
+const hubY = (firstMid + lastMid) / 2 - 38;
+const railX = 402;
+---
+<svg viewBox={`0 0 1200 ${H}`} xmlns="http://www.w3.org/2000/svg" class="screenflow">
+  <Box x={20} y={hubY + 9} w={150} h={58} title={entry.title} sub={entry.sub} variant="accent" />
+  <Arrow d={`M170 ${hubY + 38} H200`} />
+  <Box x={200} y={hubY} w={180} h={76} title={hub.title} sub={hub.sub} variant="app" />
+  <path d={`M380 ${hubY + 38} H${railX} M${railX} ${firstMid} V${lastMid}`} fill="none" stroke="var(--primary-600)" stroke-width="1.75" />
+
+  {placed.map(({ it, y, noteH }) => (
+    <Fragment>
+      <Arrow d={`M${railX} ${y + IH / 2} H${IX}`} />
+      <Box x={IX} y={y} w={IW} h={IH} title={it.title} sub={it.sub} variant={it.variant ?? 'default'} />
+      {it.chain && (
+        <Fragment>
+          {it.chainNote && <text x={CX} y={y + 14} class="sf-note">{it.chainNote}</text>}
+          <path d={`M${IX + IW} ${y + IH / 2} H${CX - 6}`} fill="none" stroke="var(--line-strong)" stroke-width="1.5" stroke-dasharray="3 3" />
+          {it.chain.map((c, i) => {
+            const col = i % PER_ROW, row = Math.floor(i / PER_ROW);
+            const cx = CX + col * (CW + CG), cy = y + noteH + row * CROW;
+            const dashed = it.optional?.includes(i);
+            return (
+              <Fragment>
+                <Box x={cx} y={cy} w={CW} h={CH} title={c.title} sub={c.sub} variant={dashed ? 'phase2' : 'default'} />
+                {col > 0 && <Arrow d={`M${cx - CG} ${cy + CH / 2} H${cx}`} />}
+              </Fragment>
+            );
+          })}
+        </Fragment>
+      )}
+    </Fragment>
+  ))}
+</svg>
+
+<style>
+  .sf-note { font-size: 14px; font-weight: 500; fill: var(--ink-faint); }
+  /* Chain boxes are small: use tighter type, still >= 14 px */
+  .screenflow :global(.bx-sub) { font-size: 14px; }
+</style>

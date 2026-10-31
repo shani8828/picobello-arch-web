@@ -1,0 +1,80 @@
+---
+// Sequence diagram: participants as columns with lifelines, messages as
+// numbered rows. Replies are dashed; notes span the participants given.
+export interface Part { id: string; label: string; sub?: string; ext?: boolean }
+export interface Step {
+  from?: string; to?: string; label: string; reply?: boolean;
+  note?: [string, string];   // note spanning participants [fromId, toId]
+  tone?: 'default' | 'success' | 'warning';
+}
+interface Props { parts: Part[]; steps: Step[]; label: string; width?: number }
+const { parts, steps, width = 1200 } = Astro.props;
+const M = 24, TOP = 16, HEAD = 58, ROW = 46;
+const col = (width - 2 * M) / parts.length;
+const cx = Object.fromEntries(parts.map((p, i) => [p.id, M + col * i + col / 2]));
+const H = TOP + HEAD + 24 + steps.length * ROW + 10;
+let n = 0;
+const rows = steps.map((s, i) => ({ s, y: TOP + HEAD + 36 + i * ROW, num: s.note ? null : ++n }));
+const boxW = Math.min(col - 16, 170);
+---
+<svg viewBox={`0 0 ${width} ${H}`} xmlns="http://www.w3.org/2000/svg" class="seq">
+  {parts.map((p) => (
+    <g>
+      <line x1={cx[p.id]} x2={cx[p.id]} y1={TOP + HEAD} y2={H - 6} class="life" />
+      <rect x={cx[p.id] - boxW / 2} y={TOP} width={boxW} height={HEAD - 8} rx="10" class={p.ext ? 'pbox ext' : 'pbox'} />
+      <text x={cx[p.id]} y={TOP + (p.sub ? 22 : 30)} text-anchor="middle" class="ptitle">{p.label}</text>
+      {p.sub && <text x={cx[p.id]} y={TOP + 40} text-anchor="middle" class="psub">{p.sub}</text>}
+    </g>
+  ))}
+  {rows.map(({ s, y, num }) => {
+    if (s.note) {
+      const a = cx[s.note[0]], b = cx[s.note[1]];
+      const x1 = Math.min(a, b) - 60, x2 = Math.max(a, b) + 60;
+      return (
+        <g>
+          <rect x={x1} y={y - 20} width={x2 - x1} height={30} rx="8" class={`note tone-${s.tone ?? 'default'}`} />
+          <text x={(x1 + x2) / 2} y={y} text-anchor="middle" class="note-t">{s.label}</text>
+        </g>
+      );
+    }
+    const a = cx[s.from!], b = cx[s.to!];
+    if (a === b) {
+      return (
+        <g>
+          <path d={`M${a} ${y - 8} h34 v16 h-30`} class="msg" marker-end="url(#arr)" />
+          <text x={a + 44} y={y + 4} class="mlabel">{s.label}</text>
+          <text x={a - 10} y={y + 4} text-anchor="end" class="mnum">{num}</text>
+        </g>
+      );
+    }
+    const dir = b > a ? 1 : -1;
+    return (
+      <g class={s.reply ? 'reply' : ''}>
+        <path d={`M${a + dir * 4} ${y} H${b - dir * 4}`} class="msg" marker-end={s.reply ? 'url(#arr-muted)' : 'url(#arr)'} />
+        <text x={(a + b) / 2} y={y - 8} text-anchor="middle" class="mlabel">{s.label}</text>
+        <circle cx={a + dir * 14} cy={y} r="9" class="mdot" />
+        <text x={a + dir * 14} y={y + 4} text-anchor="middle" class="mnum-in">{num}</text>
+      </g>
+    );
+  })}
+</svg>
+
+<style>
+  .life { stroke: var(--line-strong); stroke-width: 1.25; stroke-dasharray: 3 4; }
+  .pbox { fill: var(--primary-50); stroke: var(--primary-600); stroke-width: 1.25; }
+  .pbox.ext { fill: var(--surface); stroke: var(--line-strong); }
+  .ptitle { font-size: 16px; font-weight: 600; fill: var(--ink); }
+  .psub { font-size: 13px; fill: var(--ink-muted); }
+  .msg { fill: none; stroke: var(--primary-600); stroke-width: 1.75; }
+  .reply .msg { stroke: var(--ink-faint); stroke-dasharray: 6 5; }
+  .mlabel { font-size: 15px; font-weight: 500; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 6px; stroke-linejoin: round; }
+  .reply .mlabel { fill: var(--ink-muted); font-weight: 400; }
+  .mdot { fill: var(--surface); stroke: var(--primary-600); stroke-width: 1.25; }
+  .reply .mdot { stroke: var(--ink-faint); }
+  .mnum-in { font-size: 11px; font-weight: 600; fill: var(--primary-700); font-variant-numeric: tabular-nums; }
+  .reply .mnum-in { fill: var(--ink-muted); }
+  .mnum { font-size: 12px; font-weight: 600; fill: var(--primary-700); }
+  .note { fill: var(--sun-50); stroke: var(--sun-500); stroke-width: 1; }
+  .note.tone-success { fill: var(--success-soft); stroke: var(--success-vivid); }
+  .note-t { font-size: 14px; font-weight: 500; fill: var(--ink); }
+</style>

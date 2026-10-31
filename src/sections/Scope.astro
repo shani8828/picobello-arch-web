@@ -1,0 +1,270 @@
+---
+// 01 Scope and users. Source: arch/01-scope-and-users.txt
+import Takeaway from '../components/Takeaway.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+
+const roles = [
+  { name: 'Guest', icon: 'luggage', app: 'Guest App', login: 'Personal link, no account',
+    actions: ['Online check-in once, prefilled from the booking', 'One digital guest card per person', 'Badge ready for arrival 16:00 to departure 10:00', 'Extend or change dates, request late check-in/out'] },
+  { name: 'Friend of owner', icon: 'heart-handshake', app: 'Guest App', login: 'Personal link, no account',
+    actions: ['Same link and app as a guest', 'Pays cleaning, laundry, tourist tax in check-in if "friends pay"', 'Just checks in if the owner covers it', 'Guest card and badge like a guest'] },
+  { name: 'Owner', icon: 'house', app: 'Owner Portal', login: 'Magic link, optional passkey',
+    actions: ['Calendar of own unit(s)', 'Own-use quota: days, high-season days, weeks', 'Reserve own use or book for friends', 'Running account balance; never pays out of pocket'] },
+  { name: 'Back office', icon: 'building-2', app: 'Back Office', login: 'Email, password + 2FA',
+    actions: ['Today view: arrivals, departures, missing items', 'Stays with full timeline', 'Apartments: listing content per channel', 'Owners, settings, integrations, audit log'] },
+  { name: 'Bookkeeping', icon: 'calculator', app: 'Back Office', login: 'Email, password + 2FA',
+    actions: ['Access to money records only', 'Ledger entries and owner balances', 'Manual ledger adjustments', 'Refunds'] },
+  { name: 'Admin', icon: 'shield-check', app: 'Back Office', login: 'Email, password + 2FA',
+    actions: ['Everything the back office can do', 'Users and roles', 'System settings, prices, rules', 'Archipex import'] },
+];
+
+const phase1 = [
+  'Personal guest link', 'DE / FR / EN', 'Pre-arrival info + Maps link', 'Online check-in', 'Digital guest cards',
+  'Badge access (SALTO)', 'Extra persons payment', 'Extend stay', 'Change / shorten dates', 'Late check-in / check-out requests',
+  'Link locked after departure', 'Friends pay in check-in', 'Owner magic link / passkey', 'Owner calendar', 'Own-use quota',
+  'Own-use reservation with rule check', 'Owner check-in (per-stay tax)', 'Booking for friends', 'Cancel / change (CHF 50 fee)',
+  'Owner account balance', 'Today view', 'Stays + timeline', 'Apartments / listing editor', 'Channel sync + "What\'s missing"',
+  'Owners and ownerships', 'Settings with valid-from', 'Integrations page', 'Audit log', 'Archipex import',
+  'Ledger from first live booking', 'Webhooks stored + retried',
+];
+const phase2 = [
+  'WhatsApp messaging', 'Repairs: tickets, quotes, approval > CHF 500, DocuSign', 'Cleaning via PicobelloAI 2.0',
+  'Half-year owner statements (PDF), payouts', 'Bank import (camt.053/054)', 'Bexio export, VAT 3.8 % / 8.1 %',
+  'Tourist-tax reconciliation with Feratel', 'ZWG report (PDF)', 'Partner offers, reviews',
+];
+
+const stories: { group: string; items: [string, string][] }[] = [
+  { group: 'Guest', items: [
+    ['G-1', 'I get a personal link 3 days before arrival (immediately if I book short-notice) and can open the Guest App without an account.'],
+    ['G-2', 'I see the app in my booking language (DE/FR/EN) and can switch.'],
+    ['G-3', 'I see pre-arrival info: address with a Google Maps link, parking, check-in from 16:00, Wi-Fi, house rules.'],
+    ['G-4', 'I do the online check-in once: my data is prefilled from the booking, I add companions with birth dates, arrival time, and optional marketing consent (separate checkbox).'],
+    ['G-5', 'After check-in I get one digital guest card per person (Simmental Card: free bus/train, discounts).'],
+    ['G-6', 'After check-in my badge access is ready (arrival 16:00 to departure 10:00); I collect the badge at the SALTO dispenser.'],
+    ['G-7', 'If I report more people than booked, check-in still works and I get a payment link for the difference (direct bookings).'],
+    ['G-8', 'I can extend my stay by one or more nights if the apartment is free: I see the price, pay in the app, done. No approval.'],
+    ['G-9', 'I can shorten or change my dates if availability fits. No approval.'],
+    ['G-10', 'I can request a late check-in or late check-out; Picobello answers in the app (needs approval because of cleaning).'],
+    ['G-11', 'My link stops working after departure (data protection).'],
+  ] },
+  { group: 'Friend of owner', items: [
+    ['F-1', 'I get the same personal link and Guest App as a guest.'],
+    ['F-2', 'If the owner chose "friends pay": the check-in shows the costs (cleaning, laundry, tourist tax) and I must pay by card/TWINT before the check-in is completed.'],
+    ['F-3', 'If the owner chose "I cover it": I just do the check-in.'],
+    ['F-4', 'After check-in: guest card and badge like a guest.'],
+  ] },
+  { group: 'Owner', items: [
+    ['O-1', 'I log in with a magic link (email), optionally a passkey.'],
+    ['O-2', 'I see the calendar of my unit: guests, own use, friends, free.'],
+    ['O-3', 'I see my own-use quota: days used / 120 per year, high season days used / 40, weeks per high season used / 3.'],
+    ['O-4', 'I reserve own use for myself/family: the app checks the rules instantly and explains any rejection; a confirmed reservation blocks the apartment in Lodgify within 5 minutes.'],
+    ['O-5', 'If my tourist-tax mode is "per stay", I do the check-in in the portal and receive the guest card there; its cost is charged to my account. If my mode is "yearly flat", nothing else happens.'],
+    ['O-6', 'I book for friends: I enter their name and contact and choose "I cover the costs" or "friends pay".'],
+    ['O-7', 'I can cancel or change my reservations (CHF 50 fee if less than 90 days before arrival).'],
+    ['O-8', 'I see my running account balance (charges and, later, income).'],
+  ] },
+  { group: 'Back office', items: [
+    ['B-1', 'Today view: arrivals, departures, check-ins missing, payments missing, integration errors.'],
+    ['B-2', 'Stays list with filters; stay detail with timeline of everything that happened (booking, check-in, payment, guest card, badge).'],
+    ['B-3', 'Apartments tab: click a unit, edit all listing content (photos, descriptions per channel and language, amenities, rules, check-in info, policies).'],
+    ['B-4', 'For every listing field: see which channels it reaches automatically and which must be entered manually; "What\'s missing" grid of units x channels.'],
+    ['B-5', 'Owners and ownerships (who owns which unit since when, tourist tax mode).'],
+    ['B-6', 'Settings (prices, fees, quota rules) with a "valid from" date; today one global set, later per house or unit.'],
+    ['B-7', 'Integrations page: status per system, last success, errors, retry button.'],
+    ['B-8', 'Answer late check-in / check-out requests.'],
+    ['B-9', 'Audit log: who changed what, when.'],
+    ['B-10', 'Import of owners, units and consents from Archipex (old system).'],
+  ] },
+  { group: 'System', items: [
+    ['S-1', 'Every money movement is recorded in the ledger from the first live booking (payments, refunds, owner charges, booking amounts).'],
+    ['S-2', 'Every webhook and every outgoing call is stored and retried.'],
+  ] },
+];
+
+// Timeline geometry: 1 Nov 2026 -> 30 Apr 2027 (181 days) across the axis.
+const X0 = 40, X1 = 1080;
+const DAYS = 181;
+const day = (m: number, d: number) => {
+  const start = Date.UTC(2026, 10, 1);
+  return (Date.UTC(m >= 10 ? 2026 : 2027, m, d) - start) / 86400000;
+};
+const xd = (m: number, d: number) => X0 + (day(m, d) / DAYS) * (X1 - X0);
+const months = [
+  { l: 'Nov', m: 10 }, { l: 'Dec', m: 11 }, { l: 'Jan 2027', m: 0 }, { l: 'Feb', m: 1 }, { l: 'Mar', m: 2 }, { l: 'Apr', m: 3 },
+];
+---
+<Takeaway>Owners never pay out of pocket: their costs are charged to their owner account and settled with their rental income.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">Who uses the system</h3>
+  <div class="grid grid-3">
+    {roles.map((r) => (
+      <article class="role card">
+        <header class="role-head">
+          <span class="role-icon"><Icon name={r.icon} size={22} /></span>
+          <h4>{r.name}</h4>
+        </header>
+        <dl class="role-meta">
+          <div><dt>App</dt><dd>{r.app}</dd></div>
+          <div><dt>Login</dt><dd>{r.login}</dd></div>
+        </dl>
+        <ul class="list compact">{r.actions.map((a) => <li>{a}</li>)}</ul>
+      </article>
+    ))}
+  </div>
+  <div class="nonusers">
+    <p><strong>Not users (no login):</strong> contractors, authorities, partners. Their documents are uploaded by the back office.</p>
+    <p><strong>Later:</strong> cleaning team (uses PicobelloAI, connected in Phase 2) · STWEG administration (Phase 3).</p>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Scope by phase</h3>
+  <div class="board">
+    <section class="col col-p1">
+      <header><span class="col-title">Phase 1</span><span class="col-meta">~10 Jan 2027 · must</span><span class="count tnum">{phase1.length}</span></header>
+      <div class="chips">{phase1.map((c) => <span class="chip chip-soft">{c}</span>)}</div>
+    </section>
+    <section class="col">
+      <header><span class="col-title">Phase 2</span><span class="col-meta">April 2027 · designed now</span><span class="count tnum">{phase2.length}</span></header>
+      <div class="chips">{phase2.map((c) => <span class="chip">{c}</span>)}</div>
+      <div class="p3">
+        <span class="col-title small">Phase 3 · later</span>
+        <div class="chips"><span class="chip chip-muted">STWEG administration: budget, akonto QR bills, funds, assemblies, resolutions, caretaker payroll</span></div>
+      </div>
+    </section>
+    <section class="col col-no">
+      <header><span class="col-title">Not needed</span><span class="count tnum">1</span></header>
+      <div class="chips"><span class="chip chip-muted chip-strike">Snow clearing / winter service</span></div>
+    </section>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Timeline</h3>
+  <Figure label="Timeline from the architecture review on 5 Nov 2026 to Phase 2 in April 2027" minWidth={760}>
+    <svg viewBox="0 0 1120 170" xmlns="http://www.w3.org/2000/svg">
+      {months.map((mo) => (
+        <g>
+          <line x1={xd(mo.m, 1)} x2={xd(mo.m, 1)} y1="112" y2="122" stroke="var(--line-strong)" />
+          <text x={xd(mo.m, 1) + 6} y="142" class="svg-note">{mo.l}</text>
+        </g>
+      ))}
+      <line x1={X0} x2={X1} y1="100" y2="100" stroke="var(--line-strong)" stroke-width="2" />
+      <rect x={xd(10, 6)} y="92" width={xd(0, 10) - xd(10, 6)} height="16" rx="8" fill="var(--primary-600)" />
+      <rect x={xd(0, 11) + 6} y="92" width={X1 - xd(0, 11) - 6} height="16" rx="8" fill="var(--primary-100)" />
+      <text x={(xd(10, 6) + xd(0, 10)) / 2} y="78" text-anchor="middle" class="tl-band">Phase 1 build</text>
+      <text x={(xd(0, 11) + X1) / 2} y="78" text-anchor="middle" class="tl-band muted">Phase 2 · Jan to April</text>
+
+      <g class="tl-mark"><circle cx={xd(10, 5)} cy="100" r="7" fill="var(--surface)" stroke="var(--ink)" stroke-width="2" />
+        <text x={xd(10, 5) - 4} y="30" class="tl-date" text-anchor="start">5 Nov</text>
+        <text x={xd(10, 5) - 4} y="50" class="tl-what" text-anchor="start">Architecture review</text></g>
+      <line x1={xd(10, 5)} x2={xd(10, 5)} y1="56" y2="92" stroke="var(--line-strong)" />
+      <g class="tl-mark"><circle cx={xd(10, 6)} cy="100" r="4" fill="var(--surface)" />
+        <text x={xd(10, 6) + 14} y="164" class="tl-what" text-anchor="start">6 Nov build start</text></g>
+      <path d={`M${xd(10, 6)} 108 v40 h10`} fill="none" stroke="var(--line-strong)" />
+
+      <g class="tl-mark">
+        <path d={`M${xd(0, 10)} 89 l11 11 -11 11 -11 -11z`} fill="var(--accent-500)" stroke="var(--surface)" stroke-width="2" />
+        <text x={xd(0, 10)} y="30" class="tl-date" text-anchor="middle">~10 Jan 2027</text>
+        <text x={xd(0, 10)} y="50" class="tl-what" text-anchor="middle">Phase 1 go-live</text></g>
+      <g class="tl-mark"><circle cx={xd(3, 15)} cy="100" r="7" fill="var(--surface)" stroke="var(--primary-600)" stroke-width="2" />
+        <text x={xd(3, 15)} y="30" class="tl-date" text-anchor="middle">April 2027</text>
+        <text x={xd(3, 15)} y="50" class="tl-what" text-anchor="middle">Phase 2</text></g>
+    </svg>
+  </Figure>
+</div>
+
+<div class="block">
+  <h3 class="block-title">User stories, Phase 1</h3>
+  <p class="block-sub">All are must-haves for ~10 Jan 2027. Open a group to read its stories.</p>
+  {stories.map((g, i) => (
+    <details class="disclose" open={i === 0 ? true : undefined}>
+      <summary>{g.group}<span class="count">{g.items.length} stories</span><Icon name="chevron-right" size={18} class="chev" /></summary>
+      <div class="disclose-body">
+        <ol class="stories">
+          {g.items.map(([id, text]) => <li><span class="sid mono">{id}</span><span>{text}</span></li>)}
+        </ol>
+      </div>
+    </details>
+  ))}
+</div>
+
+<div class="block">
+  <h3 class="block-title">Key business rules</h3>
+  <p class="block-sub">From the contracts. Stored as settings, never in code.</p>
+  <div class="grid grid-2">
+    <article class="card rules">
+      <h4 class="eyebrow">Own use · Contract 2, clause 4</h4>
+      <div class="quota">
+        <div><span class="qv tnum">120</span><span class="ql">days per year max</span></div>
+        <div><span class="qv tnum">40</span><span class="ql">days in high season max</span></div>
+        <div><span class="qv tnum">3</span><span class="ql">weeks per high season max (building permit, takes precedence)</span></div>
+      </div>
+      <ul class="list compact">
+        <li>High season: week of 24.12 to week of 1.1; week of 1.2 to week of 15.3; week of 1.7 to week of 15.8</li>
+        <li>High season only in full weeks, Saturday to Saturday</li>
+        <li>Short notice (only if free, no guarantee): min 4 nights. Every night = 1 day of quota</li>
+        <li>Reserved ≥ 366 days ahead = guaranteed. Cancellation &lt; 90 days before: CHF 50</li>
+        <li>Check-in from 16:00, check-out until 10:00</li>
+      </ul>
+    </article>
+    <article class="card rules">
+      <h4 class="eyebrow">Costs</h4>
+      <div class="quota">
+        <div><span class="qv tnum"><small>CHF</small>5.–</span><span class="ql">tourist tax per person/night from age 16; half for ages 6–15</span></div>
+      </div>
+      <ul class="list compact">
+        <li>Owner own stay: cleaning + laundry charged to the owner account</li>
+        <li>Owner tourist tax: yearly flat (direct with municipality) or per stay (check-in + guest card, charged to the owner account)</li>
+        <li>Friends: cleaning, laundry, tourist tax; paid by the owner (account) or by the friends (in the app, before check-in completes)</li>
+        <li>Prices are the same for every property today; must be easy to make per house/unit later</li>
+      </ul>
+    </article>
+  </div>
+</div>
+
+<style>
+  .role { display: grid; gap: var(--s-4); align-content: start; padding: var(--s-5) var(--s-6) var(--s-6); }
+  .role-head { display: flex; align-items: center; gap: var(--s-3); }
+  .role-icon { display: grid; place-items: center; color: var(--primary-600); }
+  .role h4 { font-size: var(--fs-h3); font-weight: 700; }
+  .role-meta { display: grid; gap: 4px; margin: 0; padding: var(--s-3) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: var(--fs-ui); }
+  .role-meta div { display: grid; grid-template-columns: 56px 1fr; gap: 8px; }
+  .role-meta dt { color: var(--ink-muted); }
+  .role-meta dd { margin: 0; font-weight: 500; }
+  .nonusers { display: grid; gap: 6px; margin-top: var(--s-5); font-size: var(--fs-label); color: var(--ink-muted); max-width: var(--measure); }
+  .nonusers strong { color: var(--ink); font-weight: 600; }
+
+  .board { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(190px, 0.55fr); gap: var(--s-4); align-items: start; }
+  .col { border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); padding: var(--s-5); }
+  .col-p1 { border-color: var(--primary-100); box-shadow: inset 0 3px 0 var(--primary-600); }
+  .col-no { background: var(--surface-2); }
+  .col header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: var(--s-4); }
+  .col-title { font-family: var(--font-head); font-weight: 700; font-size: 1.125rem; }
+  .col-title.small { display: block; font-size: var(--fs-ui); margin-bottom: var(--s-2); color: var(--ink-muted); }
+  .col-meta { font-size: var(--fs-ui); color: var(--ink-muted); }
+  .col .count { margin-left: auto; font-size: var(--fs-ui); font-weight: 600; color: var(--ink-muted); }
+  .col-p1 .count { color: var(--primary-600); }
+  .p3 { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px dashed var(--line-strong); }
+  @media (max-width: 1279px) { .board { grid-template-columns: 1fr 1fr; } .col-p1 { grid-column: 1 / -1; } }
+  @media (max-width: 767px) { .board { grid-template-columns: 1fr; } }
+
+  .tl-band { font-size: 15px; font-weight: 600; fill: var(--primary-800); }
+  .tl-band.muted { fill: var(--ink-muted); font-weight: 500; }
+  .tl-date { font-size: 16px; font-weight: 700; fill: var(--ink); font-variant-numeric: tabular-nums; }
+  .tl-what { font-size: 15px; fill: var(--ink-muted); }
+
+  .stories { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .stories li { display: grid; grid-template-columns: 52px 1fr; gap: var(--s-3); font-size: var(--fs-label); line-height: 1.5; }
+  .sid { color: var(--primary-700); font-weight: 600; font-size: 14px; padding-top: 2px; }
+
+  .rules { display: grid; gap: var(--s-5); align-content: start; }
+  .quota { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); padding-bottom: var(--s-5); border-bottom: 1px solid var(--line); }
+  .quota div { display: grid; gap: 4px; align-content: start; }
+  .rules .quota:has(> :only-child) { grid-template-columns: 1fr; }
+  .qv { font-size: 2.25rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em; color: var(--ink); }
+  .qv small { font-size: 0.45em; font-weight: 500; color: var(--ink-muted); margin-right: 6px; letter-spacing: 0; }
+  .ql { font-size: var(--fs-ui); color: var(--ink-muted); line-height: 1.4; }
+</style>

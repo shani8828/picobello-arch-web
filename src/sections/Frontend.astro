@@ -1,0 +1,267 @@
+---
+// 04 Frontend. Source: arch/04-frontend.txt (domains: arch/11 section 2)
+import Takeaway from '../components/Takeaway.astro';
+import Pill from '../components/Pill.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+import ScreenFlow from '../components/diagram/ScreenFlow.astro';
+import Wireframes from './Wireframes.astro';
+
+const apps = [
+  { name: 'Guest App', users: 'Guests, friends of owners', device: 'Phone first', lang: 'DE / FR / EN', login: 'Personal link', url: 'guest.picobello.ch/s/<token>', kind: 'phone' },
+  { name: 'Owner Portal', users: 'Owners', device: 'Phone + desktop', lang: 'DE / EN (FR later)', login: 'Magic link', url: 'owner.picobello.ch', kind: 'laptop' },
+  { name: 'Back Office', users: 'Picobello staff', device: 'Desktop first', lang: 'DE / EN', login: 'Password + 2FA or passkey', url: 'admin.picobello.ch', kind: 'desktop' },
+];
+
+const stackRows: [string, string, string][] = [
+  ['UI library', 'React 18', 'Prototype is React; biggest ecosystem; easy to hire for'],
+  ['Build tool', 'Vite', 'Fast; prototype uses it'],
+  ['Language', 'TypeScript (strict)', 'Same types as backend'],
+  ['Routing', 'TanStack Router', 'Fully typed routes and URL params'],
+  ['Server data', 'TanStack Query', 'Caching, retries, loading and error states built in'],
+  ['Forms', 'React Hook Form + Zod', 'Same Zod schemas as the API = identical validation'],
+  ['Styling', 'Tailwind CSS', 'Fast, consistent, small CSS'],
+  ['Components', 'shadcn/ui (Radix based)', 'Accessible (keyboard, screen readers), we own the code'],
+  ['Translations', 'i18next + react-i18next', 'Plurals, DE/FR/EN, lazy loading per language'],
+  ['Dates', 'date-fns + date-fns-tz', 'All times Europe/Zurich'],
+  ['Tables (Back Office)', 'TanStack Table', 'Sorting, filters, big lists'],
+  ['Calendar views', 'Own component on date-fns', 'Occupancy grid is simple and specific'],
+  ['Offline (Guest App)', 'vite-plugin-pwa (Workbox)', 'Apartment info works without signal'],
+  ['Payments UI', 'Stripe Embedded Checkout', 'Card, TWINT, Apple/Google Pay with no card data on our side'],
+  ['Image upload', 'Uppy (direct to storage)', 'Large photos upload straight to Cloud Storage via signed URL'],
+  ['Error tracking', 'Sentry (EU region)', 'See errors with context'],
+];
+
+const strip = ['React', 'Vite', 'TypeScript', 'TanStack', 'Tailwind', 'shadcn/ui', 'i18next', 'Stripe'];
+
+const guestItems = [
+  { title: 'Arrival info', sub: 'address, Maps link, parking' },
+  { title: 'Check-in', sub: 'multi-step', chainNote: 'step 5 only if friends pay, or extra persons on a direct booking',
+    chain: [{ title: '1 Main guest', sub: 'prefilled' }, { title: '2 Companions', sub: 'name, birth date' }, { title: '3 Arrival time', sub: '+ parking' },
+            { title: '4 Consent', sub: 'optional, separate' }, { title: '5 Costs + pay', sub: 'Stripe' }, { title: '6 Done', sub: 'card + access' }], optional: [4] },
+  { title: 'Guest cards', sub: 'one per person, QR, wallet' },
+  { title: 'Access', sub: 'badge status, dispenser, help' },
+  { title: 'Apartment', sub: 'Wi-Fi, rules · works offline' },
+  { title: 'My booking', sub: 'change the stay',
+    chain: [{ title: 'Extend stay', sub: 'nights, price, pay' }, { title: 'Change dates', sub: 'pay or refund' }, { title: 'Late in / out', sub: 'pending → answer' }] },
+  { title: 'Help / contact', sub: 'phone, email; WhatsApp April', variant: 'muted' as const },
+];
+const ownerItems = [
+  { title: 'Calendar', sub: 'guests, own use, friends, free' },
+  { title: 'Reserve', sub: 'rules checked instantly',
+    chain: [{ title: '1 Pick dates', sub: 'on calendar' }, { title: '2 Type', sub: 'family or friends' }, { title: '3 Persons', sub: 'friends: who pays?' },
+            { title: '4 Rule check', sub: '+ cost preview' }, { title: '5 Confirm', sub: 'or needs Picobello' }] },
+  { title: 'My reservations', sub: 'change, cancel (fee preview)' },
+  { title: 'Owner check-in', sub: 'only if tax mode = per stay' },
+  { title: 'Account', sub: 'balance, charges' },
+  { title: 'Profile', sub: 'contact, language, tax mode' },
+];
+const boItems = [
+  { title: 'Today', sub: 'arrivals, missing, failed' },
+  { title: 'Stays', sub: 'filters: house, channel, status', chain: [{ title: 'Stay detail', sub: 'timeline, actions' }] },
+  { title: 'Calendar', sub: 'all 22 units by house' },
+  { title: 'Requests', sub: 'late check-in / check-out' },
+  { title: 'Apartments', sub: 'list of units', chain: [{ title: 'Apartment detail', sub: '7 tabs, sync lines' }, { title: "What's missing", sub: 'units x channels' }] },
+  { title: 'Owners', sub: 'units, tax mode, balance', chain: [{ title: 'Owner detail', sub: 'units, reservations' }] },
+  { title: 'Money', sub: 'ledger, balances (read-only)' },
+  { title: 'Settings', sub: 'valid_from + scope, fees' },
+  { title: 'Integrations', sub: 'status, inbox/outbox, retry' },
+  { title: 'Users · Audit · Import', sub: 'roles · search · Archipex' },
+];
+const homeStates = ['invited', 'check-in open', 'payment needed', 'checked in', 'card ready', 'access ready', 'in stay', 'ended (link locked)'];
+---
+<Takeaway>Three separate apps share one component library and one typed API client: the Guest App stays tiny and fast on mobile data, and a Back Office deploy can't break it.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">Three apps</h3>
+  <div class="devices">
+    {apps.map((a) => (
+      <figure class={`device device-${a.kind}`}>
+        <div class="frame" aria-hidden="true">
+          <div class="screen">
+            {a.kind === 'phone' && (
+              <div class="mini mini-guest">
+                <div class="m-photo"></div>
+                <div class="m-welcome"><span class="m-dot"></span><span class="m-line w60"></span></div>
+                <div class="m-card"><span class="m-line w40 dark"></span><span class="m-line w80"></span></div>
+                <div class="m-card"><span class="m-line w50 dark"></span><span class="m-line w70"></span></div>
+                <div class="m-btn"></div>
+                <div class="m-tabs"><i></i><i></i><i></i><i></i><i></i></div>
+              </div>
+            )}
+            {a.kind === 'laptop' && (
+              <div class="mini mini-owner">
+                <div class="m-row"><span class="m-line w30 dark"></span></div>
+                <div class="m-quota"><span><i style="width:28%"></i></span><span><i style="width:35%"></i></span><span><i style="width:66%"></i></span></div>
+                <div class="m-cal">{Array.from({ length: 35 }, (_, i) => <i class={i >= 9 && i <= 15 ? 'own' : i >= 20 && i <= 24 ? 'guest' : i >= 27 && i <= 29 ? 'friends' : ''}></i>)}</div>
+              </div>
+            )}
+            {a.kind === 'desktop' && (
+              <div class="mini mini-bo">
+                <div class="m-side"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="m-main">
+                  <div class="m-kpis"><i></i><i></i><i></i><i></i></div>
+                  <div class="m-table">{Array.from({ length: 6 }, () => <span><i></i><b></b></span>)}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <figcaption>
+          <span class="d-name">{a.name}</span>
+          <span class="d-url mono">{a.url}</span>
+          <dl class="kv d-kv">
+            <dt>Users</dt><dd>{a.users}</dd>
+            <dt>Device</dt><dd>{a.device}</dd>
+            <dt>Languages</dt><dd>{a.lang}</dd>
+            <dt>Login</dt><dd>{a.login}</dd>
+          </dl>
+        </figcaption>
+      </figure>
+    ))}
+  </div>
+  <p class="note-line"><Pill kind="open" /> Subdomains of picobello.ch still to be confirmed with Picobello (file 11).</p>
+  <ul class="list why-three">
+    <li>Very different users and devices.</li>
+    <li>The Guest App must be tiny and fast on mobile data.</li>
+    <li>A bug or deploy in the Back Office can't break the Guest App.</li>
+    <li>Shared <code>packages/ui</code> and <code>packages/api-client</code>, so no duplicated work.</li>
+  </ul>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Screen flows</h3>
+  <p class="block-sub">Boxes are screens, arrows are taps. Dashed boxes appear only in some cases.</p>
+  <div class="flows">
+    <h4 class="flow-title"><Icon name="smartphone" size={20} /> Guest App</h4>
+    <Figure label="Guest App screen flow" minWidth={980}>
+      <ScreenFlow label="Guest App" entry={{ title: 'Personal link', sub: '/s/<token>' }} hub={{ title: 'Home', sub: ['stay overview,', 'status cards'] }} items={guestItems} />
+    </Figure>
+    <div class="states">
+      <span class="eyebrow">States the Home screen handles</span>
+      <ol class="state-chain">{homeStates.map((s) => <li>{s}</li>)}</ol>
+    </div>
+    <h4 class="flow-title"><Icon name="laptop" size={20} /> Owner Portal</h4>
+    <Figure label="Owner Portal screen flow" minWidth={980}>
+      <ScreenFlow label="Owner Portal" entry={{ title: 'Magic link', sub: 'email' }} hub={{ title: 'Overview', sub: ['next stays, quota,', 'balance, alerts'] }} items={ownerItems} />
+    </Figure>
+    <h4 class="flow-title"><Icon name="monitor" size={20} /> Back Office</h4>
+    <Figure label="Back Office screen flow" minWidth={980}>
+      <ScreenFlow label="Back Office" entry={{ title: 'Login', sub: 'password + 2FA' }} hub={{ title: 'Sidebar', sub: ['all sections'] }} items={boItems} />
+    </Figure>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Key screens · grey-box wireframes</h3>
+  <p class="block-sub">Five screens chosen for the presentation. Layout and flow only; the final look follows section 13.</p>
+  <Wireframes />
+</div>
+
+<div class="block">
+  <h3 class="block-title">Tech stack · decided</h3>
+  <ul class="stack-strip">{strip.map((s) => <li>{s}</li>)}</ul>
+  <details class="disclose">
+    <summary>Choice and reason per purpose<span class="count">16 rows</span><Icon name="chevron-right" size={18} class="chev" /></summary>
+    <div class="disclose-body">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Purpose</th><th>Choice</th><th>Why</th></tr></thead>
+          <tbody>{stackRows.map(([p, c, w]) => <tr><td class="muted">{p}</td><td><strong>{c}</strong></td><td>{w}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  </details>
+  <p class="note-line"><Icon name="info" size={18} /> The prototype's screens, texts and flows are the reference design. Its components are rewritten in this stack (the prototype keeps all state in localStorage and has no API layer).</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Frontend rules</h3>
+  <div class="grid grid-2 fe-rules">
+    <ul class="list">
+      <li>All server calls through the generated typed API client; no hand-written fetch calls.</li>
+      <li>All texts through i18n keys; no hard-coded strings in components.</li>
+      <li>Money comes from the server already calculated (Rappen integer); the frontend only formats it (CHF 1'234.50). The owner rule check in the browser is a preview; the server always re-checks.</li>
+    </ul>
+    <ul class="list">
+      <li>All dates shown in Europe/Zurich.</li>
+      <li>Accessibility: WCAG 2.1 AA target (contrast, keyboard, labels).</li>
+      <li>Guest App budget: &lt; 200 KB JS gzipped on first load, usable on 3G.</li>
+      <li>Every screen has loading, empty and error states.</li>
+    </ul>
+  </div>
+</div>
+
+<style>
+  .devices { display: grid; grid-template-columns: 0.8fr 1.1fr 1.3fr; grid-template-rows: auto auto; gap: var(--s-4) var(--s-6); }
+  .device { margin: 0; display: grid; grid-row: span 2; grid-template-rows: subgrid; gap: var(--s-4); }
+  .device .frame { align-self: end; }
+  .frame { display: grid; place-items: end center; }
+  .screen { background: var(--snow); overflow: hidden; position: relative; }
+  .device-phone .screen { width: 168px; height: 300px; border: 7px solid var(--ink); border-radius: 26px; }
+  .device-laptop .screen { width: 100%; aspect-ratio: 16 / 10; border: 7px solid var(--ink); border-bottom-width: 9px; border-radius: 12px 12px 4px 4px; }
+  .device-laptop .frame::after { content: ""; width: 112%; height: 10px; background: var(--line-strong); border-radius: 0 0 10px 10px; }
+  .device-desktop .screen { width: 100%; aspect-ratio: 16 / 9.5; border: 7px solid var(--ink); border-radius: 10px; }
+  .device-desktop .frame::after { content: ""; width: 26%; height: 18px; background: linear-gradient(var(--line-strong), var(--line-strong)) center top / 18% 12px no-repeat, linear-gradient(var(--line-strong), var(--line-strong)) center bottom / 100% 6px no-repeat; }
+
+  .mini { position: absolute; inset: 0; }
+  .m-line { display: block; height: 6px; border-radius: 3px; background: var(--line-strong); }
+  .m-line.dark { background: var(--ink-faint); }
+  .w30 { width: 30%; } .w40 { width: 40%; } .w50 { width: 50%; } .w60 { width: 60%; } .w70 { width: 70%; } .w80 { width: 80%; }
+  .mini-guest { padding: 0 10px; display: grid; align-content: start; gap: 8px; }
+  .m-photo { margin: 0 -10px; height: 92px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+  .m-welcome { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; background: var(--accent-50); }
+  .m-dot { width: 10px; height: 10px; border-radius: 3px; background: var(--accent-500); flex: none; }
+  .m-card { display: grid; gap: 6px; padding: 9px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+  .m-btn { height: 22px; border-radius: 6px; background: var(--primary-600); }
+  .m-tabs { position: absolute; left: 0; right: 0; bottom: 0; height: 26px; display: flex; justify-content: space-around; align-items: center; background: var(--surface); border-top: 1px solid var(--line); }
+  .m-tabs i { width: 12px; height: 12px; border-radius: 3px; background: var(--line-strong); }
+  .m-tabs i:first-child { background: var(--primary-600); }
+  .mini-owner { padding: 12px; display: grid; align-content: start; gap: 10px; }
+  .m-quota { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .m-quota span { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+  .m-quota i { display: block; height: 100%; background: var(--sun-500); }
+  .m-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .m-cal i { aspect-ratio: 1.6; border-radius: 3px; background: var(--surface); border: 1px solid var(--line); }
+  .m-cal i.own { background: var(--violet-600); border-color: var(--violet-600); }
+  .m-cal i.friends { background: var(--violet-300); border-color: var(--violet-300); }
+  .m-cal i.guest { background: var(--stay-guest); border-color: var(--stay-guest); }
+  .mini-bo { display: grid; grid-template-columns: 22% 1fr; }
+  .m-side { background: var(--surface-2); border-right: 1px solid var(--line); padding: 10px 8px; display: grid; align-content: start; gap: 7px; }
+  .m-side i { height: 6px; border-radius: 3px; background: var(--line-strong); }
+  .m-side i:nth-child(1) { background: var(--primary-600); width: 80%; }
+  .m-main { padding: 10px; display: grid; align-content: start; gap: 10px; }
+  .m-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .m-kpis i { height: 30px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+  .m-table { display: grid; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+  .m-table span { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-top: 1px solid var(--line); }
+  .m-table span:first-child { border-top: 0; background: var(--surface-2); }
+  .m-table i { width: 45%; height: 5px; border-radius: 3px; background: var(--line-strong); }
+  .m-table b { width: 14%; height: 8px; border-radius: 4px; background: var(--success-soft); }
+  .m-table span:nth-child(3) b { background: var(--warning-soft); }
+
+  .device figcaption { display: grid; gap: 4px; }
+  .d-name { font-family: var(--font-head); font-weight: 700; font-size: var(--fs-h3); }
+  .d-url { font-size: 14px; color: var(--primary-700); }
+  .d-kv { margin-top: var(--s-2); font-size: var(--fs-ui); grid-template-columns: 86px 1fr; gap: 4px 12px; }
+  @media (max-width: 1023px) { .devices { grid-template-columns: 1fr; grid-template-rows: none; gap: var(--s-10); } .device { grid-row: auto; grid-template-rows: none; } .device-laptop .frame, .device-desktop .frame { max-width: 360px; } }
+
+  .note-line { display: flex; gap: 10px; align-items: center; margin-top: var(--s-5); font-size: var(--fs-ui); color: var(--ink-muted); max-width: var(--measure); }
+  .note-line :global(svg) { flex: none; color: var(--info-vivid); }
+  .note-line :global(.pill) { font-size: 13px; }
+  .why-three { margin-top: var(--s-5); max-width: var(--measure); }
+
+  .flows { display: grid; gap: var(--s-5); }
+  .flow-title { display: flex; align-items: center; gap: 8px; margin: var(--s-4) 0 calc(var(--s-2) * -1); font-family: var(--font-head); font-size: 1.125rem; font-weight: 700; }
+  .flow-title :global(svg) { color: var(--primary-600); }
+  .states { display: grid; gap: var(--s-3); padding: 0 var(--s-2) var(--s-3); }
+  .state-chain { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 22px; }
+  .state-chain li { position: relative; font-size: var(--fs-ui); font-weight: 500; padding: 3px 10px; border-radius: var(--r-full); background: var(--surface); border: 1px solid var(--line); }
+  .state-chain li + li::before { content: "→"; position: absolute; left: -17px; color: var(--primary-600); }
+  .state-chain li:last-child { background: var(--surface-2); color: var(--ink-muted); }
+
+  .stack-strip { list-style: none; margin: 0 0 var(--s-4); padding: 0; display: flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); overflow: hidden; }
+  .stack-strip li { flex: 1 1 auto; text-align: center; padding: 14px 16px; font-weight: 600; font-size: var(--fs-label); border-left: 1px solid var(--line); margin-left: -1px; }
+  td.muted { color: var(--ink-muted); }
+  .fe-rules { gap: var(--s-8); }
+</style>

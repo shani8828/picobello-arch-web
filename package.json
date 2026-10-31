@@ -1,0 +1,20 @@
+{
+  "name": "picobello-arch-web",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "fonts:login": "node scripts/gen-login-fonts.mjs",
+    "test:auth": "node --experimental-strip-types scripts/test-middleware.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@vercel/functions": "^3.10.5",
+    "astro": "^7.4.4",
+    "lucide-static": "^1.65.0"
+  }
+}

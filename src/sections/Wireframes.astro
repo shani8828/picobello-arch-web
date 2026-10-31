@@ -1,0 +1,283 @@
+---
+// Grey-box wireframes W1-W5 (arch/04 section 6). Amounts come from the
+// worked examples in arch/07 and arch/09; the sync states in W4/W5 follow
+// the placeholder sync matrix in arch/08 section 8b.
+import Icon from '../components/Icon.astro';
+
+// Rentable units (arch/01): 3078-2..8, 3078-10..14, 4335-1..10
+const units = ['3078-2', '3078-3', '3078-4', '3078-5', '4335-1', '4335-2'];
+const channels = ['Website', 'Booking', 'Airbnb', 'Vrbo'];
+---
+<div class="wfs">
+  <!-- W1 -->
+  <figure class="wf-fig">
+    <div class="wf phone">
+      <div class="wf-top"><Icon name="chevron-left" size={18} /><span>Check-in</span></div>
+      <div class="wf-progress"><span style="width:83%"></span></div>
+      <p class="wf-step">Step 5 of 6</p>
+      <h5 class="wf-h">Costs to pay</h5>
+      <p class="wf-note">Your host chose that friends pay these costs. The check-in is completed after payment.</p>
+      <div class="wf-lines">
+        <div><span>Cleaning <em>unit 3.5</em></span><span class="amt"><small>CHF</small>180.00</span></div>
+        <div><span>Laundry <em>3 × 35.00</em></span><span class="amt"><small>CHF</small>105.00</span></div>
+        <div><span>Tourist tax <em>3 × 7 nights × 5.00</em></span><span class="amt"><small>CHF</small>105.00</span></div>
+        <div class="total"><span>Total</span><span class="amt"><small>CHF</small>390.00</span></div>
+      </div>
+      <div class="wf-embed"><span>Stripe Embedded Checkout</span><em>Card · TWINT · Apple Pay · Google Pay</em></div>
+      <div class="wf-btn">Pay CHF 390.00</div>
+    </div>
+    <figcaption><b>W1</b> Guest check-in, step 5 "Costs + payment" when friends pay. Example: 3 adults, 7 nights.</figcaption>
+  </figure>
+
+  <!-- W2 -->
+  <figure class="wf-fig">
+    <div class="wf phone">
+      <div class="wf-top"><Icon name="chevron-left" size={18} /><span>Extend stay</span></div>
+      <p class="wf-meta">Departure now: Sun, 10 Jan 2027, 10:00</p>
+      <div class="wf-cal">
+        <div class="wf-cal-head"><span>January 2027</span></div>
+        <div class="wf-dow">{['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d) => <span>{d}</span>)}</div>
+        <div class="wf-days">
+          {Array.from({ length: 14 }, (_, i) => {
+            const d = i + 4;
+            const cls = d <= 9 ? 'stay' : d <= 11 ? 'new' : d === 12 ? 'dep' : '';
+            return <span class={cls}>{d}</span>;
+          })}
+        </div>
+        <div class="wf-cal-key"><span class="k stay"></span>your stay <span class="k new"></span>new nights</div>
+      </div>
+      <div class="wf-lines">
+        <div><span>Lodging <em>2 nights</em></span><span class="amt"><small>CHF</small>360.00</span></div>
+        <div><span>Tourist tax <em>2 × 2 × 5.00</em></span><span class="amt"><small>CHF</small>20.00</span></div>
+        <div class="total"><span>Total</span><span class="amt"><small>CHF</small>380.00</span></div>
+      </div>
+      <p class="wf-info"><Icon name="timer" size={16} /> Nights held for you for 10 minutes</p>
+      <div class="wf-btn">Pay CHF 380.00</div>
+    </div>
+    <figcaption><b>W2</b> Guest "Extend stay": pick nights, see the price, pay. No approval. Example from the API call in section 05.</figcaption>
+  </figure>
+
+  <!-- W3 -->
+  <figure class="wf-fig wide">
+    <div class="wf desk owner">
+      <div class="wf-steps">{['Dates', 'Type', 'Persons', 'Rule check', 'Confirm'].map((s, i) => <span class={i < 3 ? 'done' : i === 3 ? 'cur' : ''}>{i + 1} {s}</span>)}</div>
+      <div class="wf-cols">
+        <div class="wf-form">
+          <label>Dates</label>
+          <div class="wf-input">Sat, 6 Mar 2027 → Sat, 13 Mar 2027 <em>7 nights</em></div>
+          <label>Type</label>
+          <div class="wf-seg"><span>Myself &amp; family</span><span class="on">Friends</span></div>
+          <label>Friends (3 persons)</label>
+          <div class="wf-input ph"><i class="b w40"></i><i class="b w30"></i></div>
+          <div class="wf-input ph"><i class="b w30"></i><i class="b w40"></i></div>
+          <label>Who pays?</label>
+          <div class="wf-radio"><span class="r"></span>I cover the costs <em>charged to my account</em></div>
+          <div class="wf-radio on"><span class="r"></span>Friends pay <em>in the app, before check-in</em></div>
+        </div>
+        <div class="wf-check">
+          <div class="wf-result"><span class="pill pill-open">Possible, Picobello confirms</span><em>less than 366 days ahead</em></div>
+          <ul>
+            {[['C1', 'Dates valid'], ['C2', 'Unit free'], ['C3', 'Yearly quota'], ['C4', 'High-season days'], ['C5', 'High-season weeks'], ['C6', 'Full weeks Sat to Sat'], ['C7', 'Short notice: min 4 nights'], ['C8', 'Guest booking window (info)']].map(([c, t]) => (
+              <li><Icon name="check" size={16} /><span class="mono">{c}</span>{t}</li>
+            ))}
+          </ul>
+          <div class="wf-quota">
+            <div><span>Year</span><b>34 / 120</b><i><s style="width:28%"></s></i></div>
+            <div><span>High-season days</span><b>14 / 40</b><i><s style="width:35%"></s></i></div>
+          </div>
+          <div class="wf-lines small">
+            <div><span>Cleaning</span><span class="amt">180.00</span></div>
+            <div><span>Laundry 3 × 35.00</span><span class="amt">105.00</span></div>
+            <div><span>Tourist tax</span><span class="amt">105.00</span></div>
+            <div class="total"><span>Paid by friends</span><span class="amt"><small>CHF</small>390.00</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>W3</b> Owner "Reserve for friends": dates, persons, who pays, instant rule check with reasons. Example values; quota figures from the rule-engine example in file 07.</figcaption>
+  </figure>
+
+  <!-- W4 -->
+  <figure class="wf-fig wide">
+    <div class="wf desk bo">
+      <div class="wf-side"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="wf-main">
+        <p class="wf-crumb">Apartments / <b>A3</b></p>
+        <div class="wf-tabs">{['Basics', 'Photos', 'Texts', 'Amenities & rules', 'Check-in info', 'Policies', 'Channels'].map((t) => <span class={t === 'Texts' ? 'on' : ''}>{t}</span>)}</div>
+        <div class="wf-field">
+          <label>Title · EN</label>
+          <div class="wf-input ph"><i class="b w50"></i></div>
+          <p class="sync"><span class="s ok">Website</span><span class="s ok">Booking</span><span class="s ok">Airbnb</span><span class="s ok">Vrbo</span></p>
+        </div>
+        <div class="wf-field">
+          <label>Description · EN</label>
+          <div class="wf-input ph tall"><i class="b w80"></i><i class="b w70"></i><i class="b w40"></i></div>
+          <p class="sync"><span class="s ok">Website</span><span class="s info">Booking: partly, via Lodgify</span><span class="s ok">Airbnb</span><span class="s ok">Vrbo</span></p>
+        </div>
+        <div class="wf-field">
+          <label>House rules · EN</label>
+          <div class="wf-input ph"><i class="b w70"></i></div>
+          <p class="sync"><span class="s ok">Website</span><span class="s ok">Booking</span><span class="s warn">Airbnb: enter manually</span><span class="wf-mini">Copy</span><span class="wf-mini">Mark entered</span><span class="s ok">Vrbo</span></p>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>W4</b> Back Office apartment detail: every field shows which channels it reaches automatically and which need manual entry.</figcaption>
+  </figure>
+
+  <!-- W5 -->
+  <figure class="wf-fig wide">
+    <div class="wf desk grid-wf">
+      <div class="wf-gridhead"><h5 class="wf-h">What's missing</h5><span class="wf-meta">22 units × channels · fields still manual_needed or push_failed</span></div>
+      <table class="wf-table">
+        <thead><tr><th>Unit</th>{channels.map((c) => <th>{c}</th>)}</tr></thead>
+        <tbody>
+          {units.map((u, i) => (
+            <Fragment>
+              <tr class={i === 2 ? 'open' : ''}>
+                <td class="mono">{u}</td>
+                <td><span class="cnt zero">0</span></td>
+                <td><span class="cnt zero">0</span></td>
+                <td><span class="cnt warn">2</span></td>
+                <td><span class="cnt unk">?</span></td>
+              </tr>
+              {i === 2 && (
+                <tr class="expand"><td colspan="5">
+                  <div class="ex"><span>Airbnb · House rules</span><span class="wf-mini">Copy</span><span class="wf-mini">Mark entered</span></div>
+                  <div class="ex"><span>Airbnb · Payment / cancel policy</span><span class="wf-mini">Copy</span><span class="wf-mini">Mark entered</span></div>
+                </td></tr>
+              )}
+            </Fragment>
+          ))}
+          <tr><td colspan="5" class="more">… 16 more units</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption><b>W5</b> "What's missing" grid. Counts follow the placeholder matrix in file 08 (Airbnb: house rules and policy manual; Vrbo policy unknown) until Picobello fills in real values.</figcaption>
+  </figure>
+</div>
+
+<style>
+  .wfs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-8) var(--s-6); align-items: start; }
+  .wf-fig { margin: 0; display: grid; gap: var(--s-3); justify-items: center; }
+  .wf-fig.wide { grid-column: 1 / -1; justify-items: stretch; }
+  .wf-fig figcaption { font-size: var(--fs-ui); color: var(--ink-muted); max-width: 64ch; justify-self: start; line-height: 1.5; }
+  .wf-fig figcaption b { color: var(--ink); font-weight: 700; margin-right: 6px; }
+
+  .wf { background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink); font-size: 14px; line-height: 1.4; }
+  .wf.phone { width: 320px; max-width: 100%; border-radius: 24px; padding: 16px 18px 20px; display: grid; gap: 10px; box-shadow: var(--e-1); }
+  .wf.desk { border-radius: var(--r-card); box-shadow: var(--e-1); }
+  .wf em { font-style: normal; color: var(--ink-muted); }
+
+  .wf-top { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 15px; color: var(--ink); margin-bottom: 2px; }
+  .wf-top :global(svg) { color: var(--ink-muted); }
+  .wf-progress { height: 3px; border-radius: 2px; background: var(--surface-2); }
+  .wf-progress span { display: block; height: 100%; border-radius: 2px; background: var(--primary-600); }
+  .wf-step { font-size: 13px; color: var(--ink-muted); }
+  .wf-h { margin: 0; font-family: var(--font-head); font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  .wf-note { font-size: 14px; color: var(--ink-muted); padding: 10px 12px; background: var(--surface-2); border-radius: 8px; }
+  .wf-meta { font-size: 13px; color: var(--ink-muted); }
+  .wf-lines { display: grid; border-top: 1px solid var(--line); }
+  .wf-lines > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .wf-lines em { display: block; font-size: 12.5px; }
+  .wf-lines .amt { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 500; }
+  .wf-lines small { font-size: 12px; color: var(--ink-muted); margin-right: 4px; font-weight: 400; }
+  .wf-lines .total { border-bottom: 0; padding-top: 10px; font-weight: 600; align-items: baseline; }
+  .wf-lines .total .amt { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
+  .wf-lines.small .total .amt { font-size: 18px; }
+  .wf-embed { display: grid; gap: 2px; padding: 14px; border: 1px dashed var(--line-strong); border-radius: 10px; font-size: 13px; color: var(--ink-muted); text-align: center; }
+  .wf-embed span { font-weight: 600; color: var(--ink-muted); }
+  .wf-btn { height: 48px; display: grid; place-items: center; border-radius: 10px; background: var(--primary-600); color: #fff; font-weight: 600; font-size: 15px; }
+  .wf-info { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--info-text); }
+
+  .wf-cal { border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .wf-cal-head { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .wf-dow, .wf-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+  .wf-dow span { font-size: 11.5px; color: var(--ink-faint); font-weight: 500; }
+  .wf-days span { font-size: 13px; padding: 5px 0; border-radius: 6px; font-variant-numeric: tabular-nums; }
+  .wf-days .stay { background: var(--surface-2); color: var(--ink-muted); }
+  .wf-days .new { background: var(--primary-600); color: #fff; font-weight: 600; }
+  .wf-days .dep { box-shadow: inset 0 0 0 1.5px var(--primary-600); color: var(--primary-800); font-weight: 600; }
+  .wf-cal-key { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--ink-muted); }
+  .wf-cal-key .k { width: 10px; height: 10px; border-radius: 3px; }
+  .wf-cal-key .k.stay { background: var(--surface-2); border: 1px solid var(--line-strong); }
+  .wf-cal-key .k.new { background: var(--primary-600); margin-left: 8px; }
+
+  /* W3 */
+  .wf.owner { padding: 18px 22px 22px; }
+  .wf-steps { display: flex; flex-wrap: wrap; gap: 6px 22px; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--line); font-size: 13.5px; color: var(--ink-faint); font-weight: 500; }
+  .wf-steps .done { color: var(--success-text); }
+  .wf-steps .cur { color: var(--primary-700); font-weight: 600; }
+  .wf-cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; }
+  .wf-form { display: grid; gap: 6px; align-content: start; }
+  .wf-form label, .wf-field label { font-size: 12.5px; font-weight: 500; color: var(--ink-muted); margin-top: 6px; }
+  .wf-input { min-height: 38px; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: 14px; }
+  .wf-input em { margin-left: auto; font-size: 13px; }
+  .wf-input.ph { gap: 14px; }
+  .wf-input.tall { flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px; }
+  .b { display: block; height: 6px; border-radius: 3px; background: var(--line-strong); }
+  .w30 { width: 30%; } .w40 { width: 40%; } .w50 { width: 50%; } .w70 { width: 70%; } .w80 { width: 80%; }
+  .wf-seg { display: inline-flex; justify-self: start; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; }
+  .wf-seg span { padding: 7px 14px; font-size: 13.5px; }
+  .wf-seg span.on { background: var(--primary-50); color: var(--primary-800); font-weight: 600; box-shadow: inset 0 0 0 1.5px var(--primary-600); border-radius: 9px; }
+  .wf-radio { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; }
+  .wf-radio em { font-size: 12.5px; margin-left: auto; }
+  .wf-radio .r { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--line-strong); flex: none; }
+  .wf-radio.on { border-color: var(--primary-600); background: var(--primary-50); }
+  .wf-radio.on .r { border: 5px solid var(--primary-600); }
+  .wf-check { display: grid; gap: 12px; align-content: start; padding: 14px 16px; background: var(--surface-2); border-radius: 12px; }
+  .wf-result { display: grid; gap: 4px; justify-items: start; }
+  .wf-result em { font-size: 12.5px; }
+  .wf-result .pill { font-size: 13px; }
+  .wf-check ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 14px; }
+  .wf-check li { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  .wf-check li :global(svg) { color: var(--success-vivid); flex: none; }
+  .wf-check li .mono { font-size: 12px; color: var(--ink-muted); }
+  .wf-quota { display: grid; gap: 8px; }
+  .wf-quota div { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; font-size: 13px; }
+  .wf-quota b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .wf-quota i { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--surface); overflow: hidden; }
+  .wf-quota s { display: block; height: 100%; background: var(--sun-500); }
+
+  /* W4 */
+  .wf.bo { display: grid; grid-template-columns: 56px 1fr; min-height: 300px; overflow: hidden; }
+  .wf-side { background: var(--surface-2); border-right: 1px solid var(--line); padding: 16px 14px; display: grid; align-content: start; gap: 14px; }
+  .wf-side i { height: 8px; border-radius: 4px; background: var(--line-strong); }
+  .wf-side i.on { background: var(--primary-600); }
+  .wf-main { padding: 16px 22px 20px; display: grid; gap: 12px; align-content: start; }
+  .wf-crumb { font-size: 13px; color: var(--ink-muted); }
+  .wf-crumb b { color: var(--ink); font-size: 16px; }
+  .wf-tabs { display: flex; flex-wrap: wrap; gap: 4px 18px; border-bottom: 1px solid var(--line); font-size: 13.5px; color: var(--ink-muted); }
+  .wf-tabs span { padding: 6px 0 8px; }
+  .wf-tabs .on { color: var(--primary-800); font-weight: 600; box-shadow: inset 0 -2px 0 var(--primary-500); }
+  .wf-field { display: grid; gap: 6px; }
+  .sync { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 12.5px; }
+  .s { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-muted); }
+  .s::before { content: ""; width: 7px; height: 7px; border-radius: 50%; }
+  .s.ok::before { background: var(--success-vivid); }
+  .s.info { color: var(--info-text); } .s.info::before { background: var(--info-vivid); }
+  .s.warn { color: var(--warning-text); font-weight: 600; } .s.warn::before { background: var(--warning-vivid); }
+  .wf-mini { font-size: 12px; font-weight: 500; padding: 2px 8px; border: 1px solid var(--line-strong); border-radius: 6px; color: var(--ink); background: var(--surface); }
+
+  /* W5 */
+  .wf.grid-wf { padding: 18px 22px 12px; }
+  .wf-gridhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 12px; }
+  .wf-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .wf-table th { text-align: left; font-weight: 500; font-size: 12.5px; color: var(--ink-muted); padding: 8px 10px; border-bottom: 1px solid var(--line-strong); background: var(--surface-2); }
+  .wf-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  .wf-table tr.open td { background: var(--primary-50); }
+  .cnt { display: inline-grid; place-items: center; min-width: 28px; height: 24px; padding: 0 8px; border-radius: 6px; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 13px; }
+  .cnt.zero { color: var(--ink-faint); font-weight: 400; }
+  .cnt.warn { background: var(--warning-soft); color: var(--warning-text); }
+  .cnt.unk { background: var(--surface-2); color: var(--ink-muted); }
+  .expand td { background: var(--primary-50); padding: 4px 10px 12px 28px; }
+  .ex { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 13.5px; }
+  .ex span:first-child { min-width: 240px; }
+  .more { color: var(--ink-faint); font-size: 13px; border-bottom: 0 !important; }
+
+  @media (max-width: 1023px) {
+    .wfs { grid-template-columns: 1fr; }
+    .wf-cols { grid-template-columns: 1fr; }
+    .wf.bo { grid-template-columns: 1fr; } .wf-side { display: none; }
+    .ex span:first-child { min-width: 0; }
+  }
+</style>

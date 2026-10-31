@@ -1,0 +1,24 @@
+---
+// One box in a hand-drawn diagram: optional icon, title, sub lines.
+// Text is left-aligned (arch/13 section 8: no "centred everything").
+import Icon from '../Icon.astro';
+type Variant = 'default' | 'app' | 'group' | 'ext' | 'phase2' | 'muted' | 'accent' | 'violet';
+interface Props {
+  x: number; y: number; w: number; h: number;
+  title: string; sub?: string | string[]; icon?: string;
+  variant?: Variant; tag?: string;
+}
+const { x, y, w, h, title, sub = [], icon, variant = 'default', tag } = Astro.props;
+const subs = Array.isArray(sub) ? sub : [sub];
+const TITLE_LH = 21, SUB_LH = 19;
+const total = TITLE_LH + subs.length * SUB_LH;
+const top = y + h / 2 - total / 2;
+const tx = icon ? x + 46 : x + 16;
+---
+<g class={`bx bx-${variant}`}>
+  <rect x={x} y={y} width={w} height={h} rx="10" />
+  {icon && <Icon name={icon} size={22} x={x + 14} y={y + h / 2 - 11} class="bx-icon" />}
+  <text x={tx} y={top + 16} class="bx-title">{title}</text>
+  {subs.map((s, i) => <text x={tx} y={top + TITLE_LH + 14 + i * SUB_LH} class="bx-sub">{s}</text>)}
+  {tag && <text x={x + w - 12} y={y + 20} class="bx-tag" text-anchor="end">{tag}</text>}
+</g>

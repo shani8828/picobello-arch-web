@@ -1,0 +1,109 @@
+---
+// One-page summary. Every fact is taken from arch/01, 12, 14 and 15.
+import Takeaway from '../components/Takeaway.astro';
+import Pill from '../components/Pill.astro';
+import Icon from '../components/Icon.astro';
+import { stack } from '../data/stack';
+
+const delivers = [
+  { who: 'Guests', what: 'check in online, pay, get one guest card per person and badge access.' },
+  { who: 'Owners', what: 'reserve for themselves and for friends, with the contract rules checked instantly.' },
+  { who: 'Staff', what: 'manage stays and apartments, including listing content for every channel.' },
+  { who: 'Money', what: 'every franc is recorded in the ledger from the first live booking.' },
+];
+
+const decide = [
+  'Extension price: Lodgify nightly rate or our own? Max nights?',
+  'Shortening a stay: refund rules?',
+  'Editing guest details (names, number of people): free or request?',
+  'SALTO badges and Feratel guest card: both in Phase 1?',
+  'High-season weeks rule: per period or per winter/summer?',
+  'Who builds which parts? Domains (picobello.ch subdomains)?',
+  'ID document retention period?',
+  'Database host: Cloud SQL (one cloud, failover) or Supabase (lower cost, faster setup)?',
+];
+---
+<Takeaway>Phase 1 records every franc from the first live booking. The April features (statements, Bexio, VAT, bank) only read that data, so no Phase 1 table has to change.</Takeaway>
+
+<div class="block">
+  <div class="stat-row">
+    <div class="stat"><div class="v">22</div><div class="l">rentable apartments in Lenk</div></div>
+    <div class="stat"><div class="v">2</div><div class="l">houses: Alpsunne A&amp;B, Chalet Spitzacker</div></div>
+    <div class="stat"><div class="v">3</div><div class="l">apps on one backend and one database</div></div>
+    <div class="stat"><div class="v">10 Jan<small>2027</small></div><div class="l">Phase 1 go-live (approx.)</div></div>
+    <div class="stat"><div class="v">April<small>2027</small></div><div class="l">Phase 2: messaging, cleaning, statements, accounting</div></div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">What Phase 1 delivers</h3>
+  <ul class="delivers">
+    {delivers.map((d) => (
+      <li><span class="who">{d.who}</span><span class="what">{d.what}</span></li>
+    ))}
+  </ul>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Stack at a glance</h3>
+  <p class="block-sub">The chosen option per layer. Each one links to its comparison in section 14.</p>
+  <div class="stack">
+    {stack.map((g) => (
+      <div class="stack-row">
+        <div class="stack-group eyebrow">{g.group}</div>
+        <div class="stack-items">
+          {g.items.map((it) => (
+            <a class="stack-item" href={`#d${it.d}`}>
+              <span class="layer">{it.layer}<span class="dnum tnum">D{it.d}</span></span>
+              <span class="choice">{it.choice}</span>
+              {it.open && <span class="flag"><Pill kind="open" text="5 Nov" /></span>}
+            </a>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">To decide on 5 Nov</h3>
+  <p class="block-sub">File 12, part F, plus the database host (file 14, D8). The full list of Open and Verify items is in the <a href="#open">appendix</a>.</p>
+  <ol class="decide">
+    {decide.map((q, i) => (
+      <li><span class="i tnum">{i + 1}</span><span>{q}</span><Pill kind="open" /></li>
+    ))}
+  </ol>
+</div>
+
+<style>
+  .delivers { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid var(--ink); }
+  .delivers li { padding: var(--s-4) var(--s-5) 0 0; display: grid; gap: 6px; align-content: start; }
+  .delivers li + li { padding-left: var(--s-5); border-left: 1px solid var(--line); }
+  .who { font-family: var(--font-head); font-weight: 700; font-size: var(--fs-h3); letter-spacing: -0.01em; }
+  .what { font-size: var(--fs-body-sm); color: var(--ink-muted); line-height: 1.5; }
+  @media (max-width: 1023px) {
+    .delivers { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--s-5); }
+    .delivers li:nth-child(3) { padding-left: 0; border-left: 0; }
+  }
+  @media (max-width: 560px) { .delivers { grid-template-columns: 1fr; } .delivers li + li { padding-left: 0; border-left: 0; } }
+
+  .stack { border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--e-1); overflow: hidden; }
+  .stack-row { display: grid; grid-template-columns: 128px 1fr; border-top: 1px solid var(--line); }
+  .stack-row:first-child { border-top: 0; }
+  .stack-group { padding: 18px var(--s-5); background: var(--surface-2); border-right: 1px solid var(--line); }
+  .stack-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  .stack-item { position: relative; display: grid; gap: 2px; padding: 12px var(--s-5); text-decoration: none; color: inherit; border-left: 1px solid var(--line); margin-left: -1px; transition: background var(--t-fast) var(--ease); }
+  .stack-item:hover { background: var(--primary-50); color: inherit; }
+  .stack-item:hover .choice { color: var(--primary-800); }
+  .layer { display: flex; justify-content: space-between; gap: 8px; font-size: var(--fs-caption); color: var(--ink-muted); font-weight: 500; }
+  .dnum { color: var(--ink-faint); }
+  .choice { font-size: var(--fs-label); font-weight: 600; line-height: 1.35; color: var(--ink); }
+  .flag { margin-top: 4px; }
+  .flag :global(.pill) { font-size: 13px; }
+  @media (max-width: 767px) { .stack-row { grid-template-columns: 1fr; } .stack-group { border-right: 0; border-bottom: 1px solid var(--line); padding: 10px var(--s-5); } }
+
+  .decide { list-style: none; margin: 0; padding: 0; max-width: 880px; border-top: 1px solid var(--line); }
+  .decide li { display: grid; grid-template-columns: 32px 1fr auto; gap: var(--s-3); align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-body-sm); }
+  .decide .i { font-weight: 600; color: var(--primary-600); font-size: var(--fs-ui); }
+  .decide :global(.pill) { font-size: 13px; }
+</style>

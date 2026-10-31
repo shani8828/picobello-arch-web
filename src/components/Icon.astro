@@ -1,0 +1,14 @@
+---
+// Lucide icon, inlined at build time (no runtime JS). 1.75 px stroke per
+// arch/13 section 9. x/y allow placing it inside a diagram SVG.
+interface Props { name: string; size?: number; class?: string; label?: string; x?: number; y?: number }
+const { name, size = 20, class: cls = '', label, x, y } = Astro.props;
+const all = import.meta.glob<string>('/node_modules/lucide-static/icons/*.svg', { query: '?raw', import: 'default', eager: true });
+const raw = all[`/node_modules/lucide-static/icons/${name}.svg`];
+if (!raw) throw new Error(`Unknown Lucide icon: ${name}`);
+const inner = raw.slice(raw.indexOf('>', raw.indexOf('<svg')) + 1, raw.lastIndexOf('</svg>')).trim();
+---
+<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} x={x} y={y} viewBox="0 0 24 24" fill="none"
+  stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+  class={`icon ${cls}`} aria-hidden={label ? undefined : 'true'} role={label ? 'img' : undefined}
+  aria-label={label} set:html={inner} />

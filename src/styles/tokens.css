@@ -1,0 +1,88 @@
+/* "Alpine Fresh" tokens, exactly as arch/13-design-system.txt section 2.
+   Components use these variables, never raw hex values. */
+:root {
+  /* 2.1 Primary - Alpine Blue */
+  --primary-900: #0B2E6B;
+  --primary-800: #0F48A8;
+  --primary-700: #1457C7;
+  --primary-600: #1A66E0;
+  --primary-500: #2F80FF;
+  --primary-100: #DCEBFF;
+  --primary-50:  #F0F6FF;
+
+  /* 2.2 Accent - Alpenglow */
+  --accent-500: #FF6B3D;
+  --accent-700: #B83A12;
+  --accent-50:  #FFF3EE;
+
+  /* 2.3 Supporting vivids (data, calendars, illustration - never status) */
+  --sun-500:     #FFB020;
+  --sun-50:      #FFF7E6;
+  --glacier-500: #00B8D9;
+  --violet-600:  #6D4AE0;
+  --violet-300:  #B9A6F7;
+  --violet-50:   #F3F0FF;
+
+  /* 2.4 Neutrals - Snow & Stone */
+  --ink:         #0E1A2B;
+  --ink-muted:   #475467;
+  --ink-faint:   #98A2B3;
+  --line:        #E4E9F0;
+  --line-strong: #CBD3DE;
+  --surface:     #FFFFFF;
+  --surface-2:   #F3F6FA;
+  --snow:        #F7F9FC;
+
+  /* 2.5 Semantic: text / soft bg / vivid (dot, icon, bar) */
+  --success-text: #0B7A3B; --success-soft: #E8F8EE; --success-vivid: #12A150;
+  --warning-text: #8A5300; --warning-soft: #FFF6E0; --warning-vivid: #F5A000;
+  --danger-text:  #C0291E; --danger-soft:  #FEECEA; --danger-vivid:  #F0443A;
+  --info-text:    #0B6F85; --info-soft:    #E3F7FB; --info-vivid:    #00B8D9;
+
+  /* 2.6 Domain colours */
+  --ch-airbnb:  #FF5A5F;
+  --ch-booking: #003B95;
+  --ch-website: #1A66E0;
+  --ch-vrbo:    #245ABC;
+  --ch-expedia: #FFB020;
+  --stay-guest: #D5DDE8;
+
+  /* 4. Fonts */
+  --font-head: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* 5.4 Presentation / web page type scale (rem, root 16 px) */
+  --fs-title: 3rem;        /* 48 px  (56 px in presentation mode) */
+  --fs-section: 2rem;      /* 32 px */
+  --fs-h3: 1.375rem;       /* 22 px */
+  --fs-body: 1.25rem;      /* 20 px  (never below 18 px) */
+  --fs-body-sm: 1.125rem;  /* 18 px */
+  --fs-label: 1rem;        /* 16 px  diagram labels 15-18 px */
+  --fs-ui: 0.9375rem;      /* 15 px  navigation, chips */
+  --fs-caption: 0.8125rem; /* 13 px  meta only */
+
+  /* 6. Spacing (4 px grid) */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px;
+  --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px; --s-20: 80px;
+
+  /* 6. Radius family */
+  --r-chip: 6px;
+  --r-control: 10px;
+  --r-card: 14px;
+  --r-sheet: 20px;
+  --r-full: 999px;
+
+  /* 6. Elevation */
+  --e-1: 0 1px 2px rgba(14, 26, 43, .05), 0 1px 1px rgba(14, 26, 43, .03);
+  --e-2: 0 4px 12px rgba(14, 26, 43, .06), 0 1px 3px rgba(14, 26, 43, .05);
+  --e-3: 0 24px 48px -12px rgba(14, 26, 43, .18);
+
+  /* 9. Motion */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --t-fast: 160ms;
+
+  --nav-w: 272px;
+  --measure: 70ch;
+  --content-w: 1120px;
+}

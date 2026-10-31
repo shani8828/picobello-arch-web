@@ -1,0 +1,130 @@
+---
+// 02 System context (C4 level 1). Source: arch/02-system-context.txt
+import Takeaway from '../components/Takeaway.astro';
+import Figure from '../components/diagram/Figure.astro';
+import Box from '../components/diagram/Box.astro';
+import Arrow from '../components/diagram/Arrow.astro';
+import Icon from '../components/Icon.astro';
+
+const masters: [string, string, string][] = [
+  ['Guest bookings, availability, prices', 'Lodgify', 'Platform'],
+  ['Owners, units, ownership over time', 'Platform', '—'],
+  ['Rules, fees, settings', 'Platform', '—'],
+  ['Listing content (photos, texts)', 'Platform', 'Lodgify / channels'],
+  ['Own-use reservations, friend stays', 'Platform', 'Lodgify (block / booking)'],
+  ['Extensions and date changes', 'Platform', 'Lodgify (updated)'],
+  ['Check-in data, companions, consents', 'Platform', 'Feratel (registration)'],
+  ['Guest card', 'Feratel', 'Platform (number / link)'],
+  ['Access rights', 'Platform', 'SALTO (executes)'],
+  ['Payments', 'Stripe', 'Platform ledger'],
+  ['Money records (ledger)', 'Platform', 'Bexio (April)'],
+];
+
+// Platform frame
+const P = { x: 330, y: 214, w: 480, h: 316 };
+---
+<Takeaway>Exactly one master per piece of data. The copy is never edited by hand; it is refreshed from the master.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">Context diagram</h3>
+  <Figure label="System context: the Picobello Platform in the centre, users on the left, outside systems around it" minWidth={940}>
+    <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+      <!-- Platform -->
+      <rect x={P.x} y={P.y} width={P.w} height={P.h} rx="16" class="grp" />
+      <text x={P.x + 20} y={P.y + 30} class="grp-label">Picobello Platform · built by us</text>
+      <Box x={P.x + 20} y={P.y + 52} w={220} h={64} title="Guest App" sub="guests, friends" icon="smartphone" variant="app" />
+      <Box x={P.x + 20} y={P.y + 136} w={220} h={64} title="Owner Portal" sub="owners" icon="laptop" variant="app" />
+      <Box x={P.x + 20} y={P.y + 220} w={220} h={64} title="Back Office" sub="Picobello staff" icon="monitor" variant="app" />
+      <Box x={P.x + 268} y={P.y + 52} w={192} h={232} title="One backend" sub={['API + worker', '', 'One database', 'PostgreSQL']} icon="server" />
+      <path d={`M${P.x + 240} ${P.y + 84} H${P.x + 268} M${P.x + 240} ${P.y + 168} H${P.x + 268} M${P.x + 240} ${P.y + 252} H${P.x + 268}`} stroke="var(--primary-100)" stroke-width="2" />
+
+      <!-- People (left) -->
+      <text x="20" y="250" class="grp-label muted">People</text>
+      <Box x={20} y={266} w={196} h={64} title="Guest / friend" sub="personal link" icon="luggage" variant="ext" />
+      <Box x={20} y={350} w={196} h={64} title="Owner" sub="magic link" icon="house" variant="ext" />
+      <Box x={20} y={434} w={196} h={64} title="Picobello staff" sub="login + 2FA" icon="building-2" variant="ext" />
+      <Arrow d={`M216 298 H${P.x + 20}`} />
+      <Arrow d={`M216 382 H${P.x + 20}`} />
+      <Arrow d={`M216 466 H${P.x + 20}`} />
+
+      <!-- Booking channels + Lodgify (top left) -->
+      <Box x={20} y={40} w={250} h={84} title="Booking channels" sub={['Airbnb, Booking.com, Vrbo,', 'Expedia, Google, websites']} icon="globe" variant="ext" />
+      <Box x={350} y={40} w={240} h={84} title="Lodgify" sub={['bookings, availability,', 'prices · channel manager']} icon="calendar-range" variant="ext" />
+      <Arrow d="M270 82 H350" start={true} />
+      <text x="20" y="150" class="svg-note">Channels have no direct link to us:</text>
+      <text x="20" y="169" class="svg-note">everything goes through Lodgify.</text>
+      <Arrow d={`M430 124 V${P.y}`} label={['bookings', '(webhooks +', 'nightly)']} lx={420} ly={150} anchor="end" />
+      <Arrow d={`M500 ${P.y} V124`} label={['blocks, friend bookings,', 'extensions, content']} lx={510} ly={160} anchor="start" />
+
+      <!-- Archipex (top centre) -->
+      <Box x={636} y={40} w={212} h={84} title="Archipex" sub={['old system, one-time', 'cutoff 31.12.2026']} icon="archive" variant="ext" />
+      <Arrow d={`M740 124 V${P.y}`} dashed={true} muted={true} label={['owners, units,', 'ownerships,', 'consents']} lx={752} ly={150} anchor="start" />
+
+      <!-- Stripe (bottom left) -->
+      <Box x={330} y={660} w={220} h={76} title="Stripe" sub="payments" icon="credit-card" variant="ext" />
+      <Arrow d={`M400 ${P.y + P.h} V660`} label={['payment sessions,', 'refunds']} lx={390} ly={574} anchor="end" />
+      <Arrow d={`M470 660 V${P.y + P.h}`} label={['payment', 'events']} lx={480} ly={584} anchor="start" />
+      <text x="20" y="690" class="svg-note">Money goes from Stripe to</text>
+      <text x="20" y="709" class="svg-note">Picobello's bank, never through us.</text>
+
+      <!-- Email + Maps (bottom) -->
+      <Box x={606} y={660} w={196} h={76} title="Email" sub="Postmark" icon="mail" variant="ext" />
+      <Arrow d={`M690 ${P.y + P.h} V660`} label={['links, confirmations,', 'magic links, reminders']} lx={700} ly={574} anchor="start" />
+      <Box x={880} y={660} w={196} h={76} title="Google Maps" sub="link only, no API" icon="map-pin" variant="ext" />
+      <Arrow d={`M${P.x + P.w} 516 H978 V660`} muted={true} label={['we build', 'a link']} lx={990} ly={588} anchor="start" />
+
+      <!-- Feratel + SALTO (right) -->
+      <Box x={960} y={214} w={220} h={92} title="Feratel Deskline" sub={['registration, tourist tax,', 'guest card']} icon="landmark" variant="ext" />
+      <Arrow d={`M${P.x + P.w} 248 H960`} label="registration per stay" lx={876} ly={240} />
+      <Arrow d={`M960 280 H${P.x + P.w}`} label="guest card per person" lx={876} ly={298} />
+      <Box x={960} y={408} w={220} h={92} title="SALTO KS" sub={['badge access', 'via Immer AG']} icon="key-round" variant="ext" />
+      <Arrow d={`M${P.x + P.w} 440 H960`} label={['create, extend,', 'revoke access']} lx={885} ly={414} />
+      <Arrow d={`M960 472 H${P.x + P.w}`} label="confirmation, events" lx={876} ly={490} />
+
+      <!-- Phase 2 (top right) -->
+      <rect x="900" y="24" width="280" height="160" rx="14" class="grp-p2" />
+      <text x="918" y="50" class="grp-label muted">Phase 2 · April</text>
+      <text x="918" y="78" class="p2-row">WhatsApp</text><text x="1162" y="78" class="p2-dir" text-anchor="end">out</text>
+      <text x="918" y="100" class="p2-row">PicobelloAI 2.0</text><text x="1162" y="100" class="p2-dir" text-anchor="end">both ways</text>
+      <text x="918" y="122" class="p2-row">Bank (camt.053/054)</text><text x="1162" y="122" class="p2-dir" text-anchor="end">in</text>
+      <text x="918" y="144" class="p2-row">Bexio</text><text x="1162" y="144" class="p2-dir" text-anchor="end">out</text>
+      <text x="918" y="166" class="p2-row">DocuSign</text><text x="1162" y="166" class="p2-dir" text-anchor="end">both ways</text>
+      <Arrow d={`M${P.x + P.w - 30} ${P.y} V200 H900 M1040 184 V200 H900`} end={false} dashed={true} muted={true} />
+    </svg>
+    <Fragment slot="legend">
+      <span class="legend-item"><span class="legend-swatch box soft"></span>Our system</span>
+      <span class="legend-item"><span class="legend-swatch box"></span>Outside system / people</span>
+      <span class="legend-item"><span class="legend-swatch box p2"></span>Phase 2</span>
+      <span class="legend-item"><span class="legend-swatch"></span>Data flow</span>
+      <span class="legend-item"><span class="legend-swatch dashed"></span>One-time / later</span>
+    </Fragment>
+  </Figure>
+  <p class="note-line"><Icon name="info" size={18} /> Not needed: weather (MeteoSwiss), because snow clearing was dropped. Authorities get the ZWG report as a PDF, with no system connection.</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Who is the master of which data</h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Data</th><th>Master</th><th>Copy in</th></tr></thead>
+      <tbody>
+        {masters.map(([d, m, c]) => (
+          <tr>
+            <td>{d}</td>
+            <td><span class={`chip ${m === 'Platform' ? 'chip-soft' : ''}`}>{m}</span></td>
+            <td class="muted">{c}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  .p2-row { font-size: 15px; font-weight: 500; fill: var(--ink-muted); }
+  .p2-dir { font-size: 13px; fill: var(--ink-faint); }
+  .note-line { display: flex; gap: 10px; align-items: flex-start; margin-top: var(--s-4); font-size: var(--fs-ui); color: var(--ink-muted); max-width: var(--measure); }
+  .note-line :global(svg) { flex: none; margin-top: 2px; color: var(--info-vivid); }
+  td.muted { color: var(--ink-muted); }
+  table.data .chip { font-size: 14px; padding: 2px 8px; }
+</style>

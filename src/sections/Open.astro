@@ -1,0 +1,112 @@
+---
+// Appendix: every [Open] and [Verify] item in arch/01-15, plus the
+// 5 Nov questions (file 12 part F) and the database host (file 14 D8).
+import Pill from '../components/Pill.astro';
+
+const decide: [string, string, string][] = [
+  ['Extension price: Lodgify nightly rate or our own? Max nights?', '12 F1 · 07 extension.price_source', '#logic'],
+  ['Shortening a stay: refund rules?', '12 F2 · 07 date change', '#logic'],
+  ['Editing guest details (names, number of people): free or request?', '12 F3', '#decisions'],
+  ['SALTO badges and Feratel guest card: both in Phase 1?', '12 F4', '#integrations'],
+  ['High-season weeks rule: per period (Christmas, Feb/Mar, summer) or per winter/summer?', '12 F5 · 07 check C5 (prototype counts per period)', '#logic'],
+  ['Who builds which parts? Domains (picobello.ch subdomains)?', '12 F6 · 11 domains · 12 team capacity', '#infrastructure'],
+  ['ID document retention period?', '12 F7 · 06 · 10', '#database'],
+  ['Database host: Cloud SQL (one cloud, failover) or Supabase Zurich (lower cost, faster setup)?', '12 ADR-004 · 14 D8', '#d8'],
+];
+
+const open: [string, string, string][] = [
+  ['Feratel guest card: wallet format (fer-04)', '08 Feratel', '#integrations'],
+  ['Archipex export format, agreed with Archipex (OP-05)', '08 Archipex', '#integrations'],
+  ['With Immer AG (OP-13): how the person identifies at the badge dispenser, what happens if the dispenser fails, night support', '08 SALTO', '#integrations'],
+  ['External pen-test before Phase 2: budget', '10 application security', '#security'],
+];
+
+const verify: { file: string; href: string; items: string[] }[] = [
+  { file: '06 Database', href: '#database', items: ['ID document retention period, with Picobello / Feratel rules'] },
+  { file: '07 Business logic', href: '#logic', items: ['Rounding to 5 Rappen where shown as cash amounts, with Picobello'] },
+  { file: '08 Integrations · Lodgify', href: '#integrations', items: [
+    'Webhook subscribe path and payload (docs.lodgify.com)',
+    'Webhook event names (from a third-party connector list)',
+    'Whether Lodgify signs webhooks; if yes, also check the signature',
+    'Date change on a booking vs an additional linked booking for extra nights; design supports both via stay_segments',
+    'Which listing fields the API can write; the sync matrix stores the answer per field',
+    'Exact field names in the booking mapping',
+    'Rate limits',
+  ] },
+  { file: '08 Integrations · Stripe', href: '#integrations', items: ['TWINT activation on the account', 'Current card-authorisation expiry (about 7 days) for deposits'] },
+  { file: '08 Integrations · Feratel', href: '#integrations', items: ['Everything in the Feratel section, with Feratel / LST: interface, credentials, category codes, test environment'] },
+  { file: '08 Integrations · SALTO', href: '#integrations', items: ['Endpoints for users, access groups and time schedules (Connect API reference)'] },
+  { file: '10 Security', href: '#security', items: ['ID document retention period'] },
+  { file: '11 Infrastructure', href: '#infrastructure', items: ['Monthly cost estimate, with the GCP pricing calculator'] },
+  { file: '14 Comparisons', href: '#d8', items: ['Supabase Zurich region', 'Neon data location (EU, not CH)', 'Supabase high-availability plan', 'Supabase Storage data location'] },
+];
+const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
+---
+<div class="block">
+  <div class="counts">
+    <div><span class="v tnum">{decide.length}</span><span class="l">decisions for 5 Nov</span></div>
+    <div><span class="v tnum">{open.length}</span><span class="l">further open points</span></div>
+    <div><span class="v tnum">{verifyCount}</span><span class="l">items to verify with vendors</span></div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">To decide on 5 Nov</h3>
+  <ol class="qs">
+    {decide.map(([q, src, href], i) => (
+      <li><span class="i tnum">{i + 1}</span><div><p>{q}</p><a href={href} class="src">{src}</a></div><span class="ans" aria-hidden="true"></span></li>
+    ))}
+  </ol>
+  <p class="note">After the meeting the decisions are recorded with their date in file 12 (part F) and the affected files move to v1.1 (file 15, week 0).</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Further open points <Pill kind="open" /></h3>
+  <ul class="items">{open.map(([t, src, href]) => <li><p>{t}</p><a href={href} class="src">{src}</a></li>)}</ul>
+</div>
+
+<div class="block">
+  <h3 class="block-title">To verify once we have access <Pill kind="verify" /></h3>
+  <p class="block-sub">Taken from third-party descriptions or assumptions; to check in the vendor's own docs (file 08).</p>
+  <div class="vgroups">
+    {verify.map((g) => (
+      <section class="vg">
+        <a href={g.href} class="vg-h">{g.file}</a>
+        <ul>{g.items.map((it) => <li>{it}</li>)}</ul>
+      </section>
+    ))}
+  </div>
+</div>
+
+<style>
+  .counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--e-1); }
+  .counts div { display: grid; gap: 4px; padding: var(--s-5) var(--s-6); border-left: 1px solid var(--line); }
+  .counts div:first-child { border-left: 0; background: var(--accent-50); border-radius: var(--r-card) 0 0 var(--r-card); }
+  .counts .v { font-size: 2.25rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
+  .counts .l { font-size: var(--fs-ui); color: var(--ink-muted); }
+  @media (max-width: 640px) { .counts { grid-template-columns: 1fr; } .counts div { border-left: 0; border-top: 1px solid var(--line); } .counts div:first-child { border-top: 0; border-radius: var(--r-card) var(--r-card) 0 0; } }
+
+  .qs { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .qs li { display: grid; grid-template-columns: 40px 1fr 140px; gap: var(--s-4); align-items: start; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .qs .i { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--warning-soft); color: var(--warning-text); font-weight: 700; font-size: 14px; }
+  .qs p { font-size: var(--fs-body-sm); font-weight: 500; line-height: 1.45; }
+  .src { display: inline-block; margin-top: 4px; font-size: 13.5px; color: var(--ink-muted); text-decoration: none; }
+  .src:hover { color: var(--primary-700); text-decoration: underline; }
+  .ans { height: 30px; border-bottom: 1.5px dashed var(--line-strong); }
+  @media (max-width: 767px) { .qs li { grid-template-columns: 40px 1fr; } .ans { display: none; } }
+  .note { margin-top: var(--s-4); font-size: 14.5px; color: var(--ink-muted); line-height: 1.55; max-width: var(--measure); }
+  .block-title :global(.pill) { font-size: 13px; margin-left: 8px; vertical-align: 0.2em; }
+
+  .items { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+  @media (max-width: 767px) { .items { grid-template-columns: 1fr; } }
+  .items li { padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--warning-vivid); border-radius: var(--r-control); }
+  .items p { font-size: 15.5px; line-height: 1.45; }
+
+  .vgroups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); align-items: start; }
+  @media (max-width: 767px) { .vgroups { grid-template-columns: 1fr; } }
+  .vg { padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--info-vivid); border-radius: var(--r-control); }
+  .vg-h { display: block; font-weight: 600; font-size: 15px; color: var(--ink); text-decoration: none; margin-bottom: 6px; }
+  .vg-h:hover { color: var(--primary-700); }
+  .vg ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .vg li { font-size: 14.5px; color: var(--ink-muted); line-height: 1.45; }
+</style>

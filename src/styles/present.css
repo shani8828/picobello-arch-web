@@ -1,0 +1,45 @@
+/* Presentation mode: large type for screen sharing (arch/13 section 5.4:
+   title 56 px, body 24 px), no side nav, one section per "slide". */
+
+.skip { position: absolute; left: 16px; top: -48px; z-index: 100; padding: 8px 14px; border-radius: var(--r-control); background: var(--primary-600); color: #fff; font-size: var(--fs-ui); font-weight: 600; text-decoration: none; }
+.skip:focus { top: 12px; color: #fff; }
+
+html.present { font-size: 120%; }               /* rem scale x1.2: body 24 px */
+html.present { --fs-title: 2.9167rem; }         /* = 56 px */
+html.present .shell { grid-template-columns: 1fr; }
+html.present .nav, html.present .topbar, html.present .nav-scrim { display: none; }
+html.present .main { padding: 0 clamp(32px, 6vw, 112px); }
+html.present .main-inner { max-width: 1320px; }
+html.present .doc-head { display: none; }
+html.present .section {
+  min-height: 100vh; padding: 72px 0 120px; border-bottom: 0;
+  scroll-margin-top: 0;
+}
+html.present .section + .section { border-top: 1px solid var(--line); }
+
+/* HUD */
+.hud {
+  position: fixed; z-index: 60; left: 50%; bottom: 20px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 6px; padding: 6px; padding-bottom: 9px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--e-3);
+  font-size: 15px; color: var(--ink-muted); overflow: hidden; max-width: calc(100vw - 32px);
+}
+.hud[hidden] { display: none; }
+.hud-btn, .hud-exit {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 40px;
+  border: 0; border-radius: var(--r-control); background: none; color: var(--ink); cursor: pointer;
+  font: 500 15px var(--font-body); padding: 0 10px;
+  transition: background var(--t-fast) var(--ease);
+}
+.hud-btn:hover, .hud-exit:hover { background: var(--surface-2); }
+.hud-btn:disabled { color: var(--ink-faint); cursor: default; background: none; }
+.hud-pos { display: flex; align-items: baseline; gap: 10px; padding: 0 8px; min-width: 0; }
+.hud-count { font-weight: 600; color: var(--primary-600); white-space: nowrap; }
+.hud-title { font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 28ch; }
+.hud-sep { width: 1px; height: 24px; background: var(--line); margin: 0 4px; }
+.hud-keys { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; padding: 0 6px; font-size: 13px; }
+.hud kbd { font: 500 12px/1 var(--font-body); color: var(--ink-muted); border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 5px; padding: 3px 6px; background: var(--surface); }
+.hud-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--surface-2); }
+.hud-progress span { display: block; height: 100%; width: 0; background: var(--primary-600); transition: width 200ms var(--ease); }
+
+@media (max-width: 1100px) { .hud-keys, .hud-sep { display: none; } }

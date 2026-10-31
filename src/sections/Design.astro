@@ -1,0 +1,560 @@
+---
+// 13 Design system "Alpine Fresh". Source: arch/13-design-system.txt
+import Takeaway from '../components/Takeaway.astro';
+import Icon from '../components/Icon.astro';
+
+const palettes: { name: string; note: string; sw: [string, string, string, boolean?][] }[] = [
+  { name: 'Primary · Alpine Blue', note: 'Actions, links, focus, selection, progress', sw: [
+    ['primary-900', '#0B2E6B', 'headings on blue, logo text', true], ['primary-800', '#0F48A8', 'pressed, active nav', true], ['primary-700', '#1457C7', 'button hover', true],
+    ['primary-600', '#1A66E0', 'PRIMARY BUTTONS, links, focus', true], ['primary-500', '#2F80FF', 'icons, chart lines', true], ['primary-100', '#DCEBFF', 'selected rows, focus ring'], ['primary-50', '#F0F6FF', 'hover, info panels'] ] },
+  { name: 'Accent · Alpenglow', note: 'Brand moments, welcome / success, one highlight per screen', sw: [
+    ['accent-500', '#FF6B3D', 'logo mark, welcome, "your stay"'], ['accent-700', '#B83A12', 'accent text', true], ['accent-50', '#FFF3EE', 'welcome banner'] ] },
+  { name: 'Supporting vivids', note: 'Data, calendars, illustration; never status', sw: [
+    ['sun-500', '#FFB020', 'high season, quota bars'], ['sun-50', '#FFF7E6', 'high-season band'], ['glacier-500', '#00B8D9', 'charts, accents'],
+    ['violet-600', '#6D4AE0', 'own-use stays', true], ['violet-300', '#B9A6F7', 'friends stays'], ['violet-50', '#F3F0FF', 'own-use areas'] ] },
+  { name: 'Neutrals · Snow & Stone', note: 'About 90 % of every screen', sw: [
+    ['ink', '#0E1A2B', 'main text, headings', true], ['ink-muted', '#475467', 'secondary text, labels', true], ['ink-faint', '#98A2B3', 'placeholders, disabled'], ['line', '#E4E9F0', 'borders, dividers'],
+    ['line-strong', '#CBD3DE', 'table header border'], ['surface', '#FFFFFF', 'cards, inputs'], ['surface-2', '#F3F6FA', 'panels, sidebar'], ['snow', '#F7F9FC', 'page background'] ] },
+];
+const semantic: [string, string, string, string, string][] = [
+  ['success', '#0B7A3B', '#E8F8EE', '#12A150', 'paid, checked in, in sync, ready'],
+  ['warning', '#8A5300', '#FFF6E0', '#F5A000', 'payment pending, manual needed'],
+  ['danger', '#C0291E', '#FEECEA', '#F0443A', 'failed, rejected, cancelled'],
+  ['info', '#0B6F85', '#E3F7FB', '#00B8D9', 'syncing, pending, hints'],
+];
+const dark: [string, string, boolean?][] = [
+  ['bg', '#0B1220', true], ['surface', '#131C2E', true], ['surface-2', '#1A2540', true], ['line', '#26334D', true], ['ink', '#E9EEF5'], ['ink-muted', '#9AA8BC'],
+  ['primary', '#5B9BFF'], ['accent', '#FF8A63'], ['success', '#3DD68C'], ['warning', '#FFC247'], ['danger', '#FF6B5E'], ['info', '#33D1EB'],
+];
+
+type Spec = [string, string, number, number, number, string];
+const specs: { app: string; base: string; rows: Spec[] }[] = [
+  { app: 'Presentation · this page', base: 'body never below 18 px', rows: [
+    ['Title', 'head', 56, 60, 800, 'Picobello Platform'], ['Section', 'head', 32, 38, 700, 'System context'],
+    ['Body', 'body', 22, 32, 400, 'One master per piece of data.'], ['Diagram label', 'body', 16, 22, 500, 'payment sessions, refunds'] ] },
+  { app: 'Guest App', base: 'base 16 px, phone first', rows: [
+    ['display', 'head', 32, 38, 800, "You're all set!"], ['h1', 'head', 24, 30, 700, 'Check-in'], ['h2', 'head', 20, 26, 700, 'Your companions'],
+    ['h3', 'body', 18, 24, 600, 'Badge access'], ['body', 'body', 16, 24, 400, 'Check-in from 16:00.'], ['label', 'body', 14, 20, 500, 'Date of birth'],
+    ['caption', 'body', 13, 18, 400, 'Updated 2 min ago'], ['amount-lg', 'num', 32, 38, 600, "CHF 390.00"] ] },
+  { app: 'Owner Portal', base: 'base 16 px mobile, 15 px desktop', rows: [
+    ['h1', 'head', 28, 34, 700, 'My calendar'], ['h2', 'head', 20, 26, 700, 'Own use this year'], ['h3', 'body', 17, 24, 600, 'Next stays'],
+    ['body', 'body', 16, 24, 400, 'Friends stays count to quota.'], ['quota', 'num', 28, 34, 600, '34 / 120'], ['caption', 'body', 13, 18, 400, 'Never below 13 px'] ] },
+  { app: 'Back Office', base: 'base 14 px, dense', rows: [
+    ['h1', 'head', 24, 30, 700, 'Today'], ['h2', 'head', 18, 24, 700, 'Arrivals'], ['kpi', 'num', 30, 36, 600, '12'],
+    ['body', 'body', 14, 20, 400, 'Stay detail with timeline'], ['table', 'num', 13, 18, 400, '3078-4 · 10.01.2027'], ['badge', 'body', 12, 16, 500, 'No text below 12 px'] ] },
+];
+
+const avoid: [string, string][] = [
+  ['Purple-blue gradients, glowing blobs, glassmorphism', 'Flat, confident colour; at most one subtle gradient (photo overlay)'],
+  ['Hero section + 3 identical feature cards with emoji / icons in circles', 'Real content first: the guest sees their stay, dates and next step'],
+  ['Emojis as icons', 'One icon family (Lucide), same stroke and size everywhere'],
+  ['Everything rounded-2xl with big shadows', 'One radius family (6 / 10 / 14 / 20) and borders before shadows'],
+  ['Grey text on grey, faded colours', 'Strong ink text; soft tints only for backgrounds; vivid for emphasis'],
+  ['Centred everything', 'Left-aligned text, clear grid, aligned edges and baselines'],
+  ['Lorem ipsum / "Welcome to our platform"', 'Real copy: "Your badge is ready. Collect it at the machine next to the entrance."'],
+  ['Stock illustrations, 3D blobs', 'Real apartment photos and Lenk scenery; minimal line drawings'],
+  ['Same spacing everywhere', 'Deliberate rhythm: tight inside groups, generous between groups'],
+  ['Spinners for everything', 'Skeletons shaped like the real layout; optimistic updates'],
+  ['Random colours for categories', 'Every colour has a defined meaning'],
+  ['Decorative motion', 'Motion only for feedback, 150-200 ms'],
+];
+
+const contrast: [string, string, string][] = [
+  ['ink on white', '17.5:1', 'AAA'], ['ink-muted on white', '7.7:1', 'AAA'], ['ink-muted on snow', '7.3:1', 'AAA'],
+  ['white on primary-600 (button)', '5.2:1', 'AA'], ['white on primary-700 (hover)', '6.5:1', 'AA'], ['white on primary-800 (pressed)', '8.4:1', 'AAA'],
+  ['primary-600 link on white', '5.2:1', 'AA'], ['primary-600 on primary-50', '4.8:1', 'AA'], ['accent-700 on white', '5.8:1', 'AA'], ['accent-700 on accent-50', '5.3:1', 'AA'],
+  ['ink on accent-500', '6.2:1', 'AA'], ['ink on sun-500', '9.6:1', 'AAA'], ['ink on glacier-500', '7.4:1', 'AAA'], ['violet-600 on white', '5.7:1', 'AA'],
+  ['success / warning / danger / info text on soft', '4.9 / 5.9 / 5.1 / 5.2', 'AA'],
+  ['dark: ink on #0B1220', '16.1:1', 'AAA'], ['dark: muted on #131C2E', '7.1:1', 'AAA'], ['dark: #0B1220 on primary #5B9BFF', '6.8:1', 'AA'], ['dark: accent on #131C2E', '7.4:1', 'AAA'],
+  ['primary-500 on white', '3.7:1', 'icons / large only'], ['accent-500 on white', '2.8:1', 'decoration only'], ['success / danger vivid on white', '3.4-3.8', 'dots and icons only'],
+];
+const fam = (f: string) => (f === 'head' ? 'var(--font-head)' : 'var(--font-body)');
+---
+<Takeaway>Soft base, vivid emphasis: about 60 % snow and white, 30 % ink and neutrals, 10 % vivid colour. Because vivid colour is rare, it pops, and every colour has one job.</Takeaway>
+
+<div class="block">
+  <div class="direction">
+    <div>
+      <span class="eyebrow">Theme</span>
+      <p class="dir-name">Alpine Fresh</p>
+      <p class="dir-text">Inspired by Lenk in the Simmental: a vivid alpine-sky blue for trust and action, snow-white and cool stone neutrals for calm, and a bright alpenglow coral (the pink-orange light on mountains at sunset) as the signature accent.</p>
+    </div>
+    <div class="ratio" aria-label="60 percent snow and white, 30 percent ink and neutrals, 10 percent vivid">
+      <div class="bar"><span class="r60">60 %</span><span class="r30">30 %</span><span class="r10">10</span></div>
+      <div class="ratio-l"><span>snow / white</span><span>ink + neutrals</span><span>vivid</span></div>
+    </div>
+  </div>
+  <ol class="principles">
+    <li><b>P1 Clarity first</b> one main action per screen, plain language</li>
+    <li><b>P2 Status always visible</b> colour + icon + word, never colour alone</li>
+    <li><b>P3 Colour has a job</b> blue = action, semantic = status, alpenglow = brand, sun / glacier / violet = data</li>
+    <li><b>P4 Touch and keyboard</b> touch-friendly on mobile, keyboard-friendly on desktop</li>
+    <li><b>P5 Accessible</b> WCAG 2.1 AA for all text, calculated</li>
+    <li><b>P6 Crafted, not generated</b> see "Avoid vs do" below</li>
+  </ol>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Colour palette</h3>
+  {palettes.map((p) => (
+    <div class="pal">
+      <div class="pal-h"><b>{p.name}</b><span>{p.note}</span></div>
+      <div class="swatches">
+        {p.sw.map(([t, hex, use, darkText]) => (
+          <div class="sw">
+            <div class={`chip-c${darkText ? ' on-dark' : ''}${hex === '#FFFFFF' ? ' white' : ''}`} style={`background:${hex}`}><span class="mono">{hex}</span></div>
+            <span class="sw-t mono">{t}</span>
+            <span class="sw-u">{use}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  ))}
+  <div class="pal">
+    <div class="pal-h"><b>Semantic · status</b><span>Soft background + text colour for the label, vivid for the dot or icon</span></div>
+    <div class="sem">
+      {semantic.map(([n, text, soft, vivid, use]) => (
+        <div class="sem-row">
+          <span class="sem-n mono">{n}</span>
+          <span class="sem-c" style={`background:${text}`}><span class="mono">{text}</span><em>text</em></span>
+          <span class="sem-c light" style={`background:${soft}`}><span class="mono">{soft}</span><em>soft</em></span>
+          <span class="sem-c" style={`background:${vivid}`}><span class="mono">{vivid}</span><em>vivid</em></span>
+          <span class="sem-pill" style={`background:${soft};color:${text}`}><i style={`background:${vivid}`}></i>{use.split(',')[0]}</span>
+          <span class="sem-u">{use}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+  <div class="pal">
+    <div class="pal-h"><b>Dark mode</b><span>Guest App and Owner Portal follow the phone; Back Office light only in Phase 1 (tokens ready)</span></div>
+    <div class="dark-row">
+      {dark.map(([t, hex, isBg]) => <div class="dk"><span class="dk-c" style={`background:${hex}`}></span><span class="mono dk-t">{t}</span><span class="mono dk-h">{hex}</span></div>)}
+    </div>
+  </div>
+  <details class="disclose">
+    <summary>Contrast check · WCAG 2.1, calculated<span class="count">{contrast.length} pairs</span><Icon name="chevron-right" size={18} class="chev" /></summary>
+    <div class="disclose-body">
+      <table class="ctab"><tbody>{contrast.map(([a, r, res]) => <tr><td>{a}</td><td class="tnum">{r}</td><td><span class={`res ${res.startsWith('AAA') ? 'aaa' : res === 'AA' ? 'aa' : 'lim'}`}>{res}</span></td></tr>)}</tbody></table>
+      <p class="note">AA = 4.5:1 for normal text, 3:1 for large text, icons and UI shapes.</p>
+    </div>
+  </details>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Fonts</h3>
+  <div class="fonts">
+    <div class="font-card">
+      <span class="eyebrow">Headings · 600 / 700 / 800</span>
+      <p class="font-big jak">Plus Jakarta Sans</p>
+      <p class="font-glyphs jak">Aa Ää Éé Çç 0123456789</p>
+      <p class="font-why">Modern, warm, premium; distinctive at large sizes; full DE/FR accents.</p>
+    </div>
+    <div class="font-card">
+      <span class="eyebrow">UI + body · 400 / 500 / 600</span>
+      <p class="font-big int">Inter</p>
+      <p class="font-glyphs int tnum">CHF 1'234.50 · Sa, 10.07.2027</p>
+      <p class="font-why">Made for screens, very readable at 12-16 px; tabular numbers ("tnum") and single-storey a off ("cv11") for amounts and dates.</p>
+    </div>
+  </div>
+  <p class="note">Both free (SIL Open Font License), self-hosted with @fontsource (variable woff2, latin + latin-ext), not from the Google Fonts CDN: no visitor IPs sent to Google, and faster. About 60-90 KB total. This page uses exactly that setup.</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Type scale per app</h3>
+  <div class="specs">
+    {specs.map((s) => (
+      <article class="spec">
+        <header><b>{s.app}</b><span>{s.base}</span></header>
+        <ul>
+          {s.rows.map(([name, f, size, lh, w, sample]) => (
+            <li>
+              <span class="sp-meta"><span class="mono">{name}</span><span>{f === 'head' ? 'Jakarta' : 'Inter'} {size}/{lh} · {w}</span></span>
+              <span class={`sp-sample${f === 'num' ? ' tnum' : ''}`} style={`font-family:${fam(f)};font-size:${size}px;line-height:${lh}px;font-weight:${w};letter-spacing:${f === 'head' ? (name === 'display' || name === 'Title' ? '-0.03em' : '-0.02em') : '0'}`}>{sample}</span>
+            </li>
+          ))}
+        </ul>
+      </article>
+    ))}
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Spacing, shape, elevation</h3>
+  <div class="grid grid-3 shape">
+    <div class="card">
+      <span class="eyebrow">Spacing · 4 px grid</span>
+      <div class="spaces">{[4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80].map((n) => <div><i style={`width:${n}px`}></i><span class="mono">{n}</span></div>)}</div>
+    </div>
+    <div class="card">
+      <span class="eyebrow">Radius family</span>
+      <div class="radii">{[['6', 'chips, tags'], ['10', 'buttons, inputs'], ['14', 'cards, panels'], ['20', 'sheets, modals'], ['full', 'pills, avatars']].map(([r, u]) => <div><i style={`border-radius:${r === 'full' ? '999px' : r + 'px'}`}></i><b class="mono">{r}</b><span>{u}</span></div>)}</div>
+    </div>
+    <div class="card">
+      <span class="eyebrow">Elevation · borders do most of the work</span>
+      <div class="elev">{[['0', '1 px border, no shadow'], ['1', 'cards (Guest / Owner)'], ['2', 'popovers, raised'], ['3', 'modals, sheets']].map(([l, u]) => <div class={`e e${l}`}><b>level {l}</b><span>{u}</span></div>)}</div>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Component sheet</h3>
+  <div class="sheet">
+    <div class="cs">
+      <span class="cs-h">Buttons · primary, all states</span>
+      <div class="btns">
+        <span class="b b-primary">Pay now</span>
+        <span class="b b-primary hover">Hover</span>
+        <span class="b b-primary pressed">Pressed</span>
+        <span class="b b-primary focus">Focus</span>
+        <span class="b b-primary disabled">Disabled</span>
+        <span class="b b-primary loading" aria-label="Loading"><i class="spin"></i><span class="ghost-label">Pay now</span></span>
+      </div>
+      <div class="btns">
+        <span class="b b-secondary">Secondary</span>
+        <span class="b b-ghost">Ghost</span>
+        <span class="b b-danger">Cancel stay</span>
+      </div>
+      <p class="cs-note">Heights: Guest 52 px (full width on mobile), Owner 44 px, Back Office 36 px. Loading keeps the width.</p>
+    </div>
+    <div class="cs">
+      <span class="cs-h">Inputs</span>
+      <label class="in-l">First name<span class="in">Anna</span></label>
+      <label class="in-l">Email<span class="in focus">anna@example.ch</span></label>
+      <label class="in-l">Date of birth<span class="in error">31.02.1990</span><em class="in-err">This date doesn't exist. Check day and month.</em></label>
+    </div>
+    <div class="cs">
+      <span class="cs-h">Status pills · colour + dot + word</span>
+      <div class="pills">
+        <span class="pill pill-success">Paid</span><span class="pill pill-open">Payment pending</span>
+        <span class="pill pill-danger">Failed</span><span class="pill pill-verify">Syncing</span>
+      </div>
+      <span class="cs-h">Stepper</span>
+      <div class="stepper"><div class="st-bar"><i style="width:40%"></i></div><span>Step 2 of 5 · Companions</span></div>
+      <span class="cs-h">KPI tile · Back Office</span>
+      <div class="kpi"><span class="kpi-l">Check-ins missing</span><span class="kpi-v tnum">3</span><span class="kpi-s"><i></i>arrivals today</span></div>
+    </div>
+    <div class="cs">
+      <span class="cs-h">Calendar · own use, friends, guest, high season</span>
+      <div class="cal">
+        <div class="cal-hs"></div>
+        {Array.from({ length: 14 }, (_, i) => <span class={`d${i === 3 ? ' today' : ''}`}>{i + 6}</span>)}
+        <div class="blk own" style="grid-column: 2 / 6">Own use</div>
+        <div class="blk fr" style="grid-column: 9 / 12">Friends</div>
+        <div class="blk gu" style="grid-column: 12 / 15"><i></i>Guest</div>
+      </div>
+      <p class="cs-note">40 px cells, rounded stay blocks, vivid channel dot, high-season band with a 2 px sun-500 line, today with a primary-600 ring.</p>
+    </div>
+  </div>
+  <p class="note">Sample content for illustration only.</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Three apps, one system</h3>
+  <div class="minis">
+    <figure class="mini">
+      <div class="m-phone">
+        <div class="mp-top"><Icon name="chevron-left" size={16} /> Check-in</div>
+        <div class="mp-prog"><i style="width:40%"></i></div>
+        <p class="mp-step">Step 2 of 5</p>
+        <p class="mp-h">Your companions</p>
+        <div class="mp-card"><b>Lea Müller</b><span>Adult · Swiss</span></div>
+        <div class="mp-card"><b>Noah Müller</b><span>Child 6-15 · Swiss</span></div>
+        <div class="mp-add"><Icon name="plus" size={16} /> Add companion</div>
+        <div class="mp-btn">Continue</div>
+      </div>
+      <figcaption>Guest check-in · light</figcaption>
+    </figure>
+    <figure class="mini">
+      <div class="m-owner">
+        <div class="mo-h"><b>My calendar</b><span>A3 · 2027</span></div>
+        <div class="mo-q">
+          <div><span>Year</span><b class="tnum">34 / 120</b><i><s style="width:28%"></s></i></div>
+          <div><span>High season</span><b class="tnum">14 / 40</b><i><s style="width:35%"></s></i></div>
+        </div>
+        <div class="mo-cal">
+          {Array.from({ length: 28 }, (_, i) => <span class={i >= 4 && i <= 10 ? 'own' : i >= 15 && i <= 17 ? 'fr' : i >= 20 && i <= 25 ? 'gu' : ''}></span>)}
+        </div>
+        <div class="mo-key"><span><i class="own"></i>own use</span><span><i class="fr"></i>friends</span><span><i class="gu"></i>guests</span></div>
+      </div>
+      <figcaption>Owner calendar · light</figcaption>
+    </figure>
+    <figure class="mini wide">
+      <div class="m-bo">
+        <div class="mb-side"><b>Picobello</b>{['Today', 'Stays', 'Calendar', 'Apartments', 'Owners', 'Money'].map((n, i) => <span class={i === 0 ? 'on' : ''}>{n}</span>)}</div>
+        <div class="mb-main">
+          <b class="mb-h">Today</b>
+          <div class="mb-kpis">
+            {[['Arrivals', '6'], ['Departures', '4'], ['Check-ins missing', '3'], ['Failed integrations', '1']].map(([l, v], i) => <div><span>{l}</span><b class="tnum">{v}</b>{i === 3 && <i class="dot-d"></i>}{i === 2 && <i class="dot-w"></i>}</div>)}
+          </div>
+          <table class="mb-t">
+            <tbody>
+              <tr><td class="mono">4335-2</td><td>Arrival 16:00</td><td><span class="pill pill-success">Checked in</span></td></tr>
+              <tr><td class="mono">3078-6</td><td>Arrival 16:00</td><td><span class="pill pill-open">Payment pending</span></td></tr>
+              <tr><td class="mono">3078-11</td><td>Departure 10:00</td><td><span class="pill pill-neutral">Card ready</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <figcaption>Back Office Today · light</figcaption>
+    </figure>
+    <figure class="mini">
+      <div class="m-phone dark">
+        <div class="mp-photo"></div>
+        <div class="mp-ok"><Icon name="check" size={18} /></div>
+        <p class="mp-h">Your badge is ready.</p>
+        <p class="mp-p">Collect it at the machine next to the entrance.</p>
+        <div class="mp-card"><b>Access</b><span>Today 16:00 → Sun 10:00</span></div>
+        <div class="mp-btn">How to collect</div>
+      </div>
+      <figcaption>Guest App · dark</figcaption>
+    </figure>
+  </div>
+  <p class="note">Sample names, units and numbers for illustration only. Copy line from section 8 of the design file.</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Avoid vs do · craft rules</h3>
+  <div class="table-wrap">
+    <table class="data avd">
+      <thead><tr><th><Icon name="x" size={14} /> Avoid (generic)</th><th><Icon name="check" size={14} /> Do (crafted)</th></tr></thead>
+      <tbody>{avoid.map(([a, d]) => <tr><td>{a}</td><td>{d}</td></tr>)}</tbody>
+    </table>
+  </div>
+  <details class="disclose senior">
+    <summary>Senior-level details we deliberately include<span class="count">11</span><Icon name="chevron-right" size={18} class="chev" /></summary>
+    <div class="disclose-body">
+      <ul class="list compact">
+        <li>Tabular numbers wherever money and dates appear; amounts right-aligned; "CHF" in ink-muted, the number in ink.</li>
+        <li>Optical alignment: icons nudged to the text cap height; 8 px icon-to-label gap.</li>
+        <li>Every interactive element has hover, focus-visible, active, disabled and loading states.</li>
+        <li>Forms: inline validation on blur, helpful errors, smart defaults from the booking, Enter submits, autofocus.</li>
+        <li>Relative dates where it helps ("in 3 days", "today 16:00"), absolute on hover.</li>
+        <li>No layout shift: images with fixed aspect ratio, buttons keep width while loading.</li>
+        <li>Keyboard first in Back Office (Cmd+K, J/K in lists, Esc closes).</li>
+        <li>Thoughtful empty, error and offline screens (Guest App shows cached apartment info offline).</li>
+        <li>Micro-copy reviewed by a native speaker in DE / FR / EN.</li>
+        <li>Reduced motion and larger text respected; visual QA on iPhone, Android, Windows, macOS.</li>
+        <li>Quality bar: the calm density of Linear, the clarity of the Stripe Dashboard, the guest friendliness of Airbnb's trip screens. Inspiration for quality, not copied layouts.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Style per app</h3>
+  <div class="grid grid-3 perapp">
+    <div class="card"><b>Guest App</b><p>Photo-led, snow background, large type, one vivid primary button per screen, bottom navigation, cards, alpenglow moments for welcome / success.</p></div>
+    <div class="card"><b>Owner Portal</b><p>Same bright style, calendar-centred, medium density, big confident numbers.</p></div>
+    <div class="card"><b>Back Office</b><p>Neutral stone background, compact tables, left sidebar, vivid colour only for status and actions.</p></div>
+  </div>
+  <p class="note">Formatting: money "CHF 1'234.50" (de-CH); dates de-CH "Sa, 10.07.2027", fr-CH "sam. 10.07.2027", en "Sat, 10 Jul 2027"; 24 h times; Swiss German spelling (ss, no ß), formal "Sie". Motion 150-200 ms ease-out, off with reduced motion. Icons: Lucide, 1.75 px stroke.</p>
+</div>
+
+<style>
+  .direction { display: grid; grid-template-columns: 1.3fr 1fr; gap: var(--s-8); align-items: end; margin-bottom: var(--s-6); }
+  @media (max-width: 1023px) { .direction { grid-template-columns: 1fr; } }
+  .dir-name { font-family: var(--font-head); font-size: 2.25rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; margin: 4px 0 10px; }
+  .dir-text { font-size: var(--fs-body-sm); color: var(--ink-muted); line-height: 1.55; max-width: 60ch; }
+  .ratio .bar { display: flex; height: 48px; border-radius: var(--r-control); overflow: hidden; border: 1px solid var(--line); font-size: 13px; font-weight: 600; }
+  .ratio .bar span { display: grid; place-items: center; }
+  .r60 { flex: 60; background: var(--surface); color: var(--ink-muted); }
+  .r30 { flex: 30; background: var(--ink); color: #fff; }
+  .r10 { flex: 10; background: var(--primary-600); color: #fff; }
+  .ratio-l { display: flex; margin-top: 6px; font-size: 13px; color: var(--ink-muted); }
+  .ratio-l span:nth-child(1) { flex: 60; } .ratio-l span:nth-child(2) { flex: 30; } .ratio-l span:nth-child(3) { flex: 10; white-space: nowrap; }
+  .principles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+  @media (max-width: 1023px) { .principles { grid-template-columns: 1fr; } }
+  .principles li { padding: 12px 16px 12px 0; border-bottom: 1px solid var(--line); font-size: 15px; color: var(--ink-muted); line-height: 1.45; }
+  .principles b { display: block; color: var(--ink); font-weight: 600; }
+
+  .pal { margin-bottom: var(--s-6); }
+  .pal-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: var(--s-3); }
+  .pal-h b { font-weight: 600; font-size: var(--fs-label); }
+  .pal-h span { font-size: 14.5px; color: var(--ink-muted); }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 12px; }
+  .sw { display: grid; gap: 4px; align-content: start; }
+  .chip-c { height: 64px; border-radius: var(--r-control); display: flex; align-items: flex-end; padding: 8px 10px; box-shadow: inset 0 0 0 1px rgba(14,26,43,.06); }
+  .chip-c.white { box-shadow: inset 0 0 0 1px var(--line); }
+  .chip-c span { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .chip-c.on-dark span { color: #fff; }
+  .sw-t { font-size: 13px; font-weight: 600; }
+  .sw-u { font-size: 12.5px; color: var(--ink-muted); line-height: 1.35; }
+  .sem { display: grid; gap: 8px; }
+  .sem-row { display: grid; grid-template-columns: 84px repeat(3, 110px) minmax(160px, auto) 1fr; gap: 10px; align-items: center; }
+  @media (max-width: 1023px) { .sem-row { grid-template-columns: 1fr 1fr; } .sem-u { display: none; } }
+  .sem-n { font-size: 13.5px; font-weight: 600; }
+  .sem-c { display: grid; height: 44px; padding: 5px 8px; border-radius: 8px; color: #fff; align-content: space-between; }
+  .sem-c.light { color: var(--ink); box-shadow: inset 0 0 0 1px rgba(14,26,43,.06); }
+  .sem-c .mono { font-size: 11.5px; font-weight: 600; }
+  .sem-c em { font-style: normal; font-size: 11px; opacity: .85; }
+  .sem-pill { justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 8px; border-radius: 999px; font-size: 13px; font-weight: 500; }
+  .sem-pill i { width: 7px; height: 7px; border-radius: 50%; }
+  .sem-u { font-size: 13.5px; color: var(--ink-muted); }
+  .dark-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 0; padding: 14px; border-radius: var(--r-card); background: #0B1220; }
+  .dk { display: grid; gap: 3px; padding: 6px; }
+  .dk-c { height: 36px; border-radius: 8px; box-shadow: inset 0 0 0 1px #26334D; }
+  .dk-t { font-size: 12px; color: #E9EEF5; font-weight: 600; }
+  .dk-h { font-size: 11.5px; color: #9AA8BC; }
+  .ctab { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .ctab td { padding: 6px 8px; border-top: 1px solid var(--line); }
+  .ctab tr:first-child td { border-top: 0; }
+  .res { display: inline-block; padding: 1px 8px; border-radius: 5px; font-size: 12.5px; font-weight: 700; }
+  .res.aaa { background: var(--success-soft); color: var(--success-text); }
+  .res.aa { background: var(--primary-50); color: var(--primary-800); }
+  .res.lim { background: var(--surface-2); color: var(--ink-muted); font-weight: 500; }
+  .note { margin-top: var(--s-3); font-size: 14.5px; color: var(--ink-muted); line-height: 1.55; max-width: var(--measure); }
+
+  .fonts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+  @media (max-width: 767px) { .fonts { grid-template-columns: 1fr; } }
+  .font-card { padding: var(--s-6); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); display: grid; gap: 6px; }
+  .font-big { font-size: 2.75rem; line-height: 1.1; letter-spacing: -0.02em; margin-top: 4px; }
+  .jak { font-family: var(--font-head); font-weight: 700; }
+  .int { font-family: var(--font-body); font-weight: 600; }
+  .font-glyphs { font-size: 1.375rem; color: var(--ink-muted); font-weight: 500; }
+  .font-why { font-size: 14.5px; color: var(--ink-muted); line-height: 1.5; margin-top: 6px; }
+
+  .specs { display: grid; grid-template-columns: 1fr; gap: var(--s-4); }
+  @media (min-width: 1800px) { .specs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .spec { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); overflow: hidden; }
+  .spec header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 12px 16px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+  .spec header b { font-weight: 600; font-size: 15.5px; }
+  .spec header span { font-size: 13.5px; color: var(--ink-muted); }
+  .spec ul { list-style: none; margin: 0; padding: 4px 16px 10px; }
+  .spec li { display: grid; grid-template-columns: 130px 1fr; gap: 12px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .spec li:last-child { border-bottom: 0; }
+  .sp-meta { display: grid; gap: 1px; font-size: 12px; color: var(--ink-muted); }
+  .sp-meta .mono { font-size: 12.5px; font-weight: 600; color: var(--primary-800); }
+  .sp-sample { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .shape .card { display: grid; gap: var(--s-3); align-content: start; }
+  .spaces { display: grid; gap: 4px; }
+  .spaces div { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--ink-muted); }
+  .spaces i { height: 8px; border-radius: 2px; background: var(--primary-500); }
+  .radii { display: grid; gap: 10px; }
+  .radii div { display: grid; grid-template-columns: 44px 40px 1fr; align-items: center; gap: 10px; font-size: 13.5px; color: var(--ink-muted); }
+  .radii i { width: 40px; height: 28px; background: var(--primary-50); border: 1.5px solid var(--primary-500); }
+  .radii b { color: var(--ink); font-size: 13px; }
+  .elev { display: grid; gap: 12px; }
+  .e { display: grid; gap: 2px; padding: 10px 12px; background: var(--surface); border-radius: 10px; font-size: 13.5px; }
+  .e b { font-weight: 600; font-size: 14px; }
+  .e span { color: var(--ink-muted); }
+  .e0 { border: 1px solid var(--line); }
+  .e1 { box-shadow: var(--e-1); border: 1px solid var(--line); }
+  .e2 { box-shadow: var(--e-2); }
+  .e3 { box-shadow: var(--e-3); }
+
+  .sheet { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
+  @media (max-width: 1023px) { .sheet { grid-template-columns: 1fr; } }
+  .cs { display: grid; gap: 12px; align-content: start; padding: var(--s-5); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
+  .cs-h { font-size: 12.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-muted); }
+  .cs-note { font-size: 13.5px; color: var(--ink-muted); line-height: 1.45; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .b { position: relative; display: inline-grid; place-items: center; height: 40px; padding: 0 16px; border-radius: 10px; font-size: 14.5px; font-weight: 600; }
+  .b-primary { background: var(--primary-600); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.12); }
+  .b-primary.hover { background: var(--primary-700); }
+  .b-primary.pressed { background: var(--primary-800); }
+  .b-primary.focus { box-shadow: 0 0 0 3px var(--primary-100), inset 0 1px 0 rgba(255,255,255,.12); outline: 2px solid var(--primary-600); outline-offset: 2px; }
+  .b-primary.disabled { background: var(--surface-2); color: var(--ink-faint); box-shadow: none; }
+  .b-primary.loading .ghost-label { visibility: hidden; }
+  .spin { position: absolute; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .b-secondary { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+  .b-ghost { color: var(--primary-600); }
+  .b-danger { background: var(--danger-text); color: #fff; }
+  .in-l { display: grid; gap: 5px; font-size: 13px; font-weight: 500; color: var(--ink-muted); }
+  .in { height: 40px; display: flex; align-items: center; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: 15px; font-weight: 400; color: var(--ink); background: var(--surface); }
+  .in.focus { border-color: var(--primary-600); box-shadow: 0 0 0 3px var(--primary-100); }
+  .in.error { border-color: var(--danger-text); }
+  .in-err { font-style: normal; font-size: 13px; color: var(--danger-text); font-weight: 500; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pills .pill { font-size: 13.5px; }
+  .stepper { display: grid; gap: 6px; font-size: 13.5px; color: var(--ink-muted); }
+  .st-bar { height: 4px; border-radius: 2px; background: var(--surface-2); }
+  .st-bar i { display: block; height: 100%; border-radius: 2px; background: var(--primary-600); }
+  .kpi { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; max-width: 220px; }
+  .kpi-l { font-size: 13px; color: var(--ink-muted); }
+  .kpi-v { font-size: 30px; line-height: 36px; font-weight: 600; }
+  .kpi-s { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-muted); }
+  .kpi-s i { width: 7px; height: 7px; border-radius: 50%; background: var(--warning-vivid); }
+  .cal { position: relative; display: grid; grid-template-columns: repeat(14, 1fr); grid-auto-rows: 34px; gap: 3px; padding-top: 6px; }
+  .cal-hs { position: absolute; left: calc(100% / 14 * 7); right: 0; top: 0; height: 100%; background: var(--sun-50); border-top: 2px solid var(--sun-500); border-radius: 4px 4px 0 0; }
+  .cal .d { position: relative; display: grid; place-items: center; font-size: 12.5px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink-muted); border-radius: 6px; }
+  .cal .d.today { box-shadow: inset 0 0 0 2px var(--primary-600); color: var(--primary-800); }
+  .blk { position: relative; grid-row: 2; height: 26px; align-self: center; display: flex; align-items: center; gap: 6px; padding: 0 8px; border-radius: 13px; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+  .blk.own { background: var(--violet-600); color: #fff; }
+  .blk.fr { background: var(--violet-300); color: var(--ink); }
+  .blk.gu { background: var(--stay-guest); color: var(--ink); }
+  .blk.gu i { width: 7px; height: 7px; border-radius: 50%; background: var(--ch-airbnb); }
+
+  .minis { display: grid; grid-template-columns: 1fr 1fr 2fr 1fr; gap: var(--s-4); align-items: end; }
+  @media (max-width: 1279px) { .minis { grid-template-columns: 1fr 1fr; } .mini.wide { grid-column: 1 / -1; } }
+  @media (max-width: 640px) { .minis { grid-template-columns: 1fr; } }
+  .mini { margin: 0; display: grid; gap: 8px; }
+  .mini figcaption { font-size: 13.5px; color: var(--ink-muted); font-weight: 500; }
+  .m-phone { position: relative; display: grid; gap: 8px; align-content: start; height: 360px; padding: 14px; border: 6px solid var(--ink); border-radius: 26px; background: var(--snow); font-size: 13px; overflow: hidden; }
+  .mp-top { display: flex; align-items: center; gap: 4px; font-weight: 600; font-size: 13.5px; }
+  .mp-prog { height: 3px; border-radius: 2px; background: var(--surface-2); }
+  .mp-prog i { display: block; height: 100%; background: var(--primary-600); border-radius: 2px; }
+  .mp-step { font-size: 11.5px; color: var(--ink-muted); }
+  .mp-h { font-family: var(--font-head); font-weight: 700; font-size: 17px; letter-spacing: -0.01em; line-height: 1.25; }
+  .mp-p { font-size: 13px; color: var(--ink-muted); line-height: 1.45; }
+  .mp-card { display: grid; gap: 1px; padding: 9px 11px; background: var(--surface); border-radius: 10px; box-shadow: var(--e-1); }
+  .mp-card b { font-size: 13px; font-weight: 600; }
+  .mp-card span { font-size: 12px; color: var(--ink-muted); }
+  .mp-add { display: flex; align-items: center; gap: 6px; color: var(--primary-600); font-weight: 600; font-size: 12.5px; }
+  .mp-btn { position: absolute; left: 14px; right: 14px; bottom: 14px; height: 40px; display: grid; place-items: center; border-radius: 10px; background: var(--primary-600); color: #fff; font-weight: 600; font-size: 13.5px; }
+  .m-phone.dark { background: #0B1220; color: #E9EEF5; border-color: #26334D; }
+  .dark .mp-photo { margin: -14px -14px 0; height: 96px; background: linear-gradient(180deg, #1A2540, #131C2E); }
+  .dark .mp-ok { margin-top: -30px; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #FF8A63; color: #0B1220; }
+  .dark .mp-p { color: #9AA8BC; }
+  .dark .mp-card { background: #131C2E; box-shadow: inset 0 0 0 1px #26334D; }
+  .dark .mp-card span { color: #9AA8BC; }
+  .dark .mp-btn { background: #5B9BFF; color: #0B1220; }
+  .m-owner { display: grid; gap: 10px; align-content: start; height: 360px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--snow); box-shadow: var(--e-1); }
+  .mo-h { display: flex; justify-content: space-between; align-items: baseline; }
+  .mo-h b { font-family: var(--font-head); font-size: 16px; font-weight: 700; }
+  .mo-h span { font-size: 12px; color: var(--ink-muted); }
+  .mo-q { display: grid; gap: 8px; padding: 10px; background: var(--surface); border-radius: 10px; box-shadow: var(--e-1); }
+  .mo-q div { display: grid; grid-template-columns: 1fr auto; gap: 3px; font-size: 12px; color: var(--ink-muted); }
+  .mo-q b { font-size: 15px; color: var(--ink); font-weight: 600; }
+  .mo-q i { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+  .mo-q s { display: block; height: 100%; background: var(--sun-500); }
+  .mo-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .mo-cal span { aspect-ratio: 1.15; border-radius: 4px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+  .mo-cal .own { background: var(--violet-600); box-shadow: none; }
+  .mo-cal .fr { background: var(--violet-300); box-shadow: none; }
+  .mo-cal .gu { background: var(--stay-guest); box-shadow: none; }
+  .mo-key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--ink-muted); }
+  .mo-key span { display: inline-flex; align-items: center; gap: 4px; }
+  .mo-key i { width: 9px; height: 9px; border-radius: 3px; }
+  .mo-key .own { background: var(--violet-600); } .mo-key .fr { background: var(--violet-300); } .mo-key .gu { background: var(--stay-guest); }
+  .m-bo { display: grid; grid-template-columns: 112px 1fr; height: 360px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); overflow: hidden; font-size: 12.5px; }
+  .mb-side { display: grid; align-content: start; gap: 2px; padding: 12px 8px; background: var(--surface-2); border-right: 1px solid var(--line); }
+  .mb-side b { font-family: var(--font-head); font-weight: 800; color: var(--primary-900); padding: 0 6px 10px; }
+  .mb-side span { padding: 6px; border-radius: 6px; color: var(--ink-muted); }
+  .mb-side span.on { background: var(--primary-50); color: var(--primary-800); font-weight: 600; }
+  .mb-main { display: grid; align-content: start; gap: 10px; padding: 14px; background: var(--snow); }
+  .mb-h { font-family: var(--font-head); font-size: 17px; font-weight: 700; }
+  .mb-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .mb-kpis div { position: relative; display: grid; gap: 2px; padding: 9px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+  .mb-kpis span { font-size: 11px; color: var(--ink-muted); line-height: 1.25; padding-right: 12px; }
+  .mb-kpis b { font-size: 22px; font-weight: 600; line-height: 1.1; }
+  .dot-d, .dot-w { position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; }
+  .dot-d { background: var(--danger-vivid); } .dot-w { background: var(--warning-vivid); }
+  .mb-t { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; }
+  .mb-t td { padding: 8px 10px; border-top: 1px solid var(--line); }
+  .mb-t tr:first-child td { border-top: 0; }
+  .mb-t .mono { font-size: 12px; }
+  .mb-t .pill { font-size: 11.5px; }
+
+  table.avd th { font-size: 14px; }
+  table.avd th :global(svg) { display: inline; vertical-align: -2px; margin-right: 4px; }
+  table.avd th:first-child { color: var(--danger-text); }
+  table.avd th:last-child { color: var(--success-text); }
+  table.avd td:first-child { color: var(--ink-muted); width: 44%; }
+  table.avd td:last-child { font-weight: 500; }
+  .senior { margin-top: var(--s-4); }
+  .perapp .card { display: grid; gap: 6px; }
+  .perapp b { font-family: var(--font-head); font-weight: 700; font-size: 1.0625rem; }
+  .perapp p { font-size: 15px; color: var(--ink-muted); line-height: 1.5; }
+</style>

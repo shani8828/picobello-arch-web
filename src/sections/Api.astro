@@ -1,0 +1,352 @@
+---
+// 05 Backend and API. Source: arch/05-backend-and-api.txt
+// (latency targets: arch/12 part C)
+import Takeaway from '../components/Takeaway.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+import Box from '../components/diagram/Box.astro';
+import Arrow from '../components/diagram/Arrow.astro';
+
+const pipeline = [
+  ['Request id', 'and logging'],
+  ['Security headers', 'CORS: our 3 app domains'],
+  ['Rate limit', 'per IP and token'],
+  ['Authentication', 'session cookie or stay token'],
+  ['Tenant + scope', 'which houses, units, stay'],
+  ['Validation', 'Zod'],
+  ['Permission check', 'see section 10'],
+  ['Handler', 'service → DB tx + outbox'],
+  ['Audit log', 'every write'],
+  ['Response', 'or problem+json'],
+];
+
+type Ep = [string, string, string];
+const groups: { key: string; name: string; auth: string; eps: Ep[] }[] = [
+  { key: 'auth', name: 'Auth', auth: 'owners and staff', eps: [
+    ['POST', '/auth/magic-link', 'request owner/staff login link'],
+    ['GET', '/auth/magic-link/verify', 'log in from email link'],
+    ['POST', '/auth/passkey/*', 'passkey register/login'],
+    ['POST', '/auth/2fa/*', 'staff 2FA'],
+    ['POST', '/auth/logout', ''],
+    ['GET', '/me', 'current user, roles, scope'],
+  ] },
+  { key: 'guest', name: 'Guest App', auth: 'stay token', eps: [
+    ['GET', '/guest/stay', 'stay overview + status'],
+    ['GET', '/guest/stay/info', 'arrival info, maps link, apartment info (cacheable)'],
+    ['POST', '/guest/stay/check-in', 'submit check-in'],
+    ['GET', '/guest/stay/costs', 'costs to pay (friends / extra persons)'],
+    ['POST', '/guest/stay/payments', 'create Stripe session → client secret'],
+    ['GET', '/guest/stay/guest-cards', 'cards per person'],
+    ['GET', '/guest/stay/access', 'badge status'],
+    ['POST', '/guest/stay/extensions/quote', 'price for extra nights (also holds the nights)'],
+    ['POST', '/guest/stay/extensions', 'confirm → payment session'],
+    ['POST', '/guest/stay/date-change/quote', 'availability + difference'],
+    ['POST', '/guest/stay/date-change', 'confirm → pay or refund'],
+    ['POST', '/guest/stay/requests', 'late check-in / check-out'],
+    ['GET', '/guest/stay/requests', 'status of requests'],
+  ] },
+  { key: 'owner', name: 'Owner Portal', auth: 'owner session, scope = own units', eps: [
+    ['GET', '/owner/units', 'my units'],
+    ['GET', '/owner/units/{id}/calendar?year=', 'occupancy'],
+    ['GET', '/owner/units/{id}/quota?year=', 'quota used / left'],
+    ['POST', '/owner/reservations/check', 'rule check + cost preview (no write)'],
+    ['POST', '/owner/reservations', 'create own use / friends'],
+    ['GET', '/owner/reservations', 'list'],
+    ['PATCH', '/owner/reservations/{id}', 'change dates / persons / who pays'],
+    ['POST', '/owner/reservations/{id}/cancel', 'cancel (fee preview first)'],
+    ['POST', '/owner/reservations/{id}/check-in', 'owner check-in (per-stay tourist tax)'],
+    ['GET', '/owner/reservations/{id}/guest-cards', ''],
+    ['GET', '/owner/account', 'balance + entries'],
+  ] },
+  { key: 'bo', name: 'Back Office', auth: 'staff session, scope = houses by role', eps: [
+    ['GET', '/houses, /units, /units/{id}', ''],
+    ['GET', '/stays?filters', 'list'],
+    ['GET', '/stays/{id}', 'detail + timeline'],
+    ['POST', '/stays/{id}/resend-invite', ''],
+    ['POST', '/stays/{id}/refunds', 'manual refund'],
+    ['GET', '/requests?status=open', 'late check-in/out requests'],
+    ['POST', '/requests/{id}/approve | /decline', ''],
+    ['GET', '/owners, /owners/{id}', ''],
+    ['POST', '/owners, PATCH /owners/{id}', ''],
+    ['POST', '/ownerships, PATCH /ownerships/{id}', ''],
+    ['GET', '/listings/{unitId}', 'full listing content'],
+    ['PATCH', '/listings/{unitId}', 'update fields (versioned)'],
+    ['POST', '/listings/{unitId}/photos/upload-url', 'signed upload URL'],
+    ['PATCH', '/listings/{unitId}/photos', 'order, captions, cover'],
+    ['POST', '/listings/{unitId}/push', 'push to Lodgify now'],
+    ['POST', '/listings/{unitId}/fields/{field}/channels/{channel}/confirm', '"entered manually"'],
+    ['GET', '/listings/missing', 'units x channels grid'],
+    ['GET', '/sync-rules, PATCH /sync-rules/{id}', 'channel sync matrix'],
+    ['GET', '/settings, POST /settings', 'settings sets (new version with valid_from, never edit old ones)'],
+    ['GET', '/ledger?filters, /owners/{id}/balance', ''],
+    ['GET', '/integrations', 'status per system'],
+    ['GET', '/integrations/{system}/inbox|outbox', 'events/jobs with errors'],
+    ['POST', '/integrations/jobs/{id}/retry', ''],
+    ['GET', '/audit?object=&user=&from=', ''],
+    ['POST', '/imports/archipex', 'upload → validation report'],
+    ['POST', '/imports/{id}/apply', ''],
+    ['GET', '/users, POST /users, PATCH /users/{id}', ''],
+  ] },
+  { key: 'hook', name: 'Webhooks', auth: 'no session; verified per provider', eps: [
+    ['POST', '/webhooks/lodgify/{secret}', 'secret in URL + re-fetch booking from Lodgify API'],
+    ['POST', '/webhooks/stripe', 'Stripe signature check'],
+  ] },
+  { key: 'internal', name: 'Internal', auth: 'Google OIDC token from Cloud Scheduler', eps: [
+    ['POST', '/internal/cron/lodgify-reconcile', 'nightly 02:00'],
+    ['POST', '/internal/cron/send-invites', 'every 15 min (3 days before arrival)'],
+    ['POST', '/internal/cron/expire-holds', 'every 5 min'],
+    ['POST', '/internal/cron/retention', 'nightly: delete ID data after legal period, lock ended stay links'],
+    ['POST', '/internal/cron/stripe-reconcile', 'nightly'],
+    ['GET', '/health, /ready', 'health checks'],
+  ] },
+];
+
+const queues: [string, string, string][] = [
+  ['lodgify.inbox', 'process stored webhook', '5x, backoff'],
+  ['lodgify.push', 'block / booking / change / listing push', '8x, backoff up to 6 h'],
+  ['feratel.register', 'send registration, get card', '8x'],
+  ['salto.access', 'create / change / revoke access', '8x'],
+  ['stripe.inbox', 'process payment event', '5x'],
+  ['email.send', 'send via Postmark', '5x'],
+  ['events.dispatch', 'run domain event handlers', '5x'],
+  ['photos.process', 'resize, create variants', '3x'],
+];
+
+const style: [string, string][] = [
+  ['Style', 'REST + JSON over HTTPS, base path /api/v1'],
+  ['URLs', 'plural nouns: /stays, /stays/{id}/extensions'],
+  ['Actions', 'sub-resources with POST: /stays/{id}/check-in'],
+  ['IDs', 'UUIDv7: time-sortable, not guessable'],
+  ['Money', 'integer Rappen + currency: {"amount": 18450, "currency": "CHF"}'],
+  ['Dates', 'ISO 8601 stay days ("2027-01-08"); timestamps UTC with offset; shown in Europe/Zurich'],
+  ['Pagination', 'cursor based: ?cursor=…&limit=50'],
+  ['Idempotency', 'every POST that creates money or outside effects accepts Idempotency-Key'],
+  ['Locking', 'updates send the row "version"; mismatch → 409 Conflict'],
+  ['Versioning', 'breaking changes → /api/v2 alongside /api/v1'],
+];
+
+const backend: [string, string, string][] = [
+  ['Runtime', 'Node.js 22 LTS', 'Stable, long support, every library works'],
+  ['HTTP framework', 'Hono', 'Small, fast, typed; built-in OpenAPI support; runs on Node, Workers, Bun (no lock-in)'],
+  ['API contract', 'OpenAPI 3.1 via @hono/zod-openapi', 'Schemas written once in Zod → validation + docs + typed frontend client'],
+  ['Validation', 'Zod', 'Same schemas as frontend'],
+  ['ORM / SQL', 'Drizzle ORM', 'Typed SQL, plain SQL migrations, no magic'],
+  ['Jobs / queue', 'pg-boss', 'Queue inside Postgres: jobs created in the same transaction as the data (no lost or ghost jobs)'],
+  ['Auth (owners, staff)', 'Better Auth', 'Magic links, passkeys, 2FA, sessions; open source, data stays in our DB'],
+  ['Auth (guests)', 'Own signed stay tokens', 'One link per stay, no account'],
+  ['Logging', 'pino (JSON)', 'Structured logs for Cloud Logging'],
+  ['Errors', 'Sentry (EU)', 'Stack traces + context'],
+  ['PDF (Phase 2)', 'Playwright HTML → PDF in worker', 'Statements look like the web page'],
+  ['Images', 'sharp', 'Resize listing photos'],
+  ['Tests', 'Vitest + Testcontainers', 'Real Postgres in tests'],
+  ['API docs', 'Scalar (from OpenAPI)', 'Interactive docs page'],
+];
+
+const backoff = ['30 s', '2 min', '10 min', '30 min', '1 h', '3 h', '6 h'];
+---
+<Takeaway>REST + OpenAPI works for our own apps and for outside callers (webhooks, future partners, PicobelloAI), is easy to cache and debug, and still gives fully typed clients through the generated api-client.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">Request pipeline · every request</h3>
+  <ol class="pipe">
+    {pipeline.map(([t, s], i) => (
+      <li class={i === 7 ? 'key' : ''}><span class="n tnum">{i + 1}</span><span class="t">{t}</span><span class="s">{s}</span></li>
+    ))}
+  </ol>
+</div>
+
+<div class="block">
+  <h3 class="block-title">API and worker: fast lane, slow lane</h3>
+  <Figure label="Fast lane: user request through the API and one database transaction to the response. Slow lane: the worker takes the job and calls the outside system with retries and backoff; after the last try the job is failed, shown on the Integrations page with an alert and a retry button." minWidth={960}>
+    <svg viewBox="0 0 1200 470" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="1180" height="170" rx="14" class="grp" />
+      <text x="30" y="38" class="grp-label">Fast lane · API · user requests</text>
+      <Box x={30} y={66} w={190} h={78} title="User" sub={['Guest App, Owner', 'Portal, Back Office']} icon="smartphone" variant="ext" />
+      <Box x={280} y={66} w={250} h={78} title="API" sub={['pipeline steps 1-10', 'never calls outside systems']} icon="server" variant="app" />
+      <Box x={590} y={66} w={260} h={78} title="One DB transaction" sub={['change + outbox job,', 'saved together or not at all']} icon="database" />
+      <Box x={910} y={66} w={260} h={78} title="Response" sub={['p95 < 300 ms for reads,', '< 800 ms for writes']} icon="check" variant="ext" />
+      <Arrow d="M220 105 H280" />
+      <Arrow d="M530 105 H590" />
+      <Arrow d="M850 105 H910" />
+
+      <rect x="10" y="206" width="1180" height="254" rx="14" class="grp-plain" />
+      <text x="30" y="234" class="grp-label muted">Slow lane · worker · outside calls with retries</text>
+      <Box x={30} y={262} w={190} h={78} title="Job queue" sub={['pg-boss, inside', 'Postgres']} icon="layers" />
+      <Box x={280} y={262} w={200} h={78} title="Worker" sub={['takes the job,', 'idempotency key']} icon="workflow" variant="app" />
+      <Box x={540} y={262} w={230} h={78} title="Outside system" sub={['Lodgify, Stripe, Feratel,', 'SALTO, Postmark']} icon="globe" variant="ext" />
+      <Arrow d="M220 301 H280" />
+      <Arrow d="M480 301 H540" />
+      <Arrow d="M720 144 V186 H125 V262" dashed={true} label="job saved with the data" lx={430} ly={180} />
+
+      <!-- success -->
+      <path d="M770 274 H822" fill="none" stroke="var(--success-vivid)" stroke-width="1.75" />
+      <circle cx="830" cy="274" r="8" fill="var(--success-soft)" stroke="var(--success-vivid)" stroke-width="1.5" />
+      <path d="m826.5 274 2.5 2.5 4.5-5" fill="none" stroke="var(--success-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+      <text x="846" y="279" class="ok-label">success → marked done</text>
+
+      <!-- retries -->
+      <path d="M770 322 H1160" fill="none" stroke="var(--warning-vivid)" stroke-width="1.75" stroke-dasharray="2 5" stroke-linecap="round" />
+      <text x="790" y="306" class="retry-label">failure → retry after</text>
+      {backoff.map((b, i) => (
+        <g>
+          <circle cx={800 + i * 56} cy="322" r="5" fill="var(--surface)" stroke="var(--warning-vivid)" stroke-width="1.75" />
+          <text x={800 + i * 56} y="346" text-anchor="middle" class="tick">{b}</text>
+        </g>
+      ))}
+      <Arrow d="M1136 330 V372" muted={true} />
+      <g class="failed">
+        <rect x="760" y="372" width="410" height="72" rx="10" fill="var(--danger-soft)" stroke="none" />
+        <circle cx="780" cy="396" r="5" fill="var(--danger-vivid)" />
+        <text x="794" y="401" class="f-title">After the last try: job "failed"</text>
+        <text x="780" y="428" class="f-sub">Integrations page + alert email; retry re-queues it</text>
+      </g>
+      <text x="30" y="386" class="svg-note">If Feratel is slow, users don't notice:</text>
+      <text x="30" y="406" class="svg-note">the API has already answered.</text>
+    </svg>
+  </Figure>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 api-split">
+    <div>
+      <h3 class="block-title">API style · decided</h3>
+      <dl class="style">
+        {style.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}
+      </dl>
+    </div>
+    <div class="code-col">
+      <h3 class="block-title">Errors: RFC 9457 problem+json</h3>
+      <pre class="code">{`{ `}<span class="k">"type"</span>{`: "https://picobello.ch/errors/rule-violation",
+  `}<span class="k">"title"</span>{`: "Own use not allowed",
+  `}<span class="k">"status"</span>{`: 422,
+  `}<span class="k">"code"</span>{`: "OWN_USE_HIGH_SEASON_WEEKS",
+  `}<span class="k">"detail"</span>{`: "Max 3 weeks per high season, already 3 used",
+  `}<span class="k">"params"</span>{`: { "used": 3, "max": 3 } }`}</pre>
+      <p class="code-note">"code" is stable and translated in the frontend.</p>
+
+      <h3 class="block-title example-title">Example call</h3>
+      <pre class="code"><span class="m">POST</span>{` /api/v1/guest/stay/extensions/quote
+`}<span class="c">Authorization: Bearer &lt;stay token&gt;</span>{`
+{ "newDeparture": "2027-01-12" }
+
+`}<span class="ok">200 OK</span>{`
+{ "quoteId": "01J...",
+  "nights": [ "2027-01-10", "2027-01-11" ],
+  "lines": [
+    { "type": "lodging",     "amount": 36000 },
+    { "type": "tourist_tax", "amount": 2000 } ],
+  "total": { "amount": 38000, "currency": "CHF" },
+  "heldUntil": "2027-01-08T14:12:00Z" }
+
+`}<span class="err">409 Conflict</span>{`  `}<span class="c">not available</span>{`
+{ "code": "NIGHTS_NOT_AVAILABLE", "params": { "firstFree": null } }`}</pre>
+    </div>
+  </div>
+  <p class="why-rest"><strong>Why REST and not GraphQL or tRPC:</strong> REST + OpenAPI works for our own apps and for outside callers, is easy to cache and debug, and still gives fully typed clients.</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Endpoints · Phase 1</h3>
+  <p class="block-sub">Grouped by caller. All under /api/v1. Open a group to see its endpoints.</p>
+  <div class="ep-groups">
+    {groups.map((g, gi) => (
+      <details class={`disclose ep ep-${g.key}`} open={gi === 1 ? true : undefined}>
+        <summary>
+          <span class="ep-mark" aria-hidden="true"></span>{g.name}
+          <span class="count">{g.eps.length} endpoints · auth: {g.auth}</span>
+          <Icon name="chevron-right" size={18} class="chev" />
+        </summary>
+        <div class="disclose-body">
+          <table class="ep-table">
+            <tbody>
+              {g.eps.map(([m, p, d]) => (
+                <tr><td class="m"><span class={`verb verb-${m.toLowerCase()}`}>{m}</span></td><td class="p mono">{p}</td><td class="d">{d}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    ))}
+  </div>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 api-split">
+    <div>
+      <h3 class="block-title">Background jobs · pg-boss queues</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Queue</th><th>Job does</th><th>Retry</th></tr></thead>
+          <tbody>{queues.map(([q, d, r]) => <tr><td><code>{q}</code></td><td>{d}</td><td class="nowrap">{r}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h3 class="block-title">Backend stack · decided</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Purpose</th><th>Choice</th></tr></thead>
+          <tbody>{backend.map(([p, c, w]) => <tr title={w}><td class="muted">{p}</td><td><strong>{c}</strong><span class="why">{w}</span></td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .pipe { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--e-1); overflow: hidden; }
+  .pipe li { position: relative; display: grid; align-content: start; gap: 4px; padding: 14px 12px 16px; border-left: 1px solid var(--line); }
+  .pipe li:first-child { border-left: 0; }
+  .pipe li + li::before { content: ""; position: absolute; left: -6px; top: 20px; width: 10px; height: 10px; background: var(--surface); border-top: 1.5px solid var(--primary-600); border-right: 1.5px solid var(--primary-600); transform: rotate(45deg); }
+  .pipe .n { font-size: var(--fs-caption); font-weight: 600; color: var(--primary-600); }
+  .pipe .t { font-size: 15px; font-weight: 600; line-height: 1.3; }
+  .pipe .s { font-size: 13px; color: var(--ink-muted); line-height: 1.35; }
+  .pipe li.key { background: var(--primary-50); }
+  .pipe li.key + li::before { background: var(--surface); }
+  @media (max-width: 1599px) { .pipe { grid-template-columns: repeat(5, minmax(0, 1fr)); } .pipe li:nth-child(n+6) { border-top: 1px solid var(--line); } .pipe li:nth-child(6) { border-left: 0; } .pipe li:nth-child(6)::before { display: none; } }
+  @media (max-width: 640px) { .pipe { grid-template-columns: 1fr 1fr; } .pipe li { border-left: 0; border-top: 1px solid var(--line); } .pipe li::before { display: none; } .pipe li:nth-child(even) { border-left: 1px solid var(--line); } .pipe li:nth-child(-n+2) { border-top: 0; } }
+
+  .ok-label { font-size: 15px; font-weight: 500; fill: var(--success-text); }
+  .retry-label { font-size: 15px; font-weight: 500; fill: var(--warning-text); }
+  .tick { font-size: 14px; fill: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .f-title { font-size: 16px; font-weight: 600; fill: var(--danger-text); }
+  .f-sub { font-size: 15px; fill: var(--ink-muted); }
+
+  .api-split { gap: var(--s-8); align-items: start; }
+  .style { margin: 0; display: grid; border-top: 1px solid var(--line); }
+  .style div { display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-label); }
+  .style dt { color: var(--ink-muted); font-weight: 500; }
+  .style dd { margin: 0; }
+  .code-col .code { font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .code .m { color: var(--primary-700); font-weight: 600; }
+  .code .ok { color: var(--success-text); font-weight: 600; }
+  .code .err { color: var(--danger-text); font-weight: 600; }
+  .code-note { margin-top: 8px; font-size: var(--fs-ui); color: var(--ink-muted); }
+  .example-title { margin-top: var(--s-8); }
+  .why-rest { margin-top: var(--s-6); max-width: var(--measure); font-size: var(--fs-label); color: var(--ink-muted); }
+  .why-rest strong { color: var(--ink); font-weight: 600; }
+
+  /* Endpoint groups: one colour per caller (supporting vivids = data, not status) */
+  .ep { --g: var(--ink-faint); }
+  .ep-guest { --g: var(--glacier-500); }
+  .ep-owner { --g: var(--violet-600); }
+  .ep-bo { --g: var(--primary-600); }
+  .ep-hook { --g: var(--sun-500); }
+  .ep-internal { --g: var(--ink-muted); }
+  .ep-mark { width: 4px; height: 20px; border-radius: 2px; background: var(--g); }
+  .ep-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .ep-table td { padding: 7px 10px; border-top: 1px solid var(--line); vertical-align: baseline; }
+  .ep-table tr:first-child td { border-top: 0; }
+  .ep-table .m { width: 72px; padding-left: 0; }
+  .ep-table .p { font-size: 14px; color: var(--ink); word-break: break-word; }
+  .ep-table .d { color: var(--ink-muted); }
+  .verb { display: inline-block; min-width: 54px; text-align: center; padding: 1px 6px; border-radius: 5px; font: 600 12px/1.6 var(--font-mono); background: var(--surface-2); color: var(--ink-muted); }
+  .verb-post { background: var(--primary-50); color: var(--primary-800); }
+  .verb-patch { background: var(--violet-50); color: var(--violet-600); }
+  @media (max-width: 767px) { .ep-table .d { display: none; } }
+
+  td.nowrap { white-space: nowrap; }
+  td.muted { color: var(--ink-muted); }
+  td code { font-size: 14px; color: var(--primary-800); }
+  .why { display: block; font-size: 14px; color: var(--ink-muted); line-height: 1.45; margin-top: 2px; }
+</style>

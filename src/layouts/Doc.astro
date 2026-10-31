@@ -1,0 +1,50 @@
+---
+import '@fontsource-variable/inter/wght.css';
+import '@fontsource-variable/plus-jakarta-sans/wght.css';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/components.css';
+import '../styles/present.css';
+import Nav from '../components/Nav.astro';
+import Icon from '../components/Icon.astro';
+import Defs from '../components/diagram/Defs.astro';
+
+interface Props { title: string; description: string }
+const { title, description } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#F7F9FC" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to content</a>
+    <Defs />
+    <div class="shell">
+      <Nav />
+      <main class="main" id="content">
+        <div class="main-inner">
+          <slot />
+        </div>
+      </main>
+    </div>
+
+    <div class="hud" role="toolbar" aria-label="Presentation controls" hidden>
+      <button type="button" class="hud-btn" data-step="-1" aria-label="Previous section"><Icon name="chevron-left" size={20} /></button>
+      <div class="hud-pos" aria-live="polite"><span class="hud-count tnum" data-hud-count></span><span class="hud-title" data-hud-title></span></div>
+      <button type="button" class="hud-btn" data-step="1" aria-label="Next section"><Icon name="chevron-right" size={20} /></button>
+      <span class="hud-sep" aria-hidden="true"></span>
+      <span class="hud-keys" aria-hidden="true"><kbd>←</kbd><kbd>→</kbd> sections <kbd>↑</kbd><kbd>↓</kbd> scroll</span>
+      <button type="button" class="hud-exit" data-present-toggle>Exit <kbd>Esc</kbd></button>
+      <div class="hud-progress" aria-hidden="true"><span data-hud-bar></span></div>
+    </div>
+
+    <script src="../scripts/doc.ts"></script>
+  </body>
+</html>

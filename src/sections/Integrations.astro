@@ -1,0 +1,311 @@
+---
+// 08 Integrations with outside systems. Source: arch/08-integrations.txt
+import Takeaway from '../components/Takeaway.astro';
+import Pill from '../components/Pill.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+import Sequence from '../components/diagram/Sequence.astro';
+
+interface Card {
+  name: string; role: string; icon: string;
+  inn?: string; out?: string; trigger: string; auth: string; fallback: string;
+  verify?: string[]; open?: string[];
+}
+const cards: Card[] = [
+  { name: 'Lodgify', icon: 'calendar-range', role: 'Master for bookings, availability, prices; channel manager',
+    inn: 'New, changed, cancelled bookings with guest data and amounts; availability and rate quotes',
+    out: 'Own-use blocks, friends bookings with contact, date changes, cancellations, listing content where the API allows',
+    trigger: 'Webhook immediately; nightly reconciliation 02:00 (arrival −90 to +400 days); own-use block in Lodgify < 5 min',
+    auth: 'X-ApiKey header; webhook URL with a long random secret, booking always re-fetched by id',
+    fallback: 'Outbox retries, owner sees "confirmed, syncing", alert after retries; missed webhooks caught nightly; concurrency 2 per key, backoff on 429',
+    verify: ['webhook path and payload', 'whether webhooks are signed', 'writable fields', 'rate limits'] },
+  { name: 'Stripe', icon: 'credit-card', role: 'Guest payments in our platform and refunds; Picobello\'s existing account',
+    inn: 'Payment succeeded, failed, expired, refunded; disputes (alert to back office)',
+    out: 'Checkout Sessions (CHF, our line items, metadata: payment request, stay, house, unit, purpose); refunds',
+    trigger: 'Guest pays in Stripe Embedded Checkout; every create call with an Idempotency-Key',
+    auth: 'Restricted secret key (sessions, intents, refunds, events) in Secret Manager; webhook signature check',
+    fallback: 'Nightly: Stripe balance transactions vs ledger, differences to a reconciliation list',
+    verify: ['TWINT activation on the account', 'card authorisation expiry for deposits'] },
+  { name: 'Feratel Deskline', icon: 'landmark', role: 'Official guest registration, tourist tax, guest card (Simmental Card); run by Lenk-Simmental Tourismus',
+    out: 'Per stay after check-in: dates, unit/address, each person with name, birth date, nationality, tax category; updates and cancellations',
+    inn: 'Registration id; per person: card number, QR / barcode payload, validity, download link or wallet pass',
+    trigger: 'CheckInCompleted, StayChanged, StayCancelled',
+    auth: 'Deskline 3.0 "VT PMS Web Services", likely SOAP/XML; company no, municipality codes, credentials from LST',
+    fallback: 'Retry with backoff; then staff registers in Deskline and marks it "done manually"',
+    verify: ['everything in this section'], open: ['wallet format (fer-04)'] },
+  { name: 'SALTO KS', icon: 'key-round', role: 'Time-limited badge access; badge collected at the SALTO dispenser; via Immer AG',
+    out: 'Person (external id = our person id), doors (unit + entrance + ski room), arrival 16:00 to departure 10:00; change; revoke',
+    inn: 'Confirmation id (salto_access_ref); daily access events for support',
+    trigger: 'After check-in, or at reservation for own use with yearly-flat tourist tax',
+    auth: 'SALTO KS Connect API, REST + JSON; OAuth 2.0 client credentials from the local business unit (Immer AG)',
+    fallback: 'Retry with backoff; failed grants visible on the Integrations page',
+    verify: ['endpoints for users, access groups, time schedules'], open: ['dispenser identification, failure, night support (OP-13)'] },
+  { name: 'Postmark', icon: 'mail', role: 'Transactional email, templates rendered by us in DE / FR / EN',
+    out: 'Guest invites, owner magic links, confirmations, reminders, alerts',
+    inn: 'Delivery and bounce webhooks → messages.status',
+    trigger: 'Domain events via the messaging module',
+    auth: 'REST API with server token; domain picobello.ch with SPF, DKIM, DMARC',
+    fallback: 'email.send retries 5x; an EU provider can replace it behind the same interface' },
+  { name: 'Google Maps', icon: 'map-pin', role: 'Directions for guests. No API, no key, no cost',
+    out: 'A link built from the stored latitude / longitude (search or directions URL)',
+    trigger: 'Shown on Guest App home, arrival info and the invite email',
+    auth: 'None', fallback: 'Opens the Maps app on phones, the browser on desktop' },
+  { name: 'Archipex', icon: 'archive', role: 'Old management system; one-time import',
+    inn: 'Owners, addresses, units with STWE numbers and value shares, ownerships, guests with consent',
+    trigger: 'Upload in Back Office → validation report → apply; trial early December, final at cutoff 31.12.2026',
+    auth: 'CSV / Excel export', fallback: 'Validation report lists missing fields, duplicates, unknown units before anything is applied',
+    open: ['format with Archipex (OP-05)'] },
+];
+
+const mapping: [string, string][] = [
+  ['booking.id', 'stays.lodgify_booking_id'],
+  ['booking.property_id', 'units.lodgify_property_id → unit_id'],
+  ['booking.arrival / departure', 'stays.arrival / stays.departure'],
+  ['booking.status', 'stays.status: Booked → booked · Declined/Cancelled → cancelled · Tentative/Open → ignored until booked'],
+  ['booking.source', 'stays.channel'],
+  ['booking.guest.name / email / phone', 'people.first_name, last_name / email / phone'],
+  ['booking.language', 'stays.language'],
+  ['booking.people / adults', 'stays.adults'],
+  ['booking.children', 'stays.children_ages (if ages missing: asked in check-in)'],
+  ['booking.amounts / quote', 'stays.amounts + ledger'],
+  ['booking.updated_at', 'part of the idempotency key'],
+];
+
+type Cell = 'auto' | 'partly' | 'manual' | 'unknown';
+const matrix: [string, Cell[]][] = [
+  ['Photos', ['auto', 'auto', 'auto', 'auto']],
+  ['Title / description', ['auto', 'partly', 'auto', 'auto']],
+  ['Amenities', ['auto', 'auto', 'partly', 'auto']],
+  ['House rules', ['auto', 'auto', 'manual', 'auto']],
+  ['Payment / cancel policy', ['auto', 'auto', 'manual', 'unknown']],
+];
+const cellText: Record<Cell, string> = { auto: 'auto', partly: 'partly', manual: 'manual', unknown: '?' };
+const cellIcon: Record<Cell, string> = { auto: 'check', partly: 'circle-dashed', manual: 'pencil', unknown: 'circle-help' };
+
+const p2: [string, string][] = [
+  ['WhatsApp', 'Meta WhatsApp Cloud API: templates outbound, 24 h session for replies; second channel in messaging. Direct Meta vs Lodgify inbox decided in April.'],
+  ['PicobelloAI', 'REST both ways: cleaning orders on StayCreated / Changed / Cancelled; done + time + photos and monthly costs back.'],
+  ['Bank', 'ISO 20022 camt.053 (daily) / camt.054 (notifications) as file upload or EBICS; matched to the ledger.'],
+  ['Bexio', 'Bexio REST API (OAuth 2.0): manual journal entries and documents per money circle, monthly.'],
+  ['DocuSign', 'eSignature REST API: envelope for approvals above CHF 500, Connect webhook when signed.'],
+];
+---
+<Takeaway>Every webhook is stored before it is processed and every outgoing call is a retried job, so a slow or failing vendor never loses data and never blocks a user.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">One pattern for all integrations · decided</h3>
+  <div class="pattern">
+    <article><span class="pn">Port + adapter</span><p>Each system is an interface with a real (HTTP) and a fake (in-memory) implementation. Tests, local dev and demos use the fake.</p></article>
+    <article><span class="pn">Inbox</span><p>Verify, store the raw payload with an idempotency key, answer 200 at once; the worker processes it. Lodgify bookings are always re-fetched.</p></article>
+    <article><span class="pn">Outbox</span><p>Change + job in one transaction; the worker calls out with backoff 30 s … 6 h; then "failed", alert and retry button.</p></article>
+    <article><span class="pn">Reconciliation</span><p>Nightly jobs compare our data with the master (Lodgify bookings, Stripe payments) and fix or flag differences.</p></article>
+    <article><span class="pn">Status + secrets</span><p>Per system: last success, last error, pending, failed, retry. Keys in Secret Manager, one per environment.</p></article>
+  </div>
+  <p class="decided">Picobello provides all API keys and access when needed (decided 29 Oct). <Pill kind="verify" /> marks items taken from third-party descriptions or assumptions, to check in vendor docs once we have access.</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Inbox and outbox · how a Lodgify change travels</h3>
+  <Figure label="Sequence: Lodgify webhook stored by the API, processed by the worker, outside calls with retry" minWidth={900}>
+    <Sequence label="Inbox outbox"
+      parts={[
+        { id: 'L', label: 'Lodgify', ext: true },
+        { id: 'A', label: 'API' },
+        { id: 'D', label: 'Database', sub: 'inbox / outbox' },
+        { id: 'W', label: 'Worker' },
+        { id: 'X', label: 'SALTO / Feratel', ext: true },
+      ]}
+      steps={[
+        { from: 'L', to: 'A', label: 'webhook booking_change' },
+        { from: 'A', to: 'D', label: 'store raw event (idempotent)' },
+        { from: 'A', to: 'L', label: '200 OK', reply: true },
+        { from: 'W', to: 'D', label: 'take event' },
+        { from: 'W', to: 'L', label: 'GET booking (fresh data)' },
+        { from: 'W', to: 'D', label: 'update stay + enqueue jobs (one tx)' },
+        { from: 'W', to: 'X', label: 'call API' },
+        { from: 'X', to: 'W', label: 'ok / error → retry', reply: true },
+      ]} />
+  </Figure>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Guest check-in → guest card → badge</h3>
+  <Figure label="Sequence: guest check-in, Feratel registration and guest cards, SALTO access, notification" minWidth={980}>
+    <Sequence label="Check-in"
+      parts={[
+        { id: 'G', label: 'Guest App' },
+        { id: 'A', label: 'API' },
+        { id: 'D', label: 'Database' },
+        { id: 'W', label: 'Worker' },
+        { id: 'F', label: 'Feratel', ext: true },
+        { id: 'S', label: 'SALTO', ext: true },
+        { id: 'P', label: 'Postmark', ext: true },
+      ]}
+      steps={[
+        { from: 'G', to: 'A', label: 'POST /guest/stay/check-in' },
+        { from: 'A', to: 'D', label: 'check-in + CheckInCompleted (one tx)' },
+        { from: 'A', to: 'G', label: 'checked in', reply: true },
+        { from: 'W', to: 'D', label: 'take CheckInCompleted' },
+        { from: 'W', to: 'F', label: 'registration, all persons' },
+        { from: 'F', to: 'W', label: 'guest card per person', reply: true },
+        { from: 'W', to: 'D', label: 'cards saved · GuestCardIssued' },
+        { from: 'W', to: 'S', label: 'grant: doors, 16:00 → 10:00' },
+        { from: 'S', to: 'W', label: 'salto_access_ref', reply: true },
+        { from: 'W', to: 'D', label: 'AccessGranted · access_ready' },
+        { from: 'W', to: 'P', label: 'notify guest' },
+        { note: ['G', 'P'], label: 'Guest card < 10 min after check-in when Feratel is up (quality target, section 12)', tone: 'success' },
+      ]} />
+  </Figure>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Extension: quote → pay → apply everywhere</h3>
+  <Figure label="Sequence: guest extension with night hold, Stripe payment, webhook, then Lodgify, SALTO and Feratel updates" minWidth={1040}>
+    <Sequence label="Extension"
+      parts={[
+        { id: 'G', label: 'Guest App' },
+        { id: 'A', label: 'API' },
+        { id: 'D', label: 'Database' },
+        { id: 'T', label: 'Stripe', ext: true },
+        { id: 'W', label: 'Worker' },
+        { id: 'L', label: 'Lodgify', ext: true },
+        { id: 'S', label: 'SALTO', ext: true },
+        { id: 'F', label: 'Feratel', ext: true },
+      ]}
+      steps={[
+        { from: 'G', to: 'A', label: 'POST /extensions/quote' },
+        { from: 'A', to: 'L', label: 'live availability + rate' },
+        { from: 'A', to: 'D', label: 'night holds, 10 min' },
+        { from: 'A', to: 'G', label: 'quote + heldUntil', reply: true },
+        { from: 'G', to: 'A', label: 'POST /extensions (confirm)' },
+        { from: 'A', to: 'T', label: 'Checkout Session' },
+        { from: 'G', to: 'T', label: 'pays (embedded)' },
+        { from: 'T', to: 'A', label: 'webhook: session completed', reply: true },
+        { from: 'A', to: 'D', label: 'PaymentSucceeded + jobs' },
+        { from: 'W', to: 'L', label: 'update booking / linked booking' },
+        { from: 'W', to: 'S', label: 'extend access' },
+        { from: 'W', to: 'F', label: 'update registration' },
+        { note: ['G', 'F'], label: 'All applied → confirmed in the app. After retries: apply_failed → refund offered + back office alert', tone: 'success' },
+      ]} />
+  </Figure>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Each connection</h3>
+  <div class="icards">
+    {cards.map((c) => (
+      <article class="icard">
+        <header>
+          <span class="ic-icon"><Icon name={c.icon} size={22} /></span>
+          <div><h4>{c.name}</h4><p class="ic-role">{c.role}</p></div>
+        </header>
+        <dl>
+          {c.inn && <div><dt><span class="dir in"><Icon name="arrow-down-left" size={14} /></span>To us</dt><dd>{c.inn}</dd></div>}
+          {c.out && <div><dt><span class="dir out"><Icon name="arrow-up-right" size={14} /></span>From us</dt><dd>{c.out}</dd></div>}
+          <div><dt>Trigger</dt><dd>{c.trigger}</dd></div>
+          <div><dt>Auth</dt><dd>{c.auth}</dd></div>
+          <div><dt>Fallback</dt><dd>{c.fallback}</dd></div>
+        </dl>
+        {(c.verify || c.open) && (
+          <footer>
+            {c.verify?.map((v) => <Pill kind="verify" text={`Verify: ${v}`} />)}
+            {c.open?.map((v) => <Pill kind="open" text={`Open: ${v}`} />)}
+          </footer>
+        )}
+      </article>
+    ))}
+  </div>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 int-split">
+    <div>
+      <h3 class="block-title">Lodgify → stays field mapping <Pill kind="verify" text="Verify exact names" /></h3>
+      <div class="table-wrap">
+        <table class="data map">
+          <thead><tr><th>Lodgify</th><th>Our data</th></tr></thead>
+          <tbody>{mapping.map(([a, b]) => <tr><td class="mono">{a}</td><td>{b}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h3 class="block-title">Listing sync matrix</h3>
+      <p class="block-sub">Decided (Seva, 29 Oct): the platform is the single source of truth for listing content. Example values until Picobello fills in the real ones.</p>
+      <div class="table-wrap">
+        <table class="data matrix">
+          <thead><tr><th>Field</th><th>Website</th><th>Booking</th><th>Airbnb</th><th>Vrbo</th></tr></thead>
+          <tbody>
+            {matrix.map(([f, cells]) => (
+              <tr><td>{f}</td>{cells.map((c) => <td><span class={`mx mx-${c}`}><Icon name={cellIcon[c]} size={14} />{cellText[c]}</span></td>)}</tr>
+            ))}
+            <tr><td>Prices</td><td colspan="4" class="prices">via PriceLabs → Lodgify, not edited here</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <dl class="modes">
+        <div><dt><span class="mx mx-auto"><Icon name="check" size={14} />auto</span></dt><dd>auto_api: we push to Lodgify, Lodgify passes it on</dd></div>
+        <div><dt><span class="mx mx-partly"><Icon name="circle-dashed" size={14} />partly</span></dt><dd>auto_via_lodgify: the channel takes it only partly</dd></div>
+        <div><dt><span class="mx mx-manual"><Icon name="pencil" size={14} />manual</span></dt><dd>staff type it in Lodgify / the channel, then tick "entered"</dd></div>
+        <div><dt><span class="mx mx-unknown"><Icon name="circle-help" size={14} />?</span></dt><dd>not known yet (not_supported if the channel has no such field)</dd></div>
+      </dl>
+      <p class="muted-p">When the Lodgify API supports more fields, only the rule's mode changes from manual to auto_api; no code change in the screens.</p>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Phase 2 integrations · designed now</h3>
+  <dl class="p2list">{p2.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+</div>
+
+<style>
+  .pattern { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--e-1); overflow: hidden; }
+  .pattern article { padding: var(--s-4) var(--s-5) var(--s-5); border-left: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
+  .pattern article:first-child { border-left: 0; }
+  .pn { font-weight: 600; font-size: var(--fs-label); color: var(--primary-800); }
+  .pattern p { font-size: 14.5px; color: var(--ink-muted); line-height: 1.5; }
+  @media (max-width: 1279px) { .pattern { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pattern article { border-left: 0; border-top: 1px solid var(--line); } .pattern article:nth-child(even) { border-left: 1px solid var(--line); } .pattern article:nth-child(-n+2) { border-top: 0; } }
+  @media (max-width: 640px) { .pattern { grid-template-columns: 1fr; } .pattern article { border-left: 0 !important; border-top: 1px solid var(--line) !important; } .pattern article:first-child { border-top: 0 !important; } }
+  .decided { margin-top: var(--s-4); font-size: var(--fs-ui); color: var(--ink-muted); max-width: var(--measure); }
+  .decided :global(.pill) { font-size: 12.5px; }
+
+  .icards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
+  @media (max-width: 1023px) { .icards { grid-template-columns: 1fr; } }
+  .icard { display: grid; grid-template-rows: auto 1fr auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--e-1); }
+  .icard header { display: flex; gap: var(--s-3); padding: var(--s-5) var(--s-5) var(--s-3); }
+  .ic-icon { color: var(--primary-600); padding-top: 3px; }
+  .icard h4 { font-size: 1.125rem; font-weight: 700; }
+  .ic-role { font-size: 14.5px; color: var(--ink-muted); line-height: 1.45; margin-top: 2px; }
+  .icard dl { margin: 0; padding: 0 var(--s-5) var(--s-4); display: grid; }
+  .icard dl div { display: grid; grid-template-columns: 92px 1fr; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14.5px; line-height: 1.5; }
+  .icard dt { display: flex; align-items: flex-start; gap: 6px; color: var(--ink-muted); font-weight: 500; }
+  .icard dd { margin: 0; }
+  .dir { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 5px; margin-top: 2px; }
+  .dir.in { background: var(--primary-50); color: var(--primary-700); }
+  .dir.out { background: var(--primary-600); color: #fff; }
+  .icard footer { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px var(--s-5); border-top: 1px solid var(--line); background: var(--surface-2); border-radius: 0 0 var(--r-card) var(--r-card); }
+  .icard footer :global(.pill) { font-size: 12.5px; white-space: normal; }
+
+  .int-split { gap: var(--s-8); align-items: start; }
+  .block-title :global(.pill) { font-size: 13px; margin-left: 8px; vertical-align: 0.2em; }
+  table.map { font-size: 15px; }
+  table.map td.mono { font-size: 13.5px; color: var(--primary-800); white-space: nowrap; }
+  table.matrix { font-size: 15px; }
+  table.matrix td { padding: 10px 12px; }
+  .mx { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px 2px 6px; border-radius: var(--r-chip); font-size: 13px; font-weight: 600; }
+  .mx-auto { background: var(--success-soft); color: var(--success-text); }
+  .mx-partly { background: var(--info-soft); color: var(--info-text); }
+  .mx-manual { background: var(--warning-soft); color: var(--warning-text); }
+  .mx-unknown { background: var(--surface-2); color: var(--ink-muted); }
+  .prices { color: var(--ink-muted); font-style: italic; }
+  .modes { margin: var(--s-4) 0 0; display: grid; gap: 6px; }
+  .modes div { display: grid; grid-template-columns: 90px 1fr; gap: 10px; align-items: center; font-size: 14px; color: var(--ink-muted); }
+  .modes dd { margin: 0; }
+  .muted-p { margin-top: var(--s-4); font-size: var(--fs-ui); color: var(--ink-muted); line-height: 1.55; }
+
+  .p2list { margin: 0; display: grid; border-top: 1px solid var(--line); max-width: 960px; }
+  .p2list div { display: grid; grid-template-columns: 140px 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-label); line-height: 1.5; }
+  .p2list dt { font-weight: 600; color: var(--ink-muted); }
+  .p2list dd { margin: 0; color: var(--ink-muted); }
+  @media (max-width: 640px) { .p2list div { grid-template-columns: 1fr; gap: 2px; } }
+</style>

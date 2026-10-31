@@ -1,0 +1,76 @@
+---
+// State machine drawn by hand: nodes are pills placed by coordinates,
+// edges are paths (straight lines are computed when two nodes share an
+// axis). Tones follow arch/13 section 2.5 / 2.6.
+export type Tone = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'muted' | 'done-outline' | 'primary';
+export interface SNode { id: string; x: number; y: number; w: number; label: string; tone?: Tone }
+export interface SEdge {
+  from?: string; to?: string; d?: string;
+  label?: string | string[]; lx?: number; ly?: number; anchor?: 'start' | 'middle' | 'end';
+  dashed?: boolean; muted?: boolean; noArrow?: boolean;
+}
+interface Props { width: number; height: number; nodes: SNode[]; edges: SEdge[]; start?: { x: number; y: number; to: string }; label: string }
+const { width, height, nodes, edges, start } = Astro.props;
+const H = 40;
+const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+
+function autoPath(a: SNode, b: SNode): string {
+  const ay = a.y + H / 2, by = b.y + H / 2;
+  if (Math.abs(ay - by) < 1) {
+    return a.x < b.x ? `M${a.x + a.w} ${ay} H${b.x}` : `M${a.x} ${ay} H${b.x + b.w}`;
+  }
+  const ax = a.x + a.w / 2, bx = b.x + b.w / 2;
+  if (Math.abs(ax - bx) < 1) {
+    return a.y < b.y ? `M${ax} ${a.y + H} V${b.y}` : `M${ax} ${a.y} V${b.y + H}`;
+  }
+  // elbow: leave horizontally, enter vertically
+  const sx = a.x < b.x ? a.x + a.w : a.x;
+  return `M${sx} ${ay} H${bx} V${b.y < a.y ? b.y + H : b.y}`;
+}
+const paths = edges.map((e) => ({ ...e, path: e.d ?? autoPath(byId[e.from!], byId[e.to!]) }));
+---
+<svg viewBox={`0 0 ${width} ${height}`} xmlns="http://www.w3.org/2000/svg" class="states">
+  {start && (
+    <Fragment>
+      <circle cx={start.x} cy={start.y} r="7" fill="var(--ink)" />
+      <path d={`M${start.x} ${start.y + 7} V${byId[start.to].y}`} class="st-edge" marker-end="url(#arr)" />
+    </Fragment>
+  )}
+  {paths.map((e) => (
+    <g class={`st-e${e.muted ? ' muted' : ''}${e.dashed ? ' dashed' : ''}`}>
+      <path d={e.path} class="st-edge" marker-end={e.noArrow ? undefined : e.muted ? 'url(#arr-muted)' : 'url(#arr)'} />
+      {e.label && (Array.isArray(e.label) ? e.label : [e.label]).map((l, i) => (
+        <text x={e.lx} y={(e.ly ?? 0) + i * 18} text-anchor={e.anchor ?? 'middle'} class="ar-label st-label">{l}</text>
+      ))}
+    </g>
+  ))}
+  {nodes.map((n) => (
+    <g class={`st-node tone-${n.tone ?? 'default'}`}>
+      <rect x={n.x} y={n.y} width={n.w} height={H} rx={H / 2} />
+      <text x={n.x + n.w / 2} y={n.y + 25} text-anchor="middle">{n.label}</text>
+    </g>
+  ))}
+</svg>
+
+<style>
+  .st-edge { fill: none; stroke: var(--primary-600); stroke-width: 1.75; stroke-linejoin: round; }
+  .st-e.muted .st-edge { stroke: var(--ink-faint); }
+  .st-e.dashed .st-edge { stroke-dasharray: 6 5; }
+  .st-label { font-size: 14px !important; }
+  .st-node rect { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.25; }
+  .st-node text { font-family: var(--font-mono); font-size: 14px; font-weight: 600; fill: var(--ink); }
+  .tone-primary rect { fill: var(--primary-50); stroke: var(--primary-600); }
+  .tone-primary text { fill: var(--primary-800); }
+  .tone-success rect { fill: var(--success-soft); stroke: var(--success-vivid); }
+  .tone-success text { fill: var(--success-text); }
+  .tone-done-outline rect { fill: var(--surface); stroke: var(--success-vivid); stroke-dasharray: 4 3; }
+  .tone-done-outline text { fill: var(--success-text); }
+  .tone-warning rect { fill: var(--warning-soft); stroke: var(--warning-vivid); }
+  .tone-warning text { fill: var(--warning-text); }
+  .tone-danger rect { fill: var(--danger-soft); stroke: var(--danger-vivid); }
+  .tone-danger text { fill: var(--danger-text); }
+  .tone-info rect { fill: var(--info-soft); stroke: var(--info-vivid); }
+  .tone-info text { fill: var(--info-text); }
+  .tone-muted rect { fill: var(--surface-2); stroke: var(--line); }
+  .tone-muted text { fill: var(--ink-muted); }
+</style>

@@ -1,0 +1,325 @@
+---
+// 03 Containers and modules (C4 levels 2 and 3).
+// Source: arch/03-containers-and-modules.txt
+import Takeaway from '../components/Takeaway.astro';
+import Figure from '../components/diagram/Figure.astro';
+import Box from '../components/diagram/Box.astro';
+import Arrow from '../components/diagram/Arrow.astro';
+import Icon from '../components/Icon.astro';
+
+const containers: [string, string, string, string][] = [
+  ['1', 'Back Office', 'React SPA (static files)', 'Cloudflare Pages'],
+  ['2', 'Owner Portal', 'React SPA (static files)', 'Cloudflare Pages'],
+  ['3', 'Guest App', 'React PWA (static files)', 'Cloudflare Pages'],
+  ['4', 'API', 'Node.js 22 + Hono', 'Google Cloud Run (Zurich)'],
+  ['5', 'Worker', 'Node.js 22 (same code)', 'Google Cloud Run (Zurich)'],
+  ['6', 'Database', 'PostgreSQL 16', 'Google Cloud SQL (Zurich)'],
+  ['7', 'File storage', 'Object storage', 'Google Cloud Storage (Zurich)'],
+  ['8', 'Job queue', 'pg-boss (tables in Postgres)', 'inside the Database'],
+  ['9', 'Scheduler', 'Cloud Scheduler', 'GCP (Zurich) → calls API'],
+  ['10', 'Secrets', 'Secret Manager', 'GCP'],
+];
+
+// Module grid geometry
+const MW = 180, MH = 80, GX = 194;
+const mx = (i: number) => 30 + i * GX;
+const rowA = [
+  { n: 'core', s: ['houses, units,', 'people, settings'], ev: false },
+  { n: 'stays', s: ['stays, check-in,', 'changes, consents'], ev: true },
+  { n: 'payments', s: ['payment requests,', 'Stripe, refunds'], ev: true },
+  { n: 'ledger', s: ['append-only money,', 'owner balances'], ev: true },
+  { n: 'listings', s: ['listing content,', 'per-field sync'], ev: true },
+];
+const rowB = [
+  { n: 'guestcard', s: ['Feratel,', 'guest cards'], ev: true },
+  { n: 'access', s: ['SALTO grants'], ev: true },
+  { n: 'messaging', s: ['email DE/FR/EN,', 'sending log'], ev: true },
+  { n: 'migration', s: ['Archipex import,', 'one-time'], ev: false },
+  { n: 'integrations', s: ['inbox, outbox,', 'adapters'], ev: true },
+];
+const rowC = [
+  { n: 'operations', s: 'cleaning, repairs' },
+  { n: 'statements', s: 'statements, payouts' },
+  { n: 'accounting', s: 'bank, Bexio, VAT' },
+  { n: 'reporting', s: 'ZWG, tourist tax' },
+  { n: 'stweg', s: 'Phase 3' },
+];
+const A_Y = 64, BUS_Y = 176, B_Y = 252, C_Y = 404;
+
+const events: [string, string, string][] = [
+  ['StayCreated', 'messaging (schedule invite), ledger (booking amounts)', 'operations (cleaning orders)'],
+  ['StayChanged', 'access (adjust window), guestcard (update registration), ledger', 'operations (cleaning orders)'],
+  ['StayCancelled', 'access (revoke), guestcard (cancel), ledger', 'operations (cleaning orders)'],
+  ['CheckInCompleted', 'guestcard (register), access (create grant)', ''],
+  ['GuestCardIssued', 'messaging (notify)', ''],
+  ['AccessGranted', 'messaging (notify)', ''],
+  ['PaymentSucceeded', 'stays (unlock check-in / apply extension), ledger', 'statements'],
+  ['PaymentRefunded', 'ledger', ''],
+  ['OwnUseReserved', 'integrations (Lodgify block), ledger (owner charges)', ''],
+  ['ListingFieldChanged', 'listings (mark channels pending / manual)', ''],
+  ['StayEnded', '', 'operations (final inspection), messaging (review request)'],
+  ['any message event', '', 'WhatsApp channel'],
+];
+---
+<Takeaway>A modular monolith keeps everything in one transaction, which is key for money, and can still be split later: each module already has its own folder, tables and public interface.</Takeaway>
+
+<div class="block">
+  <div class="grid grid-3">
+    <article class="card why">
+      <h4 class="eyebrow">Style · decided</h4>
+      <p class="why-title">Modular monolith</p>
+      <p>One backend codebase, one database, deployed as two processes (API and worker). Inside, modules with strict boundaries.</p>
+    </article>
+    <article class="card why">
+      <h4 class="eyebrow">Why not microservices</h4>
+      <p class="why-title">22 units, a small team, one company</p>
+      <p>Microservices would add network calls, separate deployments and distributed transactions with no benefit.</p>
+    </article>
+    <article class="card why">
+      <h4 class="eyebrow">Multi-tenant by house</h4>
+      <p class="why-title">One installation, all houses</p>
+      <p>Every business row carries <code>house_id</code>. A new house is a new row plus settings, no new deployment.</p>
+    </article>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Containers · C4 level 2</h3>
+  <Figure label="Container diagram: three static frontends on Cloudflare Pages, API and worker on Google Cloud Run in Zurich, PostgreSQL with the job queue, file storage, scheduler and secrets" minWidth={900}>
+    <svg viewBox="0 0 1200 720" xmlns="http://www.w3.org/2000/svg">
+      <!-- Cloudflare -->
+      <rect x="250" y="16" width="700" height="132" rx="14" class="grp-plain" />
+      <text x="270" y="44" class="grp-label muted">Cloudflare Pages</text>
+      <Box x={270} y={62} w={208} h={66} title="Back Office" sub="React SPA" icon="monitor" variant="app" />
+      <Box x={496} y={62} w={208} h={66} title="Owner Portal" sub="React SPA" icon="laptop" variant="app" />
+      <Box x={722} y={62} w={208} h={66} title="Guest App" sub="React PWA" icon="smartphone" variant="app" />
+
+      <!-- GCP -->
+      <rect x="200" y="196" width="800" height="508" rx="16" class="grp" />
+      <text x="220" y="224" class="grp-label">Google Cloud · Zurich</text>
+      <Arrow d="M374 148 V244" label={['HTTPS · JSON', 'REST /api/v1']} lx={386} ly={176} anchor="start" />
+      <Box x={230} y={246} w={240} h={84} title="API" sub={['Cloud Run', 'Node.js 22 + Hono']} icon="server" variant="app" />
+      <Box x={510} y={246} w={180} h={84} title="File storage" sub={['Cloud Storage', 'signed URLs']} icon="hard-drive" />
+      <Box x={730} y={246} w={240} h={84} title="Worker" sub={['Cloud Run', 'same code, runs jobs']} icon="workflow" variant="app" />
+      <Arrow d="M470 288 H510" />
+      <Arrow d="M730 288 H690" />
+
+      <!-- Database with queue inside -->
+      <g class="bx">
+        <rect x="440" y="410" width="320" height="156" rx="12" />
+      </g>
+      <Icon name="database" size={22} x={456} y={426} class="bx-icon" />
+      <text x="488" y="443" class="bx-title">Database</text>
+      <text x="488" y="463" class="bx-sub">PostgreSQL 16 · Cloud SQL</text>
+      <rect x="456" y="490" width="288" height="60" rx="8" fill="var(--sun-50)" stroke="var(--sun-500)" />
+      <text x="472" y="515" class="bx-title small">Job queue · pg-boss</text>
+      <text x="472" y="536" class="bx-sub">tables inside the database</text>
+
+      <Arrow d="M350 330 V470 H440" label={['SQL, private', 'connection; jobs in', 'the same transaction']} lx={362} ly={364} anchor="start" />
+      <Arrow d="M900 330 V520 H760" label={['polls pg-boss,', 'runs jobs']} lx={888} ly={364} anchor="end" />
+
+      <Box x={230} y={612} w={240} h={70} title="Cloud Scheduler" sub="cron" icon="clock" />
+      <Arrow d="M262 612 V330" label={['/internal/cron/…', 'Google OIDC token']} lx={274} ly={572} anchor="start" />
+      <Box x={730} y={612} w={240} h={70} title="Secret Manager" sub="API keys per environment" icon="lock-keyhole" />
+      <Arrow d="M800 612 V330" dashed={true} muted={true} label={['keys for', 'API + worker']} lx={788} ly={588} anchor="end" />
+
+      <!-- Webhooks in -->
+      <text x="20" y="232" class="svg-note">webhooks in</text>
+      <Box x={20} y={246} w={150} h={40} title="Lodgify" variant="ext" />
+      <Box x={20} y={296} w={150} h={40} title="Stripe" variant="ext" />
+      <Arrow d="M170 266 H230" />
+      <Arrow d="M170 316 H230" />
+
+      <!-- Worker out -->
+      <text x="1030" y="212" class="svg-note">worker calls,</text>
+      <text x="1030" y="231" class="svg-note">HTTPS + retries</text>
+      {['Lodgify', 'Stripe', 'Feratel', 'SALTO', 'Postmark'].map((n, i) => (
+        <Fragment>
+          <Box x={1040} y={246 + i * 52} w={140} h={40} title={n} variant="ext" />
+          <Arrow d={`M1010 ${266 + i * 52} H1040`} />
+        </Fragment>
+      ))}
+      <path d="M970 288 H1010 M1010 266 V474" fill="none" stroke="var(--primary-600)" stroke-width="1.75" />
+    </svg>
+    <Fragment slot="legend">
+      <span class="legend-item"><span class="legend-swatch box soft"></span>Google Cloud, Zurich</span>
+      <span class="legend-item"><span class="legend-swatch"></span>Request / call</span>
+      <span class="legend-item"><span class="legend-swatch dashed"></span>Reads secrets</span>
+    </Fragment>
+  </Figure>
+  <p class="why-two"><strong>Why two processes:</strong> the API answers users fast and never waits for slow outside systems. The worker does all outside calls with retries. If Feratel is slow, users don't notice.</p>
+</div>
+
+<div class="block">
+  <details class="disclose">
+    <summary>All ten containers<span class="count">tech and where each runs</span><Icon name="chevron-right" size={18} class="chev" /></summary>
+    <div class="disclose-body">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th class="num">#</th><th>Container</th><th>Tech</th><th>Runs on</th></tr></thead>
+          <tbody>{containers.map(([n, c, t, r]) => <tr><td class="num">{n}</td><td><strong>{c}</strong></td><td>{t}</td><td>{r}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  </details>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Modules inside the backend · C4 level 3</h3>
+  <p class="block-sub">Modules talk through domain events or through each other's public service functions, never through internals.</p>
+  <Figure label="Module diagram: ten Phase 1 modules around a domain-event bus, the pure rules module, the integrations module as the only door to outside systems, and greyed Phase 2 modules" minWidth={960}>
+    <svg viewBox="0 0 1200 500" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="1180" height="480" rx="16" class="grp-plain" />
+      <text x="30" y="38" class="grp-label muted">Backend · one codebase · API + worker</text>
+
+      <!-- calls to rules -->
+      <path d={`M${mx(1) + 86} ${A_Y} V52 H1096 V${A_Y}`} fill="none" stroke="var(--primary-600)" stroke-width="1.75" marker-end="url(#arr)" />
+      <path d={`M${mx(2) + 86} ${A_Y} V52`} fill="none" stroke="var(--primary-600)" stroke-width="1.75" />
+      <text x="760" y="46" class="ar-label" text-anchor="middle">calls: rule check, prices, tourist tax</text>
+
+      {rowA.map((m, i) => <Box x={mx(i)} y={A_Y} w={MW} h={MH} title={m.n} sub={m.s} />)}
+      {rowB.map((m, i) => <Box x={mx(i)} y={B_Y} w={MW} h={MH} title={m.n} sub={m.s} variant={m.n === 'integrations' ? 'app' : 'default'} />)}
+
+      <!-- event bus -->
+      <rect x="30" y={BUS_Y} width={mx(4) + MW - 30} height="44" rx="10" fill="var(--primary-50)" stroke="var(--primary-500)" stroke-dasharray="6 5" />
+      <text x="48" y={BUS_Y + 28} class="bus-title">Domain events</text>
+      <text x="186" y={BUS_Y + 28} class="bus-sub">outbox, same DB transaction as the change · handlers run in the worker</text>
+      {rowA.map((m, i) => m.ev && <path d={`M${mx(i) + 120} ${A_Y + MH} V${BUS_Y}`} class="stub" />)}
+      {rowB.map((m, i) => m.ev && <path d={`M${mx(i) + 120} ${BUS_Y + 44} V${B_Y}`} class="stub" />)}
+
+      <!-- rules (pure) -->
+      <Box x={1012} y={A_Y} w={168} h={MH + 24} title="rules" sub={['quota, prices, tax', 'pure, no I/O', 'also Owner Portal']} variant="accent" />
+
+      <!-- outside -->
+      <Box x={1012} y={B_Y - 6} w={168} h={MH + 12} title="Outside systems" sub={['Lodgify, Stripe,', 'Feratel, SALTO,', 'Postmark']} variant="ext" />
+      <Arrow d={`M${mx(4) + MW} ${B_Y + 40} H1012`} />
+
+      <!-- Phase 2 lane -->
+      <path d={`M${mx(4) + MW} ${BUS_Y + 22} H1002 V376 H${mx(0) + 86}`} class="stub" />
+      {rowC.map((m, i) => <path d={`M${mx(i) + 86} 376 V${C_Y}`} class="stub" />)}
+      <text x="996" y="368" class="ar-label" text-anchor="end">April: new listeners, no change to Phase 1 code</text>
+      {rowC.map((m, i) => <Box x={mx(i)} y={C_Y} w={MW} h={64} title={m.n} sub={m.s} variant="phase2" />)}
+    </svg>
+    <Fragment slot="legend">
+      <span class="legend-item"><span class="legend-swatch"></span>Direct call through the public service (index.ts)</span>
+      <span class="legend-item"><span class="legend-swatch dashed"></span>Publishes / listens to domain events</span>
+      <span class="legend-item"><span class="legend-swatch box p2"></span>Phase 2 / 3 (folders reserved)</span>
+    </Fragment>
+  </Figure>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Event flow: guest checks in</h3>
+  <ol class="flow">
+    <li class="node node-start"><span class="who">Guest App</span><span class="what">Guest checks in</span></li>
+    <li class="node"><span class="ev mono">CheckInCompleted</span></li>
+    <li class="node node-split">
+      <span class="sub"><span class="who">guestcard</span><span class="what">Feratel registration</span></span>
+      <span class="sub"><span class="who">access</span><span class="what">SALTO grant</span></span>
+    </li>
+    <li class="node node-split">
+      <span class="ev mono">GuestCardIssued</span>
+      <span class="ev mono">AccessGranted</span>
+    </li>
+    <li class="node node-end"><span class="who">messaging</span><span class="what">notifies the guest</span></li>
+  </ol>
+</div>
+
+<div class="block">
+  <details class="disclose">
+    <summary>Events and who listens<span class="count">Phase 1 + listeners added in April</span><Icon name="chevron-right" size={18} class="chev" /></summary>
+    <div class="disclose-body">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Event</th><th>Phase 1 listeners</th><th>Added in Phase 2</th></tr></thead>
+          <tbody>{events.map(([e, p1, p2]) => (
+            <tr><td><code>{e}</code></td><td>{p1 || <span class="dash">—</span>}</td><td class="p2">{p2 || <span class="dash">—</span>}</td></tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </div>
+  </details>
+</div>
+
+<div class="block">
+  <div class="grid grid-2">
+    <div>
+      <h3 class="block-title">How boundaries are kept</h3>
+      <ol class="rules-list">
+        <li><span class="r mono">R1</span><span>A module uses another only through its public service functions (<code>index.ts</code>) or domain events. Never its internals or tables.</span></li>
+        <li><span class="r mono">R2</span><span>Each table belongs to exactly one module.</span></li>
+        <li><span class="r mono">R3</span><span>The rules module has no I/O: data in, decisions with reasons out. Runs on the server (final check) and in the Owner Portal (instant feedback).</span></li>
+        <li><span class="r mono">R4</span><span>Outside systems only through adapters in <code>integrations/</code>, each with a port and two implementations: real and fake. Building can start before API keys arrive.</span></li>
+        <li><span class="r mono">R5</span><span>dependency-cruiser in CI fails the build if a module imports another module's internals.</span></li>
+      </ol>
+    </div>
+    <div>
+      <h3 class="block-title">Repository layout</h3>
+      <pre class="code"><span class="k">picobello-platform/</span>
+  apps/
+    backoffice/      <span class="c">React SPA</span>
+    owner/           <span class="c">React SPA</span>
+    guest/           <span class="c">React PWA</span>
+    api/             <span class="c">Hono: routes, webhooks, cron</span>
+    worker/          <span class="c">job runner (pg-boss)</span>
+  packages/
+    domain/          <span class="c">rules, pricing, state machines</span>
+    db/              <span class="c">Drizzle schema, migrations, seed</span>
+    modules/         <span class="c">core, stays, payments, ledger, …</span>
+    api-client/      <span class="c">typed client from OpenAPI</span>
+    ui/              <span class="c">shared components (design system)</span>
+    i18n/            <span class="c">DE / FR / EN</span>
+    config/          <span class="c">tsconfig, eslint, prettier</span>
+  infra/terraform/   <span class="c">GCP + Cloudflare as code</span>
+  docs/adr/          <span class="c">decision records</span>
+  .github/workflows/ <span class="c">CI/CD</span></pre>
+      <p class="tooling">pnpm workspaces + Turborepo, TypeScript strict mode everywhere.</p>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">How it scales later</h3>
+  <ul class="list scale">
+    <li>API and worker are stateless: Cloud Run adds instances automatically under load.</li>
+    <li>Database: bigger machine first, then a read replica for reports, then yearly partitioning of the ledger and audit tables.</li>
+    <li>More houses: new tenant rows; settings per house already exist.</li>
+    <li>A module that becomes heavy (e.g. reporting) can move into its own service, because it already has a clean interface.</li>
+  </ul>
+</div>
+
+<style>
+  .why { display: grid; gap: var(--s-2); align-content: start; }
+  .why-title { font-family: var(--font-head); font-weight: 700; font-size: 1.125rem; line-height: 1.35; }
+  .why p:not(.why-title) { font-size: var(--fs-label); color: var(--ink-muted); line-height: 1.55; }
+  .why-two { margin-top: var(--s-4); font-size: var(--fs-label); color: var(--ink-muted); max-width: var(--measure); }
+  .why-two strong { color: var(--ink); font-weight: 600; }
+  .bx-title.small { font-size: 15px; }
+
+  .stub { fill: none; stroke: var(--primary-500); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .bus-title { font-size: 16px; font-weight: 600; fill: var(--primary-800); }
+  .bus-sub { font-size: 15px; fill: var(--ink-muted); }
+
+  .flow { list-style: none; margin: 0; padding: 0; display: flex; align-items: stretch; gap: 28px; overflow-x: auto; padding-bottom: 4px; }
+  .node { position: relative; flex: 1 1 0; min-width: 150px; display: grid; gap: 8px; align-content: center; padding: var(--s-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
+  .node + .node::before { content: ""; position: absolute; left: -24px; top: 50%; width: 18px; height: 0; border-top: 1.75px solid var(--primary-600); }
+  .node + .node::after { content: ""; position: absolute; left: -10px; top: calc(50% - 4px); border: 4.5px solid transparent; border-left: 6px solid var(--primary-600); border-right: 0; }
+  .node-start { background: var(--primary-50); border-color: var(--primary-100); }
+  .node-end { background: var(--success-soft); border-color: transparent; }
+  .node .who, .node .sub .who { display: block; font-size: var(--fs-caption); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); }
+  .node .what { display: block; font-size: var(--fs-label); font-weight: 600; color: var(--ink); line-height: 1.35; }
+  .node-split { gap: 12px; }
+  .node .sub { display: block; }
+  .node .sub + .sub { padding-top: 12px; border-top: 1px solid var(--line); }
+  .ev { display: inline-block; justify-self: start; padding: 4px 10px; border-radius: var(--r-chip); background: var(--primary-50); color: var(--primary-800); font-size: 14px; font-weight: 600; }
+
+  td code { font-size: 14px; color: var(--primary-800); }
+  td.p2 { color: var(--ink-muted); }
+  .dash { color: var(--ink-faint); }
+
+  .rules-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .rules-list li { display: grid; grid-template-columns: 36px 1fr; gap: 10px; font-size: var(--fs-label); line-height: 1.5; }
+  .rules-list .r { font-weight: 600; font-size: 14px; color: var(--primary-700); padding-top: 2px; }
+  .tooling { margin-top: var(--s-3); font-size: var(--fs-ui); color: var(--ink-muted); }
+  .scale { max-width: var(--measure); }
+</style>

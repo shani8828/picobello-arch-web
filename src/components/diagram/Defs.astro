@@ -1,0 +1,23 @@
+---
+// Shared SVG markers, referenced by every diagram on the page.
+---
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+      <path d="M1 1.2 8.8 5 1 8.8 2.6 5Z" fill="var(--primary-600)" />
+    </marker>
+    <marker id="arr-muted" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+      <path d="M1 1.2 8.8 5 1 8.8 2.6 5Z" fill="var(--ink-faint)" />
+    </marker>
+    <!-- ERD crow's-foot notation: "many" fans out into the table, "one" is a bar -->
+    <marker id="erd-many" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+      <path d="M2 7 L14 1 M2 7 L14 7 M2 7 L14 13" fill="none" stroke="var(--ink-muted)" stroke-width="1.4" />
+    </marker>
+    <marker id="erd-one" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+      <path d="M8 1 V13" fill="none" stroke="var(--ink-muted)" stroke-width="1.4" />
+    </marker>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="var(--surface)" /><line x1="0" y1="0" x2="0" y2="6" stroke="var(--line-strong)" stroke-width="2" />
+    </pattern>
+  </defs>
+</svg>

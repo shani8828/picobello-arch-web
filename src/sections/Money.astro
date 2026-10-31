@@ -1,0 +1,294 @@
+---
+// 09 Money and ledger. Source: arch/09-money-and-ledger.txt
+import Takeaway from '../components/Takeaway.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+
+const principles: [string, string, string][] = [
+  ['P1', 'Double-entry', 'Every transaction has entries that sum to zero: every amount has a "from" and a "to".'],
+  ['P2', 'Append-only', 'Entries are never updated or deleted. A mistake is corrected with a reversal transaction.'],
+  ['P3', 'Integer Rappen', 'CHF in Rappen. No floats anywhere.'],
+  ['P4', 'Three money circles', 'owner_rental, stweg, picobello strictly separate. Transfers are explicit transactions.'],
+  ['P5', 'Source + reference', 'Every transaction links its source (Stripe id, Lodgify id, staff user) and the stored raw event.'],
+  ['P6', 'VAT per entry', '3.8 % accommodation, 8.1 % other services, so VAT reporting needs no guessing.'],
+  ['P7', 'Database protection', 'App user may only INSERT and SELECT; triggers reject UPDATE/DELETE and unbalanced transactions.'],
+];
+
+const types: [string, string, string][] = [
+  ['booking_amounts', 'guest booking confirmed', 'lodgify'],
+  ['booking_amounts_change', 'booking changed / cancelled', 'lodgify'],
+  ['stripe_payment', 'PaymentSucceeded', 'stripe'],
+  ['stripe_refund', 'PaymentRefunded', 'stripe'],
+  ['owner_charge_cleaning', 'owner own stay confirmed', 'system'],
+  ['owner_charge_laundry', 'owner own stay confirmed', 'system'],
+  ['owner_charge_tourist_tax', 'owner per-stay guest cards', 'system'],
+  ['owner_charge_friends', 'friends stay, owner pays', 'system'],
+  ['owner_charge_cancel_fee', 'owner cancels < 90 days', 'system'],
+  ['friends_costs', 'friends paid by Stripe', 'stripe'],
+  ['extension', 'extension paid', 'stripe'],
+  ['date_change', 'difference paid / refunded', 'stripe'],
+  ['extra_persons', 'extra persons paid', 'stripe'],
+  ['manual_adjustment', 'staff correction (reason required, 4-eyes later)', 'manual'],
+];
+
+const examples: { t: string; d: string; type: string; rows: [string, string, string?][]; note?: string }[] = [
+  { t: 'B', d: 'Same friends stay, owner covers the costs', type: 'owner_charge_friends',
+    rows: [['owner_balance:Meier', '+390.00'], ['revenue_cleaning', '−180.00'], ['revenue_laundry', '−105.00'], ['tourist_tax_payable', '−105.00']],
+    note: 'Owner Portal shows balance minus CHF 390.00.' },
+  { t: 'C', d: 'Owner own stay, 2 adults, 7 nights, tourist tax per stay', type: 'owner charges',
+    rows: [['owner_balance:Meier', '+320.00'], ['revenue_cleaning', '−180.00'], ['revenue_laundry', '−70.00'], ['tourist_tax_payable', '−70.00']],
+    note: 'Yearly-flat owner: only cleaning + laundry (250.00).' },
+  { t: 'D', d: 'Guest extension, 2 nights, direct booking', type: 'extension',
+    rows: [['stripe_clearing', '+380.00'], ['revenue_lodging:A3', '−360.00', 'VAT 3.8 %'], ['tourist_tax_payable', '−20.00']] },
+  { t: 'E', d: 'Refund of a wrong payment', type: 'stripe_refund',
+    rows: [], note: 'A new transaction with the opposite entries, reverses_transaction_id = original. The original stays untouched.' },
+];
+
+const readers: [string, string, string][] = [
+  ['Half-year statement', 'entries per unit / owner for 1.1–30.6 and 1.7–31.12 → PDF, frozen once approved', 'file-text'],
+  ['Bexio export', 'transactions per money circle per month, mapped to Bexio accounts, with receipts', 'arrow-up-right'],
+  ['VAT report', 'sum of entries per VAT rate per quarter', 'percent'],
+  ['Bank reconciliation', 'bank statement lines matched to stripe_clearing / platform_clearing payouts', 'landmark'],
+  ['Tourist-tax report', 'tourist_tax_payable per period vs Feratel', 'receipt'],
+];
+---
+<Takeaway>The financial features come in April, but the data must be complete from the first live booking: you can build reports later, you can't rebuild a payment record that was never stored.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">Three money circles</h3>
+  <Figure label="Three separate money circles: owner rental, STWEG and Picobello. Money moves between them only through explicit transfer transactions." minWidth={860}>
+    <svg viewBox="0 0 1200 380" xmlns="http://www.w3.org/2000/svg">
+      <path d="M330 92 Q 410 40 490 92" class="xfer" marker-start="url(#arr)" marker-end="url(#arr)" />
+      <path d="M710 92 Q 790 40 870 92" class="xfer" marker-start="url(#arr)" marker-end="url(#arr)" />
+      <text x="410" y="44" text-anchor="middle" class="ar-label">explicit transfer</text>
+      <text x="790" y="44" text-anchor="middle" class="ar-label">explicit transfer</text>
+
+      <g class="pot pot-owner">
+        <circle cx="220" cy="220" r="140" />
+        <text x="220" y="150" text-anchor="middle" class="pot-name">owner_rental</text>
+        <text x="220" y="174" text-anchor="middle" class="pot-sub">owners' rental money</text>
+        <rect x="120" y="200" width="200" height="34" rx="8" class="acct" /><text x="132" y="222" class="acct-t">unit_management:&lt;unit&gt;</text>
+        <rect x="120" y="242" width="200" height="34" rx="8" class="acct" /><text x="132" y="264" class="acct-t">owner_balance:&lt;owner&gt;</text>
+        <text x="220" y="306" text-anchor="middle" class="pot-sub">Phase 1 accounts</text>
+      </g>
+      <g class="pot pot-stweg">
+        <circle cx="600" cy="220" r="140" />
+        <text x="600" y="150" text-anchor="middle" class="pot-name">stweg</text>
+        <text x="600" y="174" text-anchor="middle" class="pot-sub">STWEG administration</text>
+        <text x="600" y="236" text-anchor="middle" class="pot-p3">Phase 3</text>
+        <text x="600" y="258" text-anchor="middle" class="pot-sub">budget, akonto, funds</text>
+      </g>
+      <g class="pot pot-pico">
+        <circle cx="980" cy="220" r="140" />
+        <text x="980" y="150" text-anchor="middle" class="pot-name">picobello</text>
+        <text x="980" y="174" text-anchor="middle" class="pot-sub">Picobello's own money</text>
+        <text x="980" y="236" text-anchor="middle" class="pot-p3 dark">April</text>
+        <text x="980" y="258" text-anchor="middle" class="pot-sub">commission, base fee</text>
+      </g>
+      <text x="600" y="376" text-anchor="middle" class="svg-note">No transaction mixes circles (P4).</text>
+    </svg>
+  </Figure>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Example A · from receipt to ledger</h3>
+  <p class="block-sub">Friends stay, friends pay: 3 adults, 7 nights, unit A3 (3.5). Paid by card via Stripe. Numbers are illustrations; fees come from settings.</p>
+  <div class="ex-a">
+    <div class="receipt">
+      <div class="r-head"><span class="r-title">Payment · Stripe</span><span class="r-meta">pi_… · friends stay A3</span></div>
+      <div class="r-line"><span>Cleaning</span><span class="r-amt">180.00</span></div>
+      <div class="r-line"><span>Laundry <em>3 × 35.00</em></span><span class="r-amt">105.00</span></div>
+      <div class="r-line"><span>Tourist tax <em>3 × 7 × 5.00</em></span><span class="r-amt">105.00</span></div>
+      <div class="r-total"><span>Total</span><span class="r-amt"><small>CHF</small>390.00</span></div>
+    </div>
+    <div class="ex-arrow" aria-hidden="true"><Icon name="arrow-right" size={22} /><span>one transaction<br /><code>friends_costs</code></span></div>
+    <div class="taccount">
+      <div class="ta-head"><span>Debit (+)</span><span>Credit (−)</span></div>
+      <div class="ta-body">
+        <div class="ta-col">
+          <div class="ta-row"><span class="mono">stripe_clearing</span><span class="amt">390.00</span></div>
+        </div>
+        <div class="ta-col">
+          <div class="ta-row"><span class="mono">revenue_cleaning</span><span class="amt">180.00</span><span class="vat">VAT 8.1 %</span></div>
+          <div class="ta-row"><span class="mono">revenue_laundry</span><span class="amt">105.00</span><span class="vat">VAT 8.1 %</span></div>
+          <div class="ta-row"><span class="mono">tourist_tax_payable</span><span class="amt">105.00</span><span class="vat">no VAT</span></div>
+        </div>
+      </div>
+      <div class="ta-foot"><span class="amt">390.00</span><span class="amt">390.00</span></div>
+      <p class="ta-zero"><Icon name="check" size={16} /> Entries sum to 0, so the database accepts the transaction.</p>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Phase 1 records, April reads</h3>
+  <div class="readers">
+    <div class="rd-src">
+      <span class="eyebrow">Phase 1 · from the first live booking</span>
+      <p class="rd-title">Record everything</p>
+      <p class="rd-sub"><code>ledger_transactions</code> + <code>ledger_entries</code>, raw webhook bodies in <code>inbox_events</code></p>
+    </div>
+    <div class="rd-fan" aria-hidden="true"></div>
+    <ul class="rd-list">
+      {readers.map(([t, d, i]) => (
+        <li><Icon name={i} size={18} /><div><b>{t}</b><span>{d}</span></div></li>
+      ))}
+    </ul>
+  </div>
+  <p class="rd-note"><span class="eyebrow">April</span> Statements, Bexio, VAT and bank all read the same tables. No Phase 1 table changes needed.</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Principles · decided</h3>
+  <ol class="principles">
+    {principles.map(([n, t, d]) => <li><span class="pn mono">{n}</span><div><b>{t}</b><span>{d}</span></div></li>)}
+  </ol>
+</div>
+
+<div class="block">
+  <h3 class="block-title">More worked examples</h3>
+  <div class="grid grid-2">
+    {examples.map((e) => (
+      <article class="card exc">
+        <header><span class="ex-t">{e.t}</span><div><b>{e.d}</b><code>{e.type}</code></div></header>
+        {e.rows.length > 0 && (
+          <table class="entries">
+            <tbody>{e.rows.map(([a, v, vat]) => <tr><td class="mono">{a}</td><td class="amt">{v}</td><td class="vat">{vat ?? ''}</td></tr>)}</tbody>
+          </table>
+        )}
+        {e.note && <p class="exc-note">{e.note}</p>}
+      </article>
+    ))}
+  </div>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 money-split">
+    <div>
+      <h3 class="block-title">Accounts · Phase 1</h3>
+      <dl class="accts">
+        <div><dt>Per unit</dt><dd><code>unit_management:&lt;unit&gt;</code> the unit's management account ("Bewirtschaftungskonto") · <code>owner_balance:&lt;owner&gt;</code> what Picobello owes the owner (+) or the owner owes (−)</dd></div>
+        <div><dt>Picobello-wide</dt><dd><code>stripe_clearing</code> · <code>platform_clearing</code> · <code>tourist_tax_payable</code> · <code>revenue_cleaning</code> · <code>revenue_laundry</code> · <code>revenue_lodging:&lt;unit&gt;</code> · <code>refunds_payable</code></dd></div>
+        <div><dt>Phase 2 adds</dt><dd><code>bank:&lt;account&gt;</code> · <code>commission_picobello</code> · <code>base_fee</code> · <code>contractor_payable</code> · <code>vat_payable</code> · stweg accounts</dd></div>
+      </dl>
+      <h3 class="block-title ob">Owner balance</h3>
+      <ul class="list">
+        <li>balance(owner, date) = sum of entries on <code>owner_balance:&lt;owner&gt;</code></li>
+        <li>Phase 1 shows charges only.</li>
+        <li>Phase 2 half-year statement: owner share 81.5 % of net lodging revenue, commission 18.5 %, base fee CHF 800, charges. Positive → payout within 60 days; negative → invoice (Seva, 29 Oct).</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="block-title">Transaction types · Phase 1</h3>
+      <div class="table-wrap">
+        <table class="data tt">
+          <thead><tr><th>Type</th><th>When</th><th>Source</th></tr></thead>
+          <tbody>{types.map(([t, w, s]) => <tr><td class="mono">{t}</td><td>{w}</td><td><span class={`src src-${s}`}>{s}</span></td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Safety nets</h3>
+  <div class="grid grid-4 nets">
+    <div class="card"><Icon name="archive" size={20} /><p>Raw webhook bodies kept, so any transaction can be re-derived.</p></div>
+    <div class="card"><Icon name="git-compare" size={20} /><p>Nightly: every Stripe charge / refund has exactly one ledger transaction.</p></div>
+    <div class="card"><Icon name="scale" size={20} /><p>Daily: all transactions sum to zero; alert if not.</p></div>
+    <div class="card"><Icon name="database-backup" size={20} /><p>Backups + monthly export kept 10 years (Swiss accounting retention).</p></div>
+  </div>
+</div>
+
+<style>
+  .xfer { fill: none; stroke: var(--primary-600); stroke-width: 1.75; stroke-dasharray: 6 5; }
+  .pot circle { stroke-width: 1.5; }
+  .pot-owner circle { fill: var(--primary-50); stroke: var(--primary-500); }
+  .pot-stweg circle { fill: var(--surface-2); stroke: var(--ink-faint); stroke-dasharray: 6 5; }
+  .pot-pico circle { fill: var(--sun-50); stroke: var(--sun-500); }
+  .pot-name { font-family: var(--font-mono); font-size: 19px; font-weight: 700; fill: var(--ink); }
+  .pot-sub { font-size: 15px; fill: var(--ink-muted); }
+  .pot-p3 { font-size: 15px; font-weight: 600; fill: var(--ink-muted); letter-spacing: .06em; text-transform: uppercase; }
+  .acct { fill: var(--surface); stroke: var(--primary-100); }
+  .acct-t { font-family: var(--font-mono); font-size: 14px; font-weight: 600; fill: var(--primary-900); }
+
+  .ex-a { display: grid; grid-template-columns: minmax(0, 0.75fr) auto minmax(0, 1.5fr); gap: var(--s-5); align-items: center; }
+  @media (max-width: 1023px) { .ex-a { grid-template-columns: 1fr; } .ex-arrow { transform: rotate(90deg); justify-self: center; } }
+  .receipt { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: var(--s-5) var(--s-6); box-shadow: var(--e-1); }
+  .r-head { display: grid; gap: 2px; padding-bottom: var(--s-3); border-bottom: 1px dashed var(--line-strong); margin-bottom: 4px; }
+  .r-title { font-family: var(--font-head); font-weight: 700; font-size: 1.0625rem; }
+  .r-meta { font-size: 14px; color: var(--ink-muted); font-family: var(--font-mono); }
+  .r-line, .r-total { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; font-size: var(--fs-label); }
+  .r-line em { font-style: normal; font-size: 14px; color: var(--ink-muted); margin-left: 6px; }
+  .r-amt, .amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .r-total { border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 12px; font-weight: 600; }
+  .r-total .r-amt { font-size: 1.5rem; }
+  .r-amt small { font-size: 13px; color: var(--ink-muted); margin-right: 4px; font-weight: 400; }
+  .ex-arrow { display: grid; justify-items: center; gap: 6px; color: var(--primary-600); text-align: center; font-size: 13px; }
+  .ex-arrow span { color: var(--ink-muted); line-height: 1.4; }
+  .ex-arrow code { color: var(--primary-800); }
+  .taccount { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--e-1); overflow: hidden; }
+  .ta-head, .ta-foot { display: grid; grid-template-columns: 1fr 1fr; }
+  .ta-head span { padding: 10px 16px; font-size: var(--fs-ui); font-weight: 600; color: var(--ink-muted); background: var(--surface-2); border-bottom: 2px solid var(--ink); }
+  .ta-head span + span, .ta-col + .ta-col, .ta-foot span + span { border-left: 2px solid var(--ink); }
+  .ta-body { display: grid; grid-template-columns: 1fr 1fr; }
+  .ta-col { padding: 8px 0; }
+  .ta-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 6px 12px; font-size: 15px; }
+  .ta-row .mono { font-size: 13px; color: var(--primary-900); font-weight: 600; white-space: nowrap; }
+  @media (max-width: 1279px) { .ta-row .mono { white-space: normal; overflow-wrap: anywhere; } }
+  .ta-row .vat { grid-column: 1 / -1; font-size: 12.5px; color: var(--ink-muted); }
+  .ta-foot span { padding: 10px 16px; text-align: right; font-weight: 600; border-top: 1px solid var(--line-strong); }
+  .ta-zero { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--success-soft); color: var(--success-text); font-size: 14px; font-weight: 500; }
+
+  .readers { display: grid; grid-template-columns: minmax(0, 0.8fr) 48px minmax(0, 1.6fr); align-items: center; }
+  @media (max-width: 1023px) { .readers { grid-template-columns: 1fr; gap: var(--s-4); } .rd-fan { display: none; } }
+  .rd-src { padding: var(--s-6); border-radius: var(--r-card); background: var(--primary-600); color: #fff; display: grid; gap: 6px; }
+  .rd-src .eyebrow { color: var(--primary-100); }
+  .rd-title { font-family: var(--font-head); font-weight: 800; font-size: 1.5rem; letter-spacing: -0.02em; }
+  .rd-sub { font-size: 15px; color: var(--primary-100); line-height: 1.5; }
+  .rd-sub code { color: #fff; }
+  .rd-fan { align-self: stretch; margin: 24px 0; border: 1.75px solid var(--primary-600); border-left: 0; border-radius: 0 12px 12px 0; position: relative; }
+  .rd-fan::before { content: ""; position: absolute; left: -48px; right: 100%; top: 50%; border-top: 1.75px solid var(--primary-600); }
+  .rd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .rd-list li { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-control); }
+  .rd-list :global(svg) { color: var(--primary-600); margin-top: 3px; }
+  .rd-list b { display: block; font-weight: 600; font-size: var(--fs-label); }
+  .rd-list span { font-size: 14.5px; color: var(--ink-muted); line-height: 1.45; }
+  .rd-note { margin-top: var(--s-4); font-size: var(--fs-ui); color: var(--ink-muted); }
+  .rd-note .eyebrow { margin-right: 8px; color: var(--primary-700); }
+
+  .principles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--s-8); }
+  @media (max-width: 767px) { .principles { grid-template-columns: 1fr; } }
+  .principles li { display: grid; grid-template-columns: 40px 1fr; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .principles .pn { font-size: 14px; font-weight: 700; color: var(--primary-700); padding-top: 2px; }
+  .principles b { display: block; font-weight: 600; font-size: var(--fs-label); }
+  .principles span { font-size: 15px; color: var(--ink-muted); line-height: 1.5; }
+
+  .exc { display: grid; gap: var(--s-3); align-content: start; }
+  .exc header { display: flex; gap: 14px; align-items: flex-start; }
+  .ex-t { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: 8px; background: var(--primary-50); color: var(--primary-800); font-weight: 700; font-family: var(--font-head); }
+  .exc header b { display: block; font-weight: 600; font-size: var(--fs-label); line-height: 1.4; }
+  .exc header code { font-size: 13px; color: var(--ink-muted); }
+  .entries { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .entries td { padding: 6px 0; border-top: 1px solid var(--line); }
+  .entries .mono { font-size: 13.5px; color: var(--primary-900); font-weight: 600; }
+  .entries .amt { text-align: right; padding-right: 12px; }
+  .entries .vat { font-size: 13px; color: var(--ink-muted); width: 80px; }
+  .exc-note { font-size: 14.5px; color: var(--ink-muted); line-height: 1.5; }
+
+  .money-split { gap: var(--s-8); align-items: start; }
+  .accts { margin: 0; display: grid; border-top: 1px solid var(--line); }
+  .accts div { display: grid; grid-template-columns: 120px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; line-height: 1.6; }
+  .accts dt { font-weight: 600; color: var(--ink-muted); }
+  .accts dd { margin: 0; }
+  code { color: var(--primary-800); font-size: 0.88em; }
+  .ob { margin-top: var(--s-8); }
+  .tt td.mono { font-size: 13.5px; color: var(--primary-900); }
+  .src { display: inline-block; padding: 1px 8px; border-radius: 5px; font-size: 12.5px; font-weight: 600; background: var(--surface-2); color: var(--ink-muted); }
+  .src-stripe { background: var(--violet-50); color: var(--violet-600); }
+  .src-lodgify { background: var(--primary-50); color: var(--primary-800); }
+  .src-manual { background: var(--warning-soft); color: var(--warning-text); }
+  .nets .card { display: grid; gap: 10px; align-content: start; padding: var(--s-5); }
+  .nets :global(svg) { color: var(--primary-600); }
+  .nets p { font-size: 15px; line-height: 1.5; }
+</style>

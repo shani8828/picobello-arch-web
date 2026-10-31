@@ -1,0 +1,107 @@
+---
+import { sections } from '../data/sections';
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+---
+<div class="topbar">
+  <a href="#overview" class="topbar-brand" aria-label="Picobello architecture, top"><Logo size={24} /></a>
+  <button class="topbar-btn" type="button" data-nav-open aria-controls="nav" aria-expanded="false">
+    <Icon name="menu" size={20} /><span>Sections</span>
+  </button>
+</div>
+
+<aside class="nav" id="nav" aria-label="Sections">
+  <div class="nav-head">
+    <a href="#overview" class="nav-brand"><Logo /></a>
+    <button class="nav-close" type="button" data-nav-close aria-label="Close sections"><Icon name="x" size={20} /></button>
+  </div>
+  <p class="nav-doc">Platform architecture<span>Review · 5 Nov 2026</span></p>
+
+  <nav>
+    <ol class="nav-list">
+      {sections.map((s) => (
+        <li>
+          <a href={`#${s.id}`} data-nav-link={s.id}>
+            <span class="n tnum">{s.num}</span>
+            <span class="t">{s.title}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+
+  <div class="nav-foot">
+    <button type="button" class="nav-action primary" data-present-toggle>
+      <Icon name="presentation" size={18} />
+      <span>Presentation mode</span>
+      <kbd>P</kbd>
+    </button>
+    <a class="nav-action" href="/__logout">
+      <Icon name="log-out" size={18} />
+      <span>Sign out</span>
+    </a>
+  </div>
+</aside>
+<div class="nav-scrim" data-nav-close></div>
+
+<style>
+  .nav {
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    display: flex; flex-direction: column;
+    background: var(--surface); border-right: 1px solid var(--line);
+    padding: var(--s-6) var(--s-4) var(--s-4);
+    scrollbar-width: thin;
+  }
+  .nav-head { display: flex; align-items: center; justify-content: space-between; padding: 0 var(--s-3); }
+  .nav-brand { text-decoration: none; }
+  .nav-close { display: none; }
+  .nav-doc { padding: var(--s-4) var(--s-3) var(--s-5); font-size: var(--fs-ui); font-weight: 600; color: var(--ink); line-height: 1.4; border-bottom: 1px solid var(--line); margin-bottom: var(--s-3); }
+  .nav-doc span { display: block; font-weight: 400; color: var(--ink-muted); font-size: var(--fs-caption); margin-top: 2px; }
+
+  .nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+  .nav-list a {
+    position: relative; display: grid; grid-template-columns: 28px 1fr; align-items: baseline; gap: var(--s-2);
+    padding: 7px var(--s-3); border-radius: var(--r-control);
+    font-size: var(--fs-ui); line-height: 1.35; color: var(--ink-muted); text-decoration: none;
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .nav-list a:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-list .n { font-size: var(--fs-caption); font-weight: 500; color: var(--ink-faint); }
+  .nav-list .t { font-weight: 500; }
+  .nav-list a[aria-current="true"] { background: var(--primary-50); color: var(--primary-800); }
+  .nav-list a[aria-current="true"] .n { color: var(--primary-600); }
+  .nav-list a[aria-current="true"]::before { content: ""; position: absolute; left: -16px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--primary-600); }
+
+  .nav-foot { margin-top: auto; padding-top: var(--s-4); display: grid; gap: var(--s-1); border-top: 1px solid var(--line); }
+  .nav-action {
+    display: flex; align-items: center; gap: var(--s-2); width: 100%;
+    padding: 9px var(--s-3); border: 0; border-radius: var(--r-control); background: none;
+    font: 500 var(--fs-ui)/1.3 var(--font-body); color: var(--ink-muted); text-decoration: none; cursor: pointer; text-align: left;
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .nav-action:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-action.primary { color: var(--primary-600); }
+  .nav-action.primary:hover { background: var(--primary-50); color: var(--primary-700); }
+  .nav-action kbd { margin-left: auto; font: 500 12px/1 var(--font-body); color: var(--ink-muted); border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 5px; padding: 3px 6px; background: var(--surface); }
+
+  .topbar, .nav-scrim { display: none; }
+
+  @media (max-width: 1023px) {
+    .topbar {
+      position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between;
+      height: 56px; padding: 0 16px; background: var(--snow); border-bottom: 1px solid var(--line);
+    }
+    .topbar-brand { text-decoration: none; }
+    .topbar-btn { display: inline-flex; align-items: center; gap: var(--s-2); height: 40px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-control); background: var(--surface); font: 500 var(--fs-ui) var(--font-body); color: var(--ink); cursor: pointer; }
+    .nav {
+      position: fixed; z-index: 50; top: 0; left: 0; bottom: 0; width: min(320px, 86vw); height: auto;
+      transform: translateX(-102%); transition: transform 240ms var(--ease); box-shadow: var(--e-3);
+    }
+    :global(html[data-nav-open]) .nav { transform: none; }
+    .nav-close { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: var(--r-control); background: none; color: var(--ink-muted); cursor: pointer; }
+    .nav-list a { padding: 10px var(--s-3); }
+    .nav-scrim { position: fixed; inset: 0; z-index: 40; background: rgba(14, 26, 43, .32); opacity: 0; pointer-events: none; transition: opacity 240ms var(--ease); display: block; }
+    :global(html[data-nav-open]) .nav-scrim { opacity: 1; pointer-events: auto; }
+    .nav-foot [data-present-toggle] { display: none; }
+  }
+</style>

@@ -1,0 +1,222 @@
+---
+// 12 Decisions, extensibility, quality, plan and risks.
+// Source: arch/12-decisions-extensibility-plan.txt
+import Takeaway from '../components/Takeaway.astro';
+import Pill from '../components/Pill.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+import Gantt from '../components/diagram/Gantt.astro';
+
+const adrs: { n: string; t: string; d: string; alt?: string; c: string; ref?: number[]; open?: string }[] = [
+  { n: '001', t: 'Modular monolith', d: 'One backend codebase, one DB, modules with strict boundaries, API + worker processes.', alt: 'microservices (too much overhead), plain monolith (hard to extend)', c: 'Simple deploys, one transaction for money; modules can be split out later.', ref: [1] },
+  { n: '002', t: 'TypeScript end-to-end', d: 'TypeScript for frontends, backend and shared domain.', alt: 'Python/Django, Java/Kotlin, PHP/Laravel', c: 'One language, shared Zod schemas and rule engine, prototype reusable; huge talent pool.', ref: [2] },
+  { n: '003', t: 'PostgreSQL 16', d: 'The only database: data + job queue.', alt: 'MySQL, MongoDB, Cloudflare D1', c: 'ACID, exclusion constraints for overlapping stays, JSONB, open source and portable.', ref: [7] },
+  { n: '004', t: 'GCP Zurich + Cloudflare', d: 'Cloud Run + Cloud SQL + Cloud Storage in europe-west6; frontends on Cloudflare.', alt: 'AWS eu-central-2, Azure Switzerland North, Infomaniak / Exoscale, Cloudflare-only', c: 'Swiss data location, no servers, Docker = portable. Two providers to manage.', ref: [8, 9, 10], open: 'Database host for Seva on 5 Nov: Supabase (Zurich) as plain Postgres is the documented alternative' },
+  { n: '005', t: 'Hono + OpenAPI + Zod', d: 'REST/JSON with an OpenAPI contract generated from Zod.', alt: 'NestJS, Express, tRPC, GraphQL', c: 'Typed client for our apps, documented API for future partners.', ref: [5, 6] },
+  { n: '006', t: 'Drizzle ORM', d: 'Drizzle with SQL migrations.', alt: 'Prisma, Kysely, raw SQL', c: 'Typed queries close to SQL, reviewable migrations.', ref: [12] },
+  { n: '007', t: 'pg-boss + outbox', d: 'Job queue in the same database.', alt: 'Pub/Sub or Cloud Tasks, Redis/BullMQ', c: 'Data change and job saved atomically; no extra infrastructure. Revisit above ~100 jobs/s.', ref: [13] },
+  { n: '008', t: 'Ports & adapters', d: 'Interface + real + fake implementation per outside system.', c: 'Build before keys arrive; tests without vendors; a vendor swap touches one adapter.', ref: [19] },
+  { n: '009', t: 'Double-entry ledger from Phase 1', d: 'Record all money events from the first live booking.', c: 'April features only read data; corrections via reversals; full audit.', ref: [20] },
+  { n: '010', t: 'Settings as scoped, dated data', d: 'settings_sets with scope (global / house / unit) and valid_from.', c: 'Per house / unit prices later = new rows, no code change (Seva, 29 Oct).' },
+  { n: '011', t: 'Platform owns listing content', d: 'All listing fields in our DB; per field × channel sync rule and state.', c: '"What\'s missing" view; fields move from manual to automatic by config.' },
+  { n: '012', t: 'Three frontends, one UI library', d: 'Separate Guest App (PWA), Owner Portal, Back Office.', c: 'Small fast guest app, isolated deploys; shared components.', ref: [4] },
+  { n: '013', t: 'Better Auth + stay tokens', d: 'No passwords for guests and owners; staff with 2FA.', alt: 'Auth0 / Clerk, Firebase Auth', c: 'User data stays in our Swiss DB; no per-user fees.', ref: [14] },
+  { n: '014', t: 'Stripe Embedded Checkout', d: 'Stripe-hosted payment form embedded in the Guest App.', c: 'TWINT, Apple / Google Pay, cards; minimal PCI scope.', ref: [15] },
+];
+
+const sockets: { s: string; plug: string; plugSub: string }[] = [
+  { s: 'domain events', plug: 'operations', plugSub: 'cleaning, repairs' },
+  { s: 'ledger (read)', plug: 'statements', plugSub: '+ accounting, VAT' },
+  { s: 'messaging channel', plug: 'WhatsApp', plugSub: 'second channel' },
+  { s: 'settings rows', plug: 'new prices', plugSub: 'per house / unit' },
+  { s: 'ports + adapters', plug: 'new adapters', plugSub: 'Bexio, bank, PMS' },
+  { s: 'OpenAPI contract', plug: 'mobile app', plugSub: 'partners, PicobelloAI' },
+];
+
+const plugs: [string, string][] = [
+  ['Cleaning (PicobelloAI)', 'new module "operations" listens to StayCreated/Changed/Cancelled; new adapter'],
+  ['Repairs + approvals', 'operations module: tickets, quotes, approvals; competence sum from settings; DocuSign adapter'],
+  ['WhatsApp', 'second channel in messaging (same templates, same send interface)'],
+  ['Half-year statements', 'statements module reads the ledger'],
+  ['Bank / Bexio / VAT', 'accounting module reads the ledger, adds bank and Bexio adapters'],
+  ['Per house / unit prices', 'add settings_sets rows with scope house / unit'],
+  ['New house', 'add house row + settings + Lodgify / SALTO mapping'],
+  ['New channel', 'handled in Lodgify; add a column in channel_sync_rules'],
+  ['Another PMS than Lodgify', 'new adapter implementing LodgifyPort ("PmsPort")'],
+  ['Mobile native app', 'same OpenAPI, generated client'],
+  ['STWEG module', 'new module + accounts in money circle stweg'],
+  ['Partner offers', 'new module + Guest App screen'],
+];
+
+const quality: [string, string, string][] = [
+  ['Availability', '99.9 %', 'per month, API + Guest App'],
+  ['API speed', '< 300 ms', 'p95 reads; < 800 ms writes'],
+  ['Guest App', '< 2 s', 'first load on 4G, < 200 KB JS'],
+  ['Own-use block', '< 5 min', 'in Lodgify after confirmation'],
+  ['Guest card', '< 10 min', 'after check-in, when Feratel is up'],
+  ['Data loss', 'RPO 5 min', 'RTO 4 h'],
+  ['Money', '0', 'unbalanced transactions; every Stripe payment has a ledger transaction'],
+  ['Security', '2FA', 'for staff; OWASP ASVS L1; no card data stored'],
+  ['Privacy', 'CH', 'all personal data in Switzerland; ID data deleted after legal period'],
+  ['Languages', '3', 'Guest App DE/FR/EN; Owner Portal and Back Office DE/EN'],
+  ['Accessibility', 'AA', 'WCAG 2.1 target'],
+  ['Tests', '100 %', 'rule engine + state machines; all permission rows; E2E for 5 flows'],
+];
+
+const milestones: [string, string, string][] = [
+  ['M1', '15 Nov', 'staging online, login works, units visible'],
+  ['M2', '29 Nov', 'real Lodgify bookings appear; owner can reserve'],
+  ['M3', '13 Dec', 'guest can check in and pay (test mode)'],
+  ['M4', '20 Dec', 'guest card + badge in staging'],
+  ['M5', '5 Jan', 'dress rehearsal passed'],
+  ['M6', '10 Jan', 'live'],
+];
+
+const risks: [string, string, boolean?][] = [
+  ['Lodgify API can\'t write some content fields or extensions in the needed way', 'Platform is source of truth; field marked manual; stay segments support linked bookings'],
+  ['API keys / test accounts arrive late', 'Fake adapters from day one; request test keys by 1 Dec'],
+  ['Feratel interface details unknown (no public docs)', 'Ask LST early for docs + test access; manual fallback in Deskline'],
+  ['Extension paid outside Airbnb/Booking (platform payment rules)', 'Picobello\'s decision (29 Oct); extra nights kept as a separate segment'],
+  ['Two guests buy the same night', 'Night holds + live re-check'],
+  ['Money data lost or inconsistent', 'Ledger, raw events, nightly reconciliation, backups'],
+  ['Personal data breach', 'Swiss hosting, least privilege, 2FA, encryption, retention job'],
+  ['Tight timeline over the holidays', 'Clear milestones, scope fixed at 5 Nov, buffer 21 Dec-5 Jan'],
+  ['Team capacity', 'Who builds which parts', true],
+];
+---
+<Takeaway>Later features plug into Phase 1 without a rewrite: April modules listen to existing events, read the existing ledger and add adapters, so Phase 1 tables and code stay as they are.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">Architecture decision records</h3>
+  <p class="block-sub">Context, decision, alternatives, consequences. The full comparison for each one is in section 14.</p>
+  <div class="adrs">
+    {adrs.map((a) => (
+      <article class="adr">
+        <header><span class="adr-n mono">ADR-{a.n}</span>{a.ref && <span class="adr-ref">{a.ref.map((r) => <a href={`#d${r}`}>D{r}</a>)}</span>}</header>
+        <h4>{a.t}</h4>
+        <p class="adr-d">{a.d}</p>
+        {a.alt && <p class="adr-alt"><span>Instead of</span> {a.alt}</p>}
+        <p class="adr-c">{a.c}</p>
+        {a.open && <p class="adr-open"><Pill kind="open" text="5 Nov" /> {a.open}</p>}
+      </article>
+    ))}
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Extensibility · Phase 1 core with sockets</h3>
+  <Figure label="Phase 1 core drawn as a bar with six sockets; April modules and later features plug into them" minWidth={940}>
+    <svg viewBox="0 0 1200 380" xmlns="http://www.w3.org/2000/svg">
+      {sockets.map((s, i) => {
+        const cx = 130 + i * 188;
+        return (
+          <g>
+            <rect x={cx - 82} y="40" width="164" height="70" rx="12" class="plug" />
+            <text x={cx - 66} y="70" class="plug-t">{s.plug}</text>
+            <text x={cx - 66} y="92" class="plug-s">{s.plugSub}</text>
+            <rect x={cx - 16} y="110" width="8" height="26" rx="2" class="prong" />
+            <rect x={cx + 8} y="110" width="8" height="26" rx="2" class="prong" />
+            <path d={`M${cx} 140 V214`} class="into" marker-end="url(#arr)" />
+            <text x={cx} y="292" text-anchor="middle" class="sock-t">{s.s}</text>
+          </g>
+        );
+      })}
+      <rect x="30" y="222" width="1140" height="44" rx="12" class="core" />
+      <text x="40" y="330" class="svg-note">Phase 1 core: modules, events, ledger, settings, adapters, OpenAPI. Built by 10 Jan.</text>
+      <text x="40" y="354" class="svg-note">Plugs above: April and later. No Phase 1 rewrite.</text>
+      {sockets.map((s, i) => { const cx = 130 + i * 188; return <rect x={cx - 24} y="222" width="48" height="18" rx="4" class="socket" />; })}
+      {sockets.map((s, i) => { const cx = 130 + i * 188; return <Fragment><circle cx={cx - 12} cy="231" r="3" class="hole" /><circle cx={cx + 12} cy="231" r="3" class="hole" /></Fragment>; })}
+    </svg>
+  </Figure>
+  <details class="disclose ext-more">
+    <summary>Every later feature and how it plugs in<span class="count">{plugs.length} features</span><Icon name="chevron-right" size={18} class="chev" /></summary>
+    <div class="disclose-body">
+      <dl class="plugs">{plugs.map(([a, b]) => <div><dt>{a}</dt><dd>{b}</dd></div>)}</dl>
+    </div>
+  </details>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Quality targets</h3>
+  <div class="tiles">
+    {quality.map(([a, v, d]) => <div class="tile"><span class="t-a">{a}</span><span class="t-v tnum">{v}</span><span class="t-d">{d}</span></div>)}
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Build plan · after the 5 Nov review</h3>
+  <Figure label="Gantt chart from 5 Nov 2026 to go-live on 10 Jan 2027 with milestones M0 to M6, then Phase 2 until April" minWidth={960}>
+    <Gantt label="Build plan" />
+  </Figure>
+  <ol class="ms-strip">
+    {milestones.map(([m, d, t]) => <li><span class="m mono">{m}</span><span class="d tnum">{d}</span><span class="t">{t}</span></li>)}
+  </ol>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Risks and mitigations</h3>
+  <p class="block-sub">The source lists risks with mitigations; it gives no likelihood or impact ratings, so they are shown as a list rather than a heat map.</p>
+  <div class="table-wrap">
+    <table class="data risks">
+      <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+      <tbody>{risks.map(([r, m, open]) => <tr><td><Icon name="triangle-alert" size={16} /><span>{r}</span></td><td>{open ? <Pill kind="open" text={`Open: ${m}`} /> : m}</td></tr>)}</tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  .adrs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+  @media (min-width: 1600px) { .adrs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 767px) { .adrs { grid-template-columns: 1fr; } }
+  .adr { display: grid; gap: 6px; align-content: start; padding: var(--s-4) var(--s-5) var(--s-5); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
+  .adr header { display: flex; justify-content: space-between; align-items: center; }
+  .adr-n { font-size: 12.5px; font-weight: 700; color: var(--primary-700); letter-spacing: .02em; }
+  .adr-ref { display: flex; gap: 6px; }
+  .adr-ref a { font-size: 12px; font-weight: 600; color: var(--ink-muted); text-decoration: none; padding: 1px 6px; border-radius: 5px; background: var(--surface-2); }
+  .adr-ref a:hover { background: var(--primary-50); color: var(--primary-800); }
+  .adr h4 { font-size: 1.0625rem; font-weight: 700; }
+  .adr-d { font-size: 15px; line-height: 1.5; }
+  .adr-alt { font-size: 14px; color: var(--ink-muted); line-height: 1.45; }
+  .adr-alt span { font-weight: 600; color: var(--ink-faint); text-transform: uppercase; font-size: 11.5px; letter-spacing: .05em; margin-right: 4px; }
+  .adr-c { font-size: 14.5px; color: var(--ink-muted); line-height: 1.5; padding-top: 6px; border-top: 1px dashed var(--line); }
+  .adr-open { font-size: 14px; line-height: 1.5; color: var(--warning-text); }
+  .adr-open :global(.pill) { font-size: 12px; margin-right: 4px; }
+
+  .plug { fill: var(--surface); stroke: var(--ink-faint); stroke-dasharray: 5 4; }
+  .plug-t { font-size: 17px; font-weight: 600; fill: var(--ink); }
+  .plug-s { font-size: 14px; fill: var(--ink-muted); }
+  .prong { fill: var(--ink-faint); }
+  .into { fill: none; stroke: var(--primary-600); stroke-width: 1.5; stroke-dasharray: 3 4; }
+  .core { fill: var(--primary-600); }
+  .socket { fill: var(--primary-900); }
+  .hole { fill: var(--primary-500); }
+  .sock-t { font-size: 15px; font-weight: 600; fill: var(--primary-800); }
+  .ext-more { margin-top: var(--s-4); }
+  .plugs { margin: 0; display: grid; }
+  .plugs div { display: grid; grid-template-columns: 220px 1fr; gap: 16px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.5; }
+  .plugs div:first-child { border-top: 0; }
+  .plugs dt { font-weight: 600; }
+  .plugs dd { margin: 0; color: var(--ink-muted); }
+  @media (max-width: 767px) { .plugs div { grid-template-columns: 1fr; gap: 2px; } }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--e-1); overflow: hidden; }
+  @media (max-width: 1023px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { display: grid; gap: 4px; align-content: start; padding: var(--s-4) var(--s-5) var(--s-5); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 -1px -1px 0; }
+  .t-a { font-size: 13.5px; font-weight: 500; color: var(--ink-muted); }
+  .t-v { font-size: 1.875rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; color: var(--ink); }
+  .t-d { font-size: 14px; color: var(--ink-muted); line-height: 1.45; }
+
+  .ms-strip { list-style: none; margin: var(--s-4) 0 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+  @media (max-width: 1023px) { .ms-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .ms-strip li { display: grid; gap: 2px; align-content: start; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-control); }
+  .ms-strip li:last-child { background: var(--accent-50); border-color: transparent; }
+  .ms-strip .m { font-size: 13px; font-weight: 700; color: var(--primary-700); }
+  .ms-strip li:last-child .m { color: var(--accent-700); }
+  .ms-strip .d { font-weight: 600; font-size: 15px; }
+  .ms-strip .t { font-size: 14px; color: var(--ink-muted); line-height: 1.4; }
+
+  table.risks td:first-child { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; }
+  table.risks td:first-child :global(svg) { flex: none; color: var(--warning-vivid); margin-top: 4px; }
+  table.risks td:last-child { color: var(--ink-muted); }
+  table.risks :global(.pill) { font-size: 13px; }
+</style>

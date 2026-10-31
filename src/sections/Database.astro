@@ -1,0 +1,268 @@
+---
+// 06 Database. Source: arch/06-database.txt
+import Takeaway from '../components/Takeaway.astro';
+import Pill from '../components/Pill.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+
+type Mod = 'core' | 'stays' | 'payments' | 'ledger' | 'guestcard' | 'access' | 'listings';
+const mods: { key: Mod; name: string }[] = [
+  { key: 'core', name: 'core' }, { key: 'stays', name: 'stays' }, { key: 'payments', name: 'payments' },
+  { key: 'ledger', name: 'ledger' }, { key: 'guestcard', name: 'guestcard + access' }, { key: 'listings', name: 'listings' },
+];
+const W = 200, H = 44;
+const T: Record<string, { x: number; y: number; m: Mod; w?: number }> = {
+  houses: { x: 20, y: 60, m: 'core' }, settings_sets: { x: 20, y: 150, m: 'core' },
+  units: { x: 250, y: 60, m: 'core' }, ownerships: { x: 250, y: 150, m: 'core' },
+  people: { x: 20, y: 240, m: 'core' }, consents: { x: 20, y: 330, m: 'stays' },
+  stays: { x: 480, y: 150, m: 'stays' },
+  stay_segments: { x: 720, y: 210, m: 'stays' }, stay_guests: { x: 720, y: 270, m: 'stays' },
+  checkins: { x: 720, y: 330, m: 'stays' }, change_requests: { x: 720, y: 390, m: 'stays' },
+  payment_requests: { x: 720, y: 450, m: 'payments' }, feratel_registrations: { x: 720, y: 510, m: 'guestcard', w: 216 },
+  access_grants: { x: 720, y: 570, m: 'access' },
+  guest_cards: { x: 960, y: 270, m: 'guestcard' }, refunds: { x: 960, y: 450, m: 'payments' },
+  listings: { x: 720, y: 60, m: 'listings' },
+  listing_photos: { x: 960, y: 10, m: 'listings' }, listing_texts: { x: 960, y: 66, m: 'listings' }, listing_field_states: { x: 960, y: 122, m: 'listings' },
+  ledger_transactions: { x: 20, y: 480, m: 'ledger' }, ledger_entries: { x: 250, y: 480, m: 'ledger' }, accounts: { x: 480, y: 480, m: 'ledger' },
+};
+// [path, endMarker] ; start marker is always "one"
+const rels: [string, 'many' | 'one', boolean?][] = [
+  ['M120 104 V150', 'many'],             // houses -> settings_sets (scope)
+  ['M220 82 H250', 'many'],              // houses -> units
+  ['M350 104 V150', 'many'],             // units -> ownerships
+  ['M220 262 H300 V194', 'many'],        // people -> ownerships
+  ['M120 284 V330', 'many'],             // people -> consents
+  ['M450 92 H580 V150', 'many'],         // units -> stays
+  ['M450 74 H720', 'one'],               // units -> listings (1:1)
+  ['M940 82 V144 H960', 'many', true],   // listings -> field states
+  ['M940 82 V88 H960', 'many', true],    // listings -> texts
+  ['M940 82 V32 H960', 'many', true],    // listings -> photos
+  ['M920 292 H960', 'one'],              // stay_guests -> guest_cards (0..1)
+  ['M920 472 H960', 'many'],             // payment_requests -> refunds
+  ['M220 502 H250', 'many'],             // transactions -> entries
+  ['M480 502 H450', 'many'],             // accounts -> entries
+];
+const stayKids: [string, 'many' | 'one'][] = [
+  ['stay_segments', 'many'], ['stay_guests', 'many'], ['checkins', 'one'], ['change_requests', 'many'],
+  ['payment_requests', 'many'], ['feratel_registrations', 'one'], ['access_grants', 'many'],
+];
+
+const tables: { m: string; rows: [string, string][] }[] = [
+  { m: 'core', rows: [
+    ['houses', 'id, name, code (ALP, SPI), plot_no, permit_ref, address, latitude, longitude, timezone, lodgify_ids, feratel_company_no, feratel_municipality_code, active'],
+    ['units', 'id, house_id, code (A3), stwe_no (3078-4), type (managed | primary_residence), unit_type (2.5 / 3.5 / 4.5), beds, max_guests, floor, lat/long (entrance), lodgify_property_id, lodgify_room_type_id, salto_door_ids[], active'],
+    ['people', 'id, first_name, last_name, email, phone, language, address, birth_date (PII), nationality, vat_status, notes'],
+    ['ownerships', 'id, house_id, unit_id, person_id, share_percent, valid_from, valid_to, tourist_tax_mode (yearly_flat | per_stay), cost_account_id · no overlapping periods for the same unit + person'],
+    ['users, user_roles', 'id, person_id, email, status, last_login_at · role (admin, backoffice, bookkeeping, owner), house_id (null = all) · Better Auth tables alongside'],
+    ['settings_sets', 'id, scope (global | house | unit), scope_id, valid_from, values (jsonb, Zod-validated), schema_version, created_by, note · old sets never edited'],
+    ['audit_log', 'id, at, actor_type, actor_id, house_id, object_type, object_id, action, before, after, request_id · append-only'],
+  ] },
+  { m: 'stays', rows: [
+    ['stays', 'id, house_id, unit_id, kind (guest | own_use | friends), channel, lodgify_booking_id, owner_person_id, main_guest_person_id, arrival, departure, adults, children_ages[], cost_payer, status, guaranteed, amounts (jsonb), language, invite_sent_at, link_token_hash, link_expires_at, version'],
+    ['stay_segments', 'id, stay_id, kind (original | extension | date_change), arrival, departure, nights, price_rappen, payment_request_id, lodgify_ref, status'],
+    ['stay_guests', 'id, stay_id, person_id, is_main, birth_date (PII), nationality, id_document_no (PII, only if legally needed), tax_category'],
+    ['checkins', 'id, stay_id, submitted_at, submitted_by (guest | owner), persons_reported, arrival_time, parking_needed, extra_persons, completed_at'],
+    ['change_requests', 'id, stay_id, kind (late_checkin | late_checkout), requested, status (open, approved, declined), price_rappen, answered_by, answered_at'],
+    ['night_holds', 'id, unit_id, night, quote_id, expires_at · UNIQUE(unit_id, night)'],
+    ['consents', 'id, person_id, purpose (marketing), channel, granted_at, revoked_at, source (checkin)'],
+  ] },
+  { m: 'payments', rows: [
+    ['payment_requests', 'id, house_id, stay_id, purpose (friend_costs | extra_persons | extension | date_change | deposit), lines, amount_rappen, currency, status, stripe_session_id, stripe_payment_intent_id, paid_at, idempotency_key'],
+    ['refunds', 'id, payment_request_id, amount_rappen, reason, stripe_refund_id, status, created_by'],
+  ] },
+  { m: 'ledger', rows: [
+    ['accounts', 'id, house_id, money_circle (owner_rental | stweg | picobello), kind, unit_id, person_id, name'],
+    ['ledger_transactions', 'id, house_id, occurred_at, recorded_at, type, description, source, source_ref, stay_id, payment_request_id, raw_event_id, reverses_transaction_id'],
+    ['ledger_entries', 'id, transaction_id, account_id, amount_rappen (signed), vat_rate_bp (380 = 3.8 %), vat_amount_rappen · entries of one transaction sum to 0 · no UPDATE / DELETE'],
+  ] },
+  { m: 'guestcard · access', rows: [
+    ['feratel_registrations', 'id, stay_id, status (pending, sent, accepted, failed, cancelled), feratel_ref, sent_at, last_error'],
+    ['guest_cards', 'id, stay_guest_id, registration_id, card_no, qr_payload, url, wallet_url, valid_from, valid_to, status'],
+    ['access_grants', 'id, stay_id, person_id, door_ids[], valid_from, valid_to, salto_user_ref, salto_access_ref, status (pending, active, changed, revoked, failed)'],
+  ] },
+  { m: 'listings', rows: [
+    ['listings', 'id, unit_id, title (per language), size_m2, bedrooms, bathrooms, amenities[], house_rules, checkin_info, policies, version'],
+    ['listing_photos', 'id, listing_id, storage_key, width, height, caption, sort_order, is_cover, content_hash'],
+    ['listing_texts', 'id, listing_id, channel, language (de, fr, en), field, text, content_hash'],
+    ['channel_sync_rules', 'id, field_key, channel, mode (auto_api | auto_via_lodgify | manual | not_supported), note'],
+    ['listing_field_states', 'id, listing_id, field_key, channel, state, content_hash, pushed_at, confirmed_by, confirmed_at, last_error'],
+  ] },
+  { m: 'messaging · integrations · migration', rows: [
+    ['message_templates, messages', 'key, channel (email; whatsapp later), language, subject, body, version · to, status, provider_ref, sent_at'],
+    ['inbox_events', 'id, provider, event_type, external_id, idempotency_key UNIQUE, payload, received_at, status, attempts, last_error'],
+    ['outbox_jobs', 'pg-boss tables (job, archive, schedule) + view integration_jobs_v'],
+    ['integration_status', 'provider, house_id, last_success_at, last_error_at, last_error, pending_count, failed_count'],
+    ['import_runs', 'id, source (archipex), file_key, status, report, applied_at, applied_by'],
+  ] },
+];
+const phase2 = ['cleaning_orders', 'tickets', 'ticket_events', 'quotes', 'approvals', 'contractor_documents', 'statements', 'statement_lines', 'payouts', 'bank_statements', 'bank_transactions', 'bank_matches', 'bexio_exports', 'zwg_reports'];
+---
+<Takeaway>The database itself refuses bad data: no two active stays can overlap on one unit, and the entries of a ledger transaction must sum to zero.</Takeaway>
+
+<div class="block">
+  <div class="grid grid-3">
+    <article class="card fact">
+      <h4 class="eyebrow">Choice · decided</h4>
+      <p class="fact-title">PostgreSQL 16 on Cloud SQL, Zurich</p>
+      <ul class="list compact">
+        <li>Real ACID transactions, foreign keys, check and exclusion constraints</li>
+        <li>JSONB for flexible parts, without a second database</li>
+        <li>The job queue lives in the same database</li>
+      </ul>
+    </article>
+    <article class="card fact">
+      <h4 class="eyebrow">Why Zurich</h4>
+      <p class="fact-title">Data stays in Switzerland</p>
+      <ul class="list compact">
+        <li>revDSG; spec principle "hosting CH or EU"</li>
+        <li>Managed: backups, point-in-time recovery, patches</li>
+        <li>High availability with one switch</li>
+      </ul>
+    </article>
+    <article class="card fact">
+      <h4 class="eyebrow">Size</h4>
+      <p class="fact-title">2 vCPU · 8 GB · 20 GB SSD</p>
+      <ul class="list compact">
+        <li>Production with auto-grow and HA from go-live</li>
+        <li>Staging: 1 vCPU / 3.75 GB, no HA</li>
+        <li>22 units produce tiny data; this carries hundreds of houses</li>
+      </ul>
+    </article>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Entity relationships · Phase 1 core</h3>
+  <Figure label="Entity relationship diagram of the Phase 1 core tables, coloured by module" minWidth={980}>
+    <svg viewBox="0 0 1180 630" xmlns="http://www.w3.org/2000/svg" class="erd">
+      {rels.map(([d, end, branch]) => <path d={d} class="rel" marker-start={branch ? undefined : 'url(#erd-one)'} marker-end={`url(#erd-${end})`} />)}
+      <path d="M920 82 H940" class="rel" marker-start="url(#erd-one)" />
+      <path d="M680 172 H700 V592" class="rel" marker-start="url(#erd-one)" />
+      {stayKids.map(([k, end]) => <path d={`M700 ${T[k].y + 22} H720`} class="rel" marker-end={`url(#erd-${end})`} />)}
+      {Object.entries(T).map(([name, t]) => (
+        <g class={`ent m-${t.m}`}>
+          <rect x={t.x} y={t.y} width={t.w ?? W} height={H} rx="8" />
+          <rect x={t.x} y={t.y} width="4" height={H} rx="2" class="bar" />
+          <text x={t.x + 16} y={t.y + 27}>{name}</text>
+        </g>
+      ))}
+      <text x="20" y="420" class="svg-note">Keys every business table carries:</text>
+      <text x="20" y="440" class="svg-note mono-note">house_id · created_at · updated_at · version</text>
+    </svg>
+    <Fragment slot="legend">
+      {mods.map((m) => <span class="legend-item"><span class={`mod-sw m-${m.key}`}></span>{m.name}</span>)}
+      <span class="legend-item"><svg width="34" height="14" aria-hidden="true"><path d="M2 7 H32 M20 1 L32 7 L20 13" fill="none" stroke="var(--ink-muted)" stroke-width="1.4" /></svg>many</span>
+      <span class="legend-item"><svg width="34" height="14" aria-hidden="true"><path d="M2 7 H32 M26 1 V13" fill="none" stroke="var(--ink-muted)" stroke-width="1.4" /></svg>one</span>
+    </Fragment>
+  </Figure>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 db-split">
+    <div>
+      <h3 class="block-title">Constraints that guard the data</h3>
+      <ul class="guards">
+        <li><code>stays</code> exclusion constraint: no two active stays overlap on the same unit (<code>daterange(arrival, departure) &amp;&amp;</code>)</li>
+        <li><code>ledger_entries</code>: entries of one transaction sum to 0 (deferred constraint trigger); no UPDATE / DELETE (revoked privileges + trigger)</li>
+        <li><code>night_holds</code> UNIQUE(unit_id, night): two guests can't buy the same night</li>
+        <li><code>ownerships</code>: no overlapping periods for the same unit + person</li>
+        <li><code>inbox_events</code> idempotency_key UNIQUE: duplicate webhooks are ignored</li>
+        <li><code>stays</code>: departure &gt; arrival</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="block-title">Global conventions</h3>
+      <dl class="conv">
+        <div><dt>Keys</dt><dd>UUIDv7, generated in the app</dd></div>
+        <div><dt>Money</dt><dd>bigint Rappen (CHF 184.50 = 18450), never float; currency char(3) 'CHF'</dd></div>
+        <div><dt>Time</dt><dd>timestamptz in UTC; stay dates as local Lenk day; 16:00 / 10:00 from settings</dd></div>
+        <div><dt>Deletes</dt><dd>soft delete only where needed; ledger and audit never deleted or updated</dd></div>
+        <div><dt>PII</dt><dd>personal columns marked in schema comments, for retention and export</dd></div>
+        <div><dt>Tenancy</dt><dd>every query needs a tenant context; queries without house scope fail in tests</dd></div>
+      </dl>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">All Phase 1 tables</h3>
+  {tables.map((g) => (
+    <details class="disclose">
+      <summary><span class="mono">{g.m}</span><span class="count">{g.rows.length} {g.rows.length === 1 ? 'table' : 'tables'}</span><Icon name="chevron-right" size={18} class="chev" /></summary>
+      <div class="disclose-body">
+        <dl class="tbls">{g.rows.map(([t, c]) => <div><dt class="mono">{t}</dt><dd>{c}</dd></div>)}</dl>
+      </div>
+    </details>
+  ))}
+  <div class="p2">
+    <p><strong>Reserved for Phase 2</strong> (designed now, created in April). They join on existing Phase 1 keys, so April adds tables and changes none.</p>
+    <div class="chips">{phase2.map((t) => <span class="chip chip-muted mono">{t}</span>)}</div>
+  </div>
+</div>
+
+<div class="block">
+  <div class="grid grid-2 db-split">
+    <div>
+      <h3 class="block-title">Data protection</h3>
+      <ul class="list">
+        <li>Encryption at rest (Cloud SQL default) and in transit (TLS).</li>
+        <li><code>id_document_no</code> deleted by the retention job after the legal period <Pill kind="verify" text="Verify period" /></li>
+        <li>Guest link tokens stored only as a hash.</li>
+        <li>Consent stored separately from booking data.</li>
+        <li>Export of all data for one person (right of access) from the Back Office.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="block-title">Migrations and backups</h3>
+      <ul class="list">
+        <li>Drizzle generates SQL migrations; reviewed in pull requests, run by CI before the new API goes live.</li>
+        <li>Only additive changes per release: expand → migrate → contract. No downtime.</li>
+        <li>Daily automatic backups + point-in-time recovery for 7 days.</li>
+        <li>Monthly export to a separate bucket, kept 10 years for the ledger (Swiss bookkeeping retention).</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<style>
+  .fact { display: grid; gap: var(--s-3); align-content: start; }
+  .fact-title { font-family: var(--font-head); font-weight: 700; font-size: 1.125rem; line-height: 1.35; }
+
+  .erd .rel { fill: none; stroke: var(--ink-muted); stroke-width: 1.4; }
+  .ent rect { stroke-width: 1; }
+  .ent text { font-family: var(--font-mono); font-size: 15px; font-weight: 600; fill: var(--ink); }
+  .mono-note { font-family: var(--font-mono); font-size: 14px; }
+  .m-core rect { fill: var(--primary-50); stroke: var(--primary-100); } .m-core .bar { fill: var(--primary-600); stroke: none; }
+  .m-stays rect { fill: var(--violet-50); stroke: #E4DCFB; } .m-stays .bar { fill: var(--violet-600); stroke: none; }
+  .m-payments rect, .m-ledger rect { fill: var(--sun-50); stroke: #FBE7BF; } .m-payments .bar { fill: var(--sun-500); stroke: none; }
+  .m-ledger rect { fill: var(--surface); stroke: var(--line-strong); } .m-ledger .bar { fill: var(--glacier-500); stroke: none; }
+  .m-guestcard rect, .m-access rect { fill: var(--surface-2); stroke: var(--line); } .m-guestcard .bar, .m-access .bar { fill: var(--ink-muted); stroke: none; }
+  .m-listings rect { fill: var(--surface); stroke: var(--violet-300); } .m-listings .bar { fill: var(--violet-300); stroke: none; }
+  .mod-sw { width: 14px; height: 14px; border-radius: 4px; border-left: 4px solid; }
+  .mod-sw.m-core { background: var(--primary-50); border-color: var(--primary-600); }
+  .mod-sw.m-stays { background: var(--violet-50); border-color: var(--violet-600); }
+  .mod-sw.m-payments { background: var(--sun-50); border-color: var(--sun-500); }
+  .mod-sw.m-ledger { background: var(--surface); border-color: var(--glacier-500); box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .mod-sw.m-guestcard { background: var(--surface-2); border-color: var(--ink-muted); }
+  .mod-sw.m-listings { background: var(--surface); border-color: var(--violet-300); box-shadow: inset 0 0 0 1px var(--violet-300); }
+
+  .db-split { gap: var(--s-8); align-items: start; }
+  .guards { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .guards li { padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-control); font-size: var(--fs-label); line-height: 1.5; }
+  .guards code, .tbls code { color: var(--primary-800); font-size: 14px; }
+  .conv { margin: 0; display: grid; border-top: 1px solid var(--line); }
+  .conv div { display: grid; grid-template-columns: 90px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-label); }
+  .conv dt { color: var(--ink-muted); font-weight: 500; }
+  .conv dd { margin: 0; }
+  .tbls { margin: 0; display: grid; }
+  .tbls div { display: grid; grid-template-columns: 220px 1fr; gap: 16px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.55; }
+  .tbls div:first-child { border-top: 0; }
+  .tbls dt { font-size: 14px; font-weight: 600; color: var(--primary-800); }
+  .tbls dd { margin: 0; color: var(--ink-muted); }
+  @media (max-width: 767px) { .tbls div { grid-template-columns: 1fr; gap: 2px; } }
+  .p2 { margin-top: var(--s-6); display: grid; gap: var(--s-3); }
+  .p2 p { font-size: var(--fs-label); color: var(--ink-muted); max-width: var(--measure); }
+  .p2 strong { color: var(--ink); }
+  .p2 .chip { font-size: 13px; }
+  li :global(.pill) { font-size: 13px; }
+</style>

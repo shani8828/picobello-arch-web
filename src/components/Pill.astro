@@ -1,0 +1,7 @@
+---
+// Visible marker for items the source files flag as [Open] or [Verify].
+interface Props { kind: 'open' | 'verify' | 'success' | 'danger' | 'neutral'; text?: string }
+const { kind, text } = Astro.props;
+const word = text ?? (kind === 'open' ? 'Open' : kind === 'verify' ? 'Verify' : '');
+---
+<span class={`pill pill-${kind}`}>{word}<slot /></span>

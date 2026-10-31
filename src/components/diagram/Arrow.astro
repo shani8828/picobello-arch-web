@@ -1,0 +1,16 @@
+---
+// Connector with an arrowhead at the end (and optionally the start).
+// Labels get a snow halo so they stay readable across lines.
+interface Props {
+  d: string; label?: string | string[]; lx?: number; ly?: number;
+  anchor?: 'start' | 'middle' | 'end'; dashed?: boolean; muted?: boolean;
+  start?: boolean; end?: boolean;
+}
+const { d, label, lx = 0, ly = 0, anchor = 'middle', dashed = false, muted = false, start = false, end = true } = Astro.props;
+const lines = label ? (Array.isArray(label) ? label : [label]) : [];
+const marker = muted ? 'url(#arr-muted)' : 'url(#arr)';
+---
+<g class={`ar${muted ? ' ar-muted' : ''}${dashed ? ' ar-dashed' : ''}`}>
+  <path d={d} marker-end={end ? marker : undefined} marker-start={start ? marker : undefined} />
+  {lines.map((l, i) => <text x={lx} y={ly + i * 19} text-anchor={anchor} class="ar-label">{l}</text>)}
+</g>
