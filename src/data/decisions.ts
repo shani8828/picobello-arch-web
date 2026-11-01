@@ -119,7 +119,7 @@ export const decisions: Decision[] = [
     ['Accessibility', '+++ (Radix)', '+++', '++', '- (DIY)'],
     ['Bundle size', '+++', '-', '+', '+++'],
     ['Speed to build', '+++', '++', '++', '-'],
-  ], choice: 'Tailwind CSS + shadcn/ui, styled with our own tokens (section 13)' },
+  ], choice: 'Tailwind CSS + shadcn/ui, styled with our own tokens' },
   { n: 17, title: 'Monorepo tooling', options: ['pnpm + Turborepo', 'Nx', 'Separate repos'], winner: 0, rows: [
     ['Shared code', '+++', '+++', '- (packages to publish)'],
     ['Build only changed', '+++', '+++', 'n/a'],
@@ -150,4 +150,23 @@ export const decisions: Decision[] = [
     ['Tabular numbers (CHF)', '+++', '+++', '++', '+'],
     ['Self-hostable, free', '+++', '+++', '+++', 'n/a'],
   ], choice: 'Plus Jakarta Sans (headings) + Inter (UI)' },
+  { n: 22, title: 'Regional content (dataCycle)', options: ['Sync into our cache', 'Live calls from the app', 'Copy by hand in Back Office'], winner: 0, rows: [
+    ['Speed for the guest', '+++', '-', '+++'],
+    ['Works if dataCycle is down', '+++ (last good)', '--', '+++'],
+    ['Always up to date', '++ (15 min)', '+++', '--'],
+    ['No double maintenance', '+++', '+++', '--'],
+    ['Analytics + translation', '+++ (one place)', '-', '+'],
+  ], choice: 'Sync into our cache' },
+  { n: 23, title: 'How the feed is ordered', options: ['Filter in code + AI ranking', 'Rules only', 'AI only'], winner: 0, rows: [
+    ['Fits each guest and moment', '+++', '+', '+++'],
+    ['Never shows closed or wrong items', '+++ (filter)', '+++', '- (may guess)'],
+    ['Works without AI', '+++ (fallback)', '+++', '--'],
+    ['Cost', '+ (cached)', '+++', '-'],
+  ], choice: 'Filter in code + AI ranking, with a rule-based fallback' },
+  { n: 24, title: 'Agents and MCP', options: ['One tool registry (REST + MCP)', 'Separate AI backend', 'No agent layer now'], winner: 0, rows: [
+    ['Same rules and rights', '+++', '- (duplicated)', 'n/a'],
+    ['Safety (confirm, audit)', '+++', '-', 'n/a'],
+    ['Phase 1 cost', '++ (discipline)', '-', '+++'],
+    ['Ready for voice / chat', '+++', '++', '-- (rework)'],
+  ], choice: 'One tool registry, REST and MCP as two doors' },
 ];

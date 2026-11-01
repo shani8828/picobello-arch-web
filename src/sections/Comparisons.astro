@@ -46,7 +46,6 @@ const labels: Record<string, string> = { '3': 'excellent', '2': 'good', '1': 'ok
     {decisions.map((d) => (
       <article class="dcard" id={`d${d.n}`}>
         <header>
-          <span class="dn mono">D{d.n}</span>
           <h4>{d.title}</h4>
           {d.open && <Pill kind="open" text="Decision for Seva, 5 Nov" />}
         </header>

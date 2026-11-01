@@ -1,13 +1,18 @@
 ---
-// Wrapper for a diagram: scrolls sideways on phones instead of shrinking
-// labels below a readable size.
+// Wrapper for a diagram. It always fits the screen width; on smaller
+// screens "Enlarge" opens it full screen at a readable size (viewer in
+// scripts/alive.ts), so nothing runs off the edge of the page.
+import Icon from '../Icon.astro';
 interface Props { caption?: string; minWidth?: number; label: string; flat?: boolean }
 const { caption, minWidth = 860, label, flat = false } = Astro.props;
 ---
-<figure class={`figure${flat ? ' figure-flat' : ''}`}>
-  <div class="figure-canvas" style={`--min-w:${minWidth}px`} role="img" aria-label={label}>
+<figure class={`figure${flat ? ' figure-flat' : ''}`} data-figure>
+  <div class="figure-canvas" style={`--min-w:${minWidth}px`} role="img" aria-label={label} data-min-w={minWidth}>
     <slot />
   </div>
+  <button type="button" class="fig-zoom" data-fig-zoom aria-label={`Enlarge diagram: ${label}`}>
+    <Icon name="maximize-2" size={16} /><span>Enlarge</span>
+  </button>
   {(caption || Astro.slots.has('legend')) && (
     <figcaption>
       <slot name="legend" />

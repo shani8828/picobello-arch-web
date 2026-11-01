@@ -47,6 +47,7 @@ const stories: { group: string; items: [string, string][] }[] = [
     ['G-9', 'I can shorten or change my dates if availability fits. No approval.'],
     ['G-10', 'I can request a late check-in or late check-out; Picobello answers in the app (needs approval because of cleaning).'],
     ['G-11', 'My link stops working after departure (data protection).'],
+    ['G-12', 'On the home screen I see "Today · picked for you": regional offers chosen for my situation (weather, day of stay, family / couple), in my language. From dataCycle, live 15–31 Jan 2027.'],
   ] },
   { group: 'Friend of owner', items: [
     ['F-1', 'I get the same personal link and Guest App as a guest.'],
@@ -125,6 +126,15 @@ const months = [
     <section class="col col-p1">
       <header><span class="col-title">Phase 1</span><span class="col-meta">~10 Jan 2027 · must</span><span class="count tnum">{phase1.length}</span></header>
       <div class="chips">{phase1.map((c) => <span class="chip chip-soft">{c}</span>)}</div>
+      <div class="p3">
+        <span class="col-title small">Regional content + AI · test Nov–Jan, live 15–31 Jan</span>
+        <div class="chips">
+          <a class="chip chip-soft" href="#regional">"Today · picked for you" from dataCycle</a>
+          <a class="chip chip-soft" href="#regional">AI ranking per guest and moment</a>
+          <a class="chip chip-soft" href="#regional">Anonymised insights</a>
+          <a class="chip" href="#regional">MCP + voice agents: designed now, built later</a>
+        </div>
+      </div>
     </section>
     <section class="col">
       <header><span class="col-title">Phase 2</span><span class="col-meta">April 2027 · designed now</span><span class="count tnum">{phase2.length}</span></header>

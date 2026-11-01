@@ -5,10 +5,6 @@ const { meta } = Astro.props;
 ---
 <section class="section" id={meta.id} data-section aria-labelledby={`${meta.id}-title`}>
   <header class="section-head">
-    <div class="section-num">
-      <span>{meta.num === '—' ? 'Appendix' : meta.num === '00' ? 'Overview' : `Section ${meta.num}`}</span>
-      {meta.file && <span class="src">· arch/{meta.file}</span>}
-    </div>
     <h2 id={`${meta.id}-title`}>{meta.title}</h2>
     <p class="question"><b>{meta.leadLabel}:</b> {meta.lead}</p>
   </header>

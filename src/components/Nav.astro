@@ -15,7 +15,7 @@ import Icon from './Icon.astro';
     <a href="#overview" class="nav-brand"><Logo /></a>
     <button class="nav-close" type="button" data-nav-close aria-label="Close sections"><Icon name="x" size={20} /></button>
   </div>
-  <p class="nav-doc">Platform architecture<span>Review · 5 Nov 2026</span></p>
+  <p class="nav-doc">Platform architecture</p>
 
   <nav>
     <ol class="nav-list">
@@ -56,7 +56,6 @@ import Icon from './Icon.astro';
   .nav-brand { text-decoration: none; }
   .nav-close { display: none; }
   .nav-doc { padding: var(--s-4) var(--s-3) var(--s-5); font-size: var(--fs-ui); font-weight: 600; color: var(--ink); line-height: 1.4; border-bottom: 1px solid var(--line); margin-bottom: var(--s-3); }
-  .nav-doc span { display: block; font-weight: 400; color: var(--ink-muted); font-size: var(--fs-caption); margin-top: 2px; }
 
   .nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
   .nav-list a {
@@ -92,7 +91,7 @@ import Icon from './Icon.astro';
       height: 56px; padding: 0 16px; background: var(--snow); border-bottom: 1px solid var(--line);
     }
     .topbar-brand { text-decoration: none; }
-    .topbar-btn { display: inline-flex; align-items: center; gap: var(--s-2); height: 40px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-control); background: var(--surface); font: 500 var(--fs-ui) var(--font-body); color: var(--ink); cursor: pointer; }
+    .topbar-btn { display: inline-flex; align-items: center; gap: var(--s-2); height: 40px; padding: 0 var(--s-2); border: 0; border-radius: var(--r-control); background: none; -webkit-tap-highlight-color: transparent; font: 500 var(--fs-ui) var(--font-body); color: var(--ink); cursor: pointer; }
     .nav {
       position: fixed; z-index: 50; top: 0; left: 0; bottom: 0; width: min(320px, 86vw); height: auto;
       transform: translateX(-102%); transition: transform 240ms var(--ease); box-shadow: var(--e-3);

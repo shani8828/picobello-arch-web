@@ -18,6 +18,9 @@ const masters: [string, string, string][] = [
   ['Access rights', 'Platform', 'SALTO (executes)'],
   ['Payments', 'Stripe', 'Platform ledger'],
   ['Money records (ledger)', 'Platform', 'Bexio (April)'],
+  ['Regional content (POIs, events, railways, images)', 'dataCycle', 'Platform (cache, read-only)'],
+  ['Weather', 'Provider', 'Platform (cache)'],
+  ['Recommendations ("Today" feed)', 'Platform', '— (computed)'],
 ];
 
 // Platform frame
@@ -64,8 +67,18 @@ const P = { x: 330, y: 214, w: 480, h: 316 };
       <Box x={330} y={660} w={220} h={76} title="Stripe" sub="payments" icon="credit-card" variant="ext" />
       <Arrow d={`M400 ${P.y + P.h} V660`} label={['payment sessions,', 'refunds']} lx={390} ly={574} anchor="end" />
       <Arrow d={`M470 660 V${P.y + P.h}`} label={['payment', 'events']} lx={480} ly={584} anchor="start" />
-      <text x="20" y="690" class="svg-note">Money goes from Stripe to</text>
-      <text x="20" y="709" class="svg-note">Picobello's bank, never through us.</text>
+      <text x="20" y="712" class="svg-note">Money goes from Stripe to</text>
+      <text x="20" y="731" class="svg-note">Picobello's bank, never through us.</text>
+
+      <!-- Regional content + AI (section 16) -->
+      <rect x="20" y="524" width="280" height="160" rx="14" class="grp-new" />
+      <text x="38" y="550" class="grp-label">Regional content + AI</text>
+      <text x="38" y="578" class="p2-row new">dataCycle</text><text x="282" y="578" class="p2-dir" text-anchor="end">in, read-only</text>
+      <text x="38" y="600" class="p2-row new">Weather</text><text x="282" y="600" class="p2-dir" text-anchor="end">in</text>
+      <text x="38" y="622" class="p2-row new">AI provider</text><text x="282" y="622" class="p2-dir" text-anchor="end">both ways</text>
+      <text x="38" y="644" class="p2-row">MCP clients</text><text x="282" y="644" class="p2-dir" text-anchor="end">later</text>
+      <text x="38" y="666" class="p2-dir">live 15–31 Jan 2027</text>
+      <Arrow d={`M300 560 H312 V512 H${P.x}`} start={true} />
 
       <!-- Email + Maps (bottom) -->
       <Box x={606} y={660} w={196} h={76} title="Email" sub="Postmark" icon="mail" variant="ext" />
@@ -95,11 +108,12 @@ const P = { x: 330, y: 214, w: 480, h: 316 };
       <span class="legend-item"><span class="legend-swatch box soft"></span>Our system</span>
       <span class="legend-item"><span class="legend-swatch box"></span>Outside system / people</span>
       <span class="legend-item"><span class="legend-swatch box p2"></span>Phase 2</span>
+      <span class="legend-item"><span class="legend-swatch box new"></span>Regional content + AI</span>
       <span class="legend-item"><span class="legend-swatch"></span>Data flow</span>
       <span class="legend-item"><span class="legend-swatch dashed"></span>One-time / later</span>
     </Fragment>
   </Figure>
-  <p class="note-line"><Icon name="info" size={18} /> Not needed: weather (MeteoSwiss), because snow clearing was dropped. Authorities get the ZWG report as a PDF, with no system connection.</p>
+  <p class="note-line"><Icon name="info" size={18} /> Weather is no longer needed for snow clearing (dropped), but it is now a signal for the regional "Today" feed. Authorities get the ZWG report as a PDF, with no system connection. AI agents (later) act as one of the people on the left, through MCP, with that person's rights.</p>
 </div>
 
 <div class="block">
@@ -123,6 +137,9 @@ const P = { x: 330, y: 214, w: 480, h: 316 };
 <style>
   .p2-row { font-size: 15px; font-weight: 500; fill: var(--ink-muted); }
   .p2-dir { font-size: 13px; fill: var(--ink-faint); }
+  .p2-row.new { fill: var(--ink); }
+  .grp-new { fill: var(--accent-50); stroke: var(--accent-500); }
+  :global(.legend-swatch.box.new) { background: var(--accent-50); border-color: var(--accent-500); }
   .note-line { display: flex; gap: 10px; align-items: flex-start; margin-top: var(--s-4); font-size: var(--fs-ui); color: var(--ink-muted); max-width: var(--measure); }
   .note-line :global(svg) { flex: none; margin-top: 2px; color: var(--info-vivid); }
   td.muted { color: var(--ink-muted); }

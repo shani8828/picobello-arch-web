@@ -278,7 +278,9 @@ const readers: [string, string, string][] = [
 
   .money-split { gap: var(--s-8); align-items: start; }
   .accts { margin: 0; display: grid; border-top: 1px solid var(--line); }
-  .accts div { display: grid; grid-template-columns: 120px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; line-height: 1.6; }
+  .accts dd { min-width: 0; overflow-wrap: anywhere; }
+  @media (max-width: 479px) { .accts div { grid-template-columns: minmax(0, 1fr) !important; gap: 2px !important; } }
+  .accts div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; line-height: 1.6; }
   .accts dt { font-weight: 600; color: var(--ink-muted); }
   .accts dd { margin: 0; }
   code { color: var(--primary-800); font-size: 0.88em; }

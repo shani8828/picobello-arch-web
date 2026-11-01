@@ -68,7 +68,7 @@ const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
 
 <div class="block">
   <h3 class="block-title">Rule check · owner reservation</h3>
-  <p class="block-sub">All checks run and all failures are returned. Example below uses the rejection from the API error example in section 05.</p>
+  <p class="block-sub">All checks run and all failures are returned. Example below uses the rejection from the API error example in <a href="#api">Backend and API</a>.</p>
   <article class="rulecard">
     <header class="rc-head">
       <div>
@@ -130,7 +130,7 @@ const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
         <div class="r-line"><span>Laundry <em>3 × 35.00</em></span><span class="r-amt"><small>CHF</small>105.00</span></div>
         <div class="r-line"><span>Tourist tax <em>3 × 7 nights × 5.00</em></span><span class="r-amt"><small>CHF</small>105.00</span></div>
         <div class="r-total"><span>Total</span><span class="r-amt"><small>CHF</small>390.00</span></div>
-        <p class="r-note">No 10 % fee and no consumables for friends (decided 29 Oct). Cleaning amount per unit type comes from settings; 180.00 is the illustration used in file 09.</p>
+        <p class="r-note">No 10 % fee and no consumables for friends (decided 29 Oct). Cleaning amount per unit type comes from settings; 180.00 is the illustration used in Money and ledger.</p>
       </div>
     </div>
   </div>
@@ -384,7 +384,7 @@ const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
 
   .sm-title { display: flex; align-items: baseline; gap: 10px; margin: var(--s-6) 0 var(--s-3); font-size: 1.125rem; font-weight: 700; }
   .sm-title span { font-family: var(--font-body); font-size: var(--fs-ui); font-weight: 500; color: var(--ink-muted); }
-  .sm-grid { display: grid; grid-template-columns: 1fr; gap: 0 var(--s-6); }
+  .sm-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 var(--s-6); }
   .sm-grid :global(.figure-canvas > svg) { max-width: 860px; }
   @media (min-width: 1800px) { .sm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .sm-note { margin-top: 8px; font-size: 14px; color: var(--ink-muted); line-height: 1.5; }

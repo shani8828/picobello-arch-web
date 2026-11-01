@@ -8,7 +8,7 @@ import ScreenFlow from '../components/diagram/ScreenFlow.astro';
 import Wireframes from './Wireframes.astro';
 
 const apps = [
-  { name: 'Guest App', users: 'Guests, friends of owners', device: 'Phone first', lang: 'DE / FR / EN', login: 'Personal link', url: 'guest.picobello.ch/s/<token>', kind: 'phone' },
+  { name: 'Guest App', users: 'Guests, friends of owners', device: 'Phone first', lang: 'DE / FR / EN (8 languages open)', login: 'Personal link', url: 'guest.picobello.ch/s/<token>', kind: 'phone' },
   { name: 'Owner Portal', users: 'Owners', device: 'Phone + desktop', lang: 'DE / EN (FR later)', login: 'Magic link', url: 'owner.picobello.ch', kind: 'laptop' },
   { name: 'Back Office', users: 'Picobello staff', device: 'Desktop first', lang: 'DE / EN', login: 'Password + 2FA or passkey', url: 'admin.picobello.ch', kind: 'desktop' },
 ];
@@ -120,7 +120,7 @@ const homeStates = ['invited', 'check-in open', 'payment needed', 'checked in', 
       </figure>
     ))}
   </div>
-  <p class="note-line"><Pill kind="open" /> Subdomains of picobello.ch still to be confirmed with Picobello (file 11).</p>
+  <p class="note-line"><Pill kind="open" /> Subdomains of picobello.ch still to be confirmed with Picobello.</p>
   <ul class="list why-three">
     <li>Very different users and devices.</li>
     <li>The Guest App must be tiny and fast on mobile data.</li>
@@ -154,7 +154,7 @@ const homeStates = ['invited', 'check-in open', 'payment needed', 'checked in', 
 
 <div class="block">
   <h3 class="block-title">Key screens · grey-box wireframes</h3>
-  <p class="block-sub">Five screens chosen for the presentation. Layout and flow only; the final look follows section 13.</p>
+  <p class="block-sub">Five screens chosen for the presentation. Layout and flow only; the final look follows the <a href="#design">design system</a>.</p>
   <Wireframes />
 </div>
 
@@ -244,7 +244,7 @@ const homeStates = ['invited', 'check-in open', 'payment needed', 'checked in', 
   .d-name { font-family: var(--font-head); font-weight: 700; font-size: var(--fs-h3); }
   .d-url { font-size: 14px; color: var(--primary-700); }
   .d-kv { margin-top: var(--s-2); font-size: var(--fs-ui); grid-template-columns: 86px 1fr; gap: 4px 12px; }
-  @media (max-width: 1023px) { .devices { grid-template-columns: 1fr; grid-template-rows: none; gap: var(--s-10); } .device { grid-row: auto; grid-template-rows: none; } .device-laptop .frame, .device-desktop .frame { max-width: 360px; } }
+  @media (max-width: 1023px) { .devices { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: var(--s-10); } .device { grid-row: auto; grid-template-rows: none; min-width: 0; } .device-laptop .frame, .device-desktop .frame { max-width: 360px; } .device-laptop .screen { width: 90%; } .device-laptop .frame::after { width: 100%; } }
 
   .note-line { display: flex; gap: 10px; align-items: center; margin-top: var(--s-5); font-size: var(--fs-ui); color: var(--ink-muted); max-width: var(--measure); }
   .note-line :global(svg) { flex: none; color: var(--info-vivid); }

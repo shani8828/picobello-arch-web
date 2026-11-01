@@ -15,6 +15,7 @@ import Integrations from '../sections/Integrations.astro';
 import Money from '../sections/Money.astro';
 import Security from '../sections/Security.astro';
 import Infrastructure from '../sections/Infrastructure.astro';
+import Regional from '../sections/Regional.astro';
 import Decisions from '../sections/Decisions.astro';
 import Comparisons from '../sections/Comparisons.astro';
 import Timeline from '../sections/Timeline.astro';
@@ -35,6 +36,7 @@ const body: Record<string, any> = {
   money: Money,
   security: Security,
   infrastructure: Infrastructure,
+  regional: Regional,
   decisions: Decisions,
   comparisons: Comparisons,
   timeline: Timeline,
@@ -44,11 +46,6 @@ const body: Record<string, any> = {
 ---
 <Doc title="Picobello Architecture" description="Architecture of the Picobello Platform, for the review on 5 Nov 2026.">
   <header class="doc-head">
-    <div class="kicker">
-      <span>Architecture review · 5 Nov 2026</span>
-      <span aria-hidden="true">·</span>
-      <span>Phase 1 go-live ~10 Jan 2027</span>
-    </div>
     <h1>Picobello Platform architecture</h1>
     <p class="lede">
       Picobello manages 22 holiday apartments in two houses in Lenk (Switzerland) for their owners.

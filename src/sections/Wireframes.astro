@@ -54,7 +54,7 @@ const channels = ['Website', 'Booking', 'Airbnb', 'Vrbo'];
       <p class="wf-info"><Icon name="timer" size={16} /> Nights held for you for 10 minutes</p>
       <div class="wf-btn">Pay CHF 380.00</div>
     </div>
-    <figcaption><b>W2</b> Guest "Extend stay": pick nights, see the price, pay. No approval. Example from the API call in section 05.</figcaption>
+    <figcaption><b>W2</b> Guest "Extend stay": pick nights, see the price, pay. No approval. Example from the API call in Backend and API.</figcaption>
   </figure>
 
   <!-- W3 -->
@@ -94,7 +94,7 @@ const channels = ['Website', 'Booking', 'Airbnb', 'Vrbo'];
         </div>
       </div>
     </div>
-    <figcaption><b>W3</b> Owner "Reserve for friends": dates, persons, who pays, instant rule check with reasons. Example values; quota figures from the rule-engine example in file 07.</figcaption>
+    <figcaption><b>W3</b> Owner "Reserve for friends": dates, persons, who pays, instant rule check with reasons. Example values; quota figures from the rule-check example in Business logic.</figcaption>
   </figure>
 
   <!-- W4 -->
@@ -152,19 +152,19 @@ const channels = ['Website', 'Booking', 'Airbnb', 'Vrbo'];
         </tbody>
       </table>
     </div>
-    <figcaption><b>W5</b> "What's missing" grid. Counts follow the placeholder matrix in file 08 (Airbnb: house rules and policy manual; Vrbo policy unknown) until Picobello fills in real values.</figcaption>
+    <figcaption><b>W5</b> "What's missing" grid. Counts follow the placeholder sync matrix in Integrations (Airbnb: house rules and policy manual; Vrbo policy unknown) until Picobello fills in real values.</figcaption>
   </figure>
 </div>
 
 <style>
   .wfs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-8) var(--s-6); align-items: start; }
-  .wf-fig { margin: 0; display: grid; gap: var(--s-3); justify-items: center; }
+  .wf-fig { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); justify-items: center; min-width: 0; }
   .wf-fig.wide { grid-column: 1 / -1; justify-items: stretch; }
   .wf-fig figcaption { font-size: var(--fs-ui); color: var(--ink-muted); max-width: 64ch; justify-self: start; line-height: 1.5; }
   .wf-fig figcaption b { color: var(--ink); font-weight: 700; margin-right: 6px; }
 
   .wf { background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink); font-size: 14px; line-height: 1.4; }
-  .wf.phone { width: 320px; max-width: 100%; border-radius: 24px; padding: 16px 18px 20px; display: grid; gap: 10px; box-shadow: var(--e-1); }
+  .wf.phone { width: min(320px, 100%); border-radius: 24px; padding: 16px 18px 20px; display: grid; gap: 10px; box-shadow: var(--e-1); }
   .wf.desk { border-radius: var(--r-card); box-shadow: var(--e-1); }
   .wf em { font-style: normal; color: var(--ink-muted); }
 
@@ -265,6 +265,7 @@ const channels = ['Website', 'Booking', 'Airbnb', 'Vrbo'];
   .wf-table th { text-align: left; font-weight: 500; font-size: 12.5px; color: var(--ink-muted); padding: 8px 10px; border-bottom: 1px solid var(--line-strong); background: var(--surface-2); }
   .wf-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); }
   .wf-table tr.open td { background: var(--primary-50); }
+  @media (max-width: 479px) { .grid-wf { overflow-x: auto; } .wf-table th, .wf-table td { padding: 6px; } }
   .cnt { display: inline-grid; place-items: center; min-width: 28px; height: 24px; padding: 0 8px; border-radius: 6px; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 13px; }
   .cnt.zero { color: var(--ink-faint); font-weight: 400; }
   .cnt.warn { background: var(--warning-soft); color: var(--warning-text); }
@@ -275,7 +276,8 @@ const channels = ['Website', 'Booking', 'Airbnb', 'Vrbo'];
   .more { color: var(--ink-faint); font-size: 13px; border-bottom: 0 !important; }
 
   @media (max-width: 1023px) {
-    .wfs { grid-template-columns: 1fr; }
+    .wfs { grid-template-columns: minmax(0, 1fr); }
+    .wfs > * { min-width: 0; }
     .wf-cols { grid-template-columns: 1fr; }
     .wf.bo { grid-template-columns: 1fr; } .wf-side { display: none; }
     .ex span:first-child { min-width: 0; }

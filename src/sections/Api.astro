@@ -14,7 +14,7 @@ const pipeline = [
   ['Authentication', 'session cookie or stay token'],
   ['Tenant + scope', 'which houses, units, stay'],
   ['Validation', 'Zod'],
-  ['Permission check', 'see section 10'],
+  ['Permission check', 'see Security, roles, privacy'],
   ['Handler', 'service → DB tx + outbox'],
   ['Audit log', 'every write'],
   ['Response', 'or problem+json'],
@@ -44,6 +44,9 @@ const groups: { key: string; name: string; auth: string; eps: Ep[] }[] = [
     ['POST', '/guest/stay/date-change', 'confirm → pay or refund'],
     ['POST', '/guest/stay/requests', 'late check-in / check-out'],
     ['GET', '/guest/stay/requests', 'status of requests'],
+    ['GET', '/guest/stay/today', '"Today · picked for you" feed (cached per day part)'],
+    ['GET', '/guest/regional/items/{id}', 'regional item detail'],
+    ['POST', '/guest/insights/events', 'anonymous view / tap events (batched)'],
   ] },
   { key: 'owner', name: 'Owner Portal', auth: 'owner session, scope = own units', eps: [
     ['GET', '/owner/units', 'my units'],
@@ -86,6 +89,8 @@ const groups: { key: string; name: string; auth: string; eps: Ep[] }[] = [
     ['POST', '/imports/archipex', 'upload → validation report'],
     ['POST', '/imports/{id}/apply', ''],
     ['GET', '/users, POST /users, PATCH /users/{id}', ''],
+    ['GET', '/insights?from=&to=&house=', 'anonymised offer statistics'],
+    ['GET', '/regional/sync', 'dataCycle sync status'],
   ] },
   { key: 'hook', name: 'Webhooks', auth: 'no session; verified per provider', eps: [
     ['POST', '/webhooks/lodgify/{secret}', 'secret in URL + re-fetch booking from Lodgify API'],
@@ -97,6 +102,8 @@ const groups: { key: string; name: string; auth: string; eps: Ep[] }[] = [
     ['POST', '/internal/cron/expire-holds', 'every 5 min'],
     ['POST', '/internal/cron/retention', 'nightly: delete ID data after legal period, lock ended stay links'],
     ['POST', '/internal/cron/stripe-reconcile', 'nightly'],
+    ['POST', '/internal/cron/regional-sync', 'every 15 min (changes), 03:00 full'],
+    ['POST', '/internal/cron/weather', 'hourly'],
     ['GET', '/health, /ready', 'health checks'],
   ] },
 ];
@@ -110,6 +117,8 @@ const queues: [string, string, string][] = [
   ['email.send', 'send via Postmark', '5x'],
   ['events.dispatch', 'run domain event handlers', '5x'],
   ['photos.process', 'resize, create variants', '3x'],
+  ['regional.sync', 'fetch dataCycle changes, update cache, translate missing texts', '5x'],
+  ['recommend.build', 'build "Today" feed per stay and day part', '3x, then fallback score'],
 ];
 
 const style: [string, string][] = [
@@ -242,6 +251,7 @@ const backoff = ['30 s', '2 min', '10 min', '30 min', '1 h', '3 h', '6 h'];
 { "code": "NIGHTS_NOT_AVAILABLE", "params": { "firstFree": null } }`}</pre>
     </div>
   </div>
+  <p class="why-rest"><strong>One set of actions:</strong> every endpoint calls a named service function with a Zod schema. The same functions are listed in the tool registry for AI agents, so a later MCP door (<span class="mono">POST /mcp</span>) shares rules and permissions with the apps.</p>
   <p class="why-rest"><strong>Why REST and not GraphQL or tRPC:</strong> REST + OpenAPI works for our own apps and for outside callers, is easy to cache and debug, and still gives fully typed clients.</p>
 </div>
 

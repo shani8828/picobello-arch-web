@@ -2,6 +2,7 @@
 // 15 Phase 1 timeline. Source: arch/15-phase1-timeline.txt
 import Takeaway from '../components/Takeaway.astro';
 import Icon from '../components/Icon.astro';
+import Pill from '../components/Pill.astro';
 import Figure from '../components/diagram/Figure.astro';
 import Gantt from '../components/diagram/Gantt.astro';
 
@@ -29,12 +30,23 @@ const deps: [string, string, number][] = [
   ['Production keys for all systems', '28 Dec', 3],
   ['Archipex final export', '31 Dec', 3],
   ['Staff available for training', '6-8 Jan', 3],
+  ['dataCycle test access + API docs', '10 Nov', 1],
+  ['AI provider account / decision', '30 Nov', 2],
+  ['Image usage rights (both tourism offices)', '14 Dec', 3],
+];
+const regional: [string, string][] = [
+  ['6-10 Nov', 'dataCycle test access, API study, list of categories (vision step 1)'],
+  ['16-29 Nov', 'RegionalContentPort, fake adapter with the vision\'s sample data, regional.sync, regional_items cache'],
+  ['30 Nov-13 Dec', 'Weather port, signals, candidate filter, AI ranking + fallback, "Today" feed in the Guest App (flag off)'],
+  ['14 Dec-5 Jan', 'Test at the Lenk in Picobello\'s apartments (vision step 2): rain, Gulf family, fresh snow; insights events'],
+  ['10 Jan', 'Phase 1 live; the feed is still behind the flag'],
+  ['15-31 Jan', 'Regional go-live for all guests (vision step 3), then evaluation and Saanenland'],
 ];
 
 const weeks: { w: string; d: string; m?: string; groups: [string, string[]][] }[] = [
   { w: 'Week 0', d: '5 Nov (Thu) · architecture review', m: 'M0', groups: [
-    ['Review meeting with Seva', ['Walk through the architecture (this web page, screen share)', 'Decide open questions (file 12, part F) and database host (Cloud SQL vs Supabase)', 'Confirm Phase 1 scope and who builds what']],
-    ['After the meeting', ['Record decisions with date in file 12 (part F); update affected files to v1.1', 'Send the final PDF to Seva', 'Request access from Picobello: Lodgify, Stripe, Feratel/LST, SALTO/Immer AG, domain/DNS, Archipex export']],
+    ['Review meeting with Seva', ['Walk through the architecture (this web page, screen share)', 'Decide the open questions and the database host (Cloud SQL vs Supabase)', 'Confirm Phase 1 scope and who builds what']],
+    ['After the meeting', ['Record each decision with its date and update the affected parts of the architecture', 'Send the final PDF to Seva', 'Request access from Picobello: Lodgify, Stripe, Feratel/LST, SALTO/Immer AG, domain/DNS, Archipex export']],
   ] },
   { w: 'Week 1', d: '6-15 Nov · foundation', m: 'M1', groups: [
     ['Repository and tooling', ['Monorepo (pnpm + Turborepo), apps/ and packages/', 'TypeScript strict, ESLint, Prettier, dependency-cruiser', 'Commit conventions, PR template, CODEOWNERS']],
@@ -88,6 +100,17 @@ const urgLabel = ['', 'by mid-Nov', 'by early Dec', 'mid-Dec or later'];
   <Figure label="Gantt chart of the seven work blocks from 5 Nov 2026 to 10 Jan 2027 with milestones and the Christmas buffer" minWidth={960}>
     <Gantt label="Phase 1 timeline" />
   </Figure>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Regional content track (dataCycle) · in parallel</h3>
+  <p class="block-sub">From the dataCycle vision. Milestones: R1 10 Nov test access · R2 13 Dec feed works in staging with real data · R3 31 Jan regional content live. Agents / MCP: only the tool-registry discipline in Phase 1 <Pill kind="open" /></p>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Weeks</th><th>Work</th></tr></thead>
+      <tbody>{regional.map(([w, t]) => <tr><td class="tnum nowrap">{w}</td><td>{t}</td></tr>)}</tbody>
+    </table>
+  </div>
 </div>
 
 <div class="block">
@@ -157,7 +180,7 @@ const urgLabel = ['', 'by mid-Nov', 'by early Dec', 'mid-Dec or later'];
   @media (max-width: 1279px) { .ms { grid-template-columns: 1fr; gap: 14px; } .ms::before { left: 8px; right: auto; top: 8px; bottom: 8px; border-top: 0; border-left: 2px solid var(--primary-100); } .ms li { padding: 0 0 0 34px; } }
 
   .tl-split { gap: var(--s-8); align-items: start; }
-  @media (max-width: 1279px) { .tl-split { grid-template-columns: 1fr; } }
+  @media (max-width: 1279px) { .tl-split { grid-template-columns: minmax(0, 1fr); } }
   td.nowrap { white-space: nowrap; }
   .light { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; white-space: nowrap; }
   .light::before { content: ""; width: 9px; height: 9px; border-radius: 50%; }

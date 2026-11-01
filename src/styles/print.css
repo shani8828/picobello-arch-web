@@ -19,5 +19,10 @@
   details.disclose > summary .chev { display: none; }
   a { color: inherit; text-decoration: none; }
   .takeaway, .pill, .chip, .dt th.win, .dt td.win, .rd-src, .core, .ta-zero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pulse, .g-today, .fig-zoom, .viewer { display: none !important; }
+  .reveal, .reveal-side, .reveal-head > *, .doc-head > * { opacity: 1 !important; transform: none !important; animation: none !important; }
+  .scroll-progress, .to-top { display: none !important; }
+  .gantt .g-bar, .gantt .g-ms { transform: none !important; }
+  [data-scroll] { -webkit-mask-image: none !important; mask-image: none !important; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

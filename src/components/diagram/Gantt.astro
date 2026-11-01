@@ -30,7 +30,8 @@ const TOP = 96, RH = 46;
 const H = TOP + rows.length * RH + 70;
 const mx = (m: number, d: number) => x(m, d + 1); // milestones mark the end of their day
 ---
-<svg viewBox={`0 0 1200 ${H}`} xmlns="http://www.w3.org/2000/svg" class="gantt">
+<svg viewBox={`0 0 1200 ${H}`} xmlns="http://www.w3.org/2000/svg" class="gantt"
+  data-start={start} data-end={end} data-x0={LX} data-x1={X1} data-top={TOP} data-bottom={TOP + rows.length * RH}>
   {showBuffer && (
     <g>
       <rect x={x(11, 21)} y={TOP - 30} width={x(0, 6) - x(11, 21)} height={rows.length * RH + 30} fill="url(#hatch)" opacity="0.55" />

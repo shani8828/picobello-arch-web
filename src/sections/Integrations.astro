@@ -32,14 +32,14 @@ const cards: Card[] = [
     trigger: 'CheckInCompleted, StayChanged, StayCancelled',
     auth: 'Deskline 3.0 "VT PMS Web Services", likely SOAP/XML; company no, municipality codes, credentials from LST',
     fallback: 'Retry with backoff; then staff registers in Deskline and marks it "done manually"',
-    verify: ['everything in this section'], open: ['wallet format (fer-04)'] },
+    verify: ['everything in this section'], open: ['wallet format'] },
   { name: 'SALTO KS', icon: 'key-round', role: 'Time-limited badge access; badge collected at the SALTO dispenser; via Immer AG',
     out: 'Person (external id = our person id), doors (unit + entrance + ski room), arrival 16:00 to departure 10:00; change; revoke',
     inn: 'Confirmation id (salto_access_ref); daily access events for support',
     trigger: 'After check-in, or at reservation for own use with yearly-flat tourist tax',
     auth: 'SALTO KS Connect API, REST + JSON; OAuth 2.0 client credentials from the local business unit (Immer AG)',
     fallback: 'Retry with backoff; failed grants visible on the Integrations page',
-    verify: ['endpoints for users, access groups, time schedules'], open: ['dispenser identification, failure, night support (OP-13)'] },
+    verify: ['endpoints for users, access groups, time schedules'], open: ['dispenser identification, failure, night support'] },
   { name: 'Postmark', icon: 'mail', role: 'Transactional email, templates rendered by us in DE / FR / EN',
     out: 'Guest invites, owner magic links, confirmations, reminders, alerts',
     inn: 'Delivery and bounce webhooks → messages.status',
@@ -54,7 +54,20 @@ const cards: Card[] = [
     inn: 'Owners, addresses, units with STWE numbers and value shares, ownerships, guests with consent',
     trigger: 'Upload in Back Office → validation report → apply; trial early December, final at cutoff 31.12.2026',
     auth: 'CSV / Excel export', fallback: 'Validation report lists missing fields, duplicates, unknown units before anything is applied',
-    open: ['format with Archipex (OP-05)'] },
+    open: ['format with Archipex'] },
+  { name: 'dataCycle', icon: 'database', role: 'Data hub of Lenk-Simmental and Gstaad Saanenland Tourismus; regional content for the "Today" feed. Read-only',
+    inn: 'POIs, opening hours, events, tours, bad-weather programme, gastronomy, mountain railways, images; all available languages',
+    trigger: 'regional.sync every 15 min (changes), full 03:00; events hourly; railway status every 10 min in season',
+    auth: 'API token in Secret Manager',
+    fallback: 'Cache in regional_items; the app shows the last good data with "updated hh:mm"; we never write to dataCycle',
+    verify: ['auth, endpoints, format, rate limits', 'change webhooks', 'live railway status'], open: ['image usage rights', 'test access by 10 Nov'] },
+  { name: 'Weather + AI provider', icon: 'sparkles', role: 'Signals and ranking for the "Today" feed',
+    inn: 'Weather today + tomorrow per house; ranked offer ids with short reasons; translations',
+    out: 'Pseudonymous signals + candidate offers (no names, contact or ID data)',
+    trigger: 'Weather hourly; feed per stay and day part (3–4 AI calls per stay per day)',
+    auth: 'API keys in Secret Manager; behind WeatherPort and AiPort',
+    fallback: 'AI slow or down → rule-based score orders the same candidates',
+    verify: ['AI region, retention, no training'], open: ['weather source', 'AI provider and model'] },
 ];
 
 const mapping: [string, string][] = [
@@ -153,7 +166,7 @@ const p2: [string, string][] = [
         { from: 'S', to: 'W', label: 'salto_access_ref', reply: true },
         { from: 'W', to: 'D', label: 'AccessGranted · access_ready' },
         { from: 'W', to: 'P', label: 'notify guest' },
-        { note: ['G', 'P'], label: 'Guest card < 10 min after check-in when Feratel is up (quality target, section 12)', tone: 'success' },
+        { note: ['G', 'P'], label: 'Guest card < 10 min after check-in when Feratel is up (quality target)', tone: 'success' },
       ]} />
   </Figure>
 </div>

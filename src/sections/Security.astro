@@ -52,6 +52,9 @@ const matrix: [string, P[]][] = [
   ['Audit log', ['-', '-', 'R', 'R', 'Y']],
   ['Users and roles', ['-', '-', '-', '-', 'Y']],
   ['Archipex import', ['-', '-', '-', '-', 'Y']],
+  ['"Today" regional feed', ['O', '-', 'R', '-', 'Y']],
+  ['Insights (anonymous stats)', ['-', '-', 'Y', 'R', 'Y']],
+  ['Own rights via AI agent (MCP, later)', ['O', 'O', 'Y', 'R', 'Y']],
 ];
 const cellClass = (p: P) => (p === 'Y' ? 'y' : p.startsWith('O') ? 'o' : p === 'R' ? 'r' : 'n');
 const cellText = (p: P) => (p === 'Y' ? 'Yes' : p === 'R' ? 'Read' : p === '-' ? '' : 'Own' + p.slice(1));
@@ -123,8 +126,21 @@ const cellText = (p: P) => (p === 'Y' ? 'Yes' : p === 'R' ? 'Read' : p === '-' ?
   </Figure>
   <div class="processors">
     <span class="eyebrow">Processors with data processing agreements</span>
-    <div class="chips">{['Google Cloud', 'Cloudflare', 'Stripe', 'Postmark', 'Sentry (EU region)', 'Lodgify', 'Feratel', 'SALTO / Immer AG'].map((p) => <span class="chip">{p}</span>)}</div>
+    <div class="chips">{['Google Cloud', 'Cloudflare', 'Stripe', 'Postmark', 'Sentry (EU region)', 'Lodgify', 'Feratel', 'SALTO / Immer AG'].map((p) => <span class="chip">{p}</span>)}<span class="chip chip-soft">AI provider <Pill kind="open" /></span></div>
+    <p class="proc-note">dataCycle and the weather source receive no personal data.</p>
   </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">AI and agents</h3>
+  <ul class="ai-rules">
+    <li><b>Pseudonymous signals only.</b> The AI gets guest type, age bands, language, day of stay, weather. Never names, contact or ID data. No training on our data, short retention, EU / CH region where offered <Pill kind="verify" />.</li>
+    <li><b>Anonymous insights.</b> No stay id, no person id; counts below 5 hidden.</li>
+    <li><b>An agent acts as a person</b> with exactly that person's rights in the matrix above. No agent-only back door.</li>
+    <li><b>Quote, then confirm.</b> Writes that cost money or change a stay: the agent may quote, the person confirms or pays in our app.</li>
+    <li><b>Audited and limited.</b> Every tool call in the audit log with via = agent; rate limits per person and tool.</li>
+    <li><b>Data, not instructions.</b> Text from dataCycle or guest messages never steers the agent; tools accept typed parameters only. Voice memos (later) are deleted after transcription.</li>
+  </ul>
 </div>
 
 <div class="block">
@@ -191,6 +207,12 @@ const cellText = (p: P) => (p === 'Y' ? 'Yes' : p === 'R' ? 'Read' : p === '-' ?
 
   .processors { display: grid; gap: var(--s-3); margin-top: var(--s-5); }
   .processors .chip { font-size: 14px; }
+  .processors .chip :global(.pill) { font-size: 12px; margin-left: 4px; }
+  .proc-note { font-size: 14px; color: var(--ink-muted); }
+  .ai-rules { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: var(--measure); }
+  .ai-rules li { font-size: 15.5px; line-height: 1.5; color: var(--ink-muted); }
+  .ai-rules b { color: var(--ink); }
+  .ai-rules :global(.pill) { font-size: 12.5px; }
   .sec-split { gap: var(--s-8); align-items: start; }
   li :global(.pill) { font-size: 12.5px; margin-left: 4px; }
 </style>

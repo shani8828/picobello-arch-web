@@ -1,12 +1,37 @@
 /* Shared document components: diagrams, chips, grids, lists. */
 
 /* ---------- Figures / diagrams ---------- */
-.figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--e-1); overflow: hidden; }
-.figure-flat { background: none; border: 0; box-shadow: none; border-radius: 0; }
-.figure-canvas { overflow-x: auto; padding: var(--s-5); }
+.figure { position: relative; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--e-1); overflow: hidden; }
+.figure-flat { background: none; border: 0; box-shadow: none; border-radius: 0; overflow: visible; }
+.figure-canvas { padding: var(--s-5); }
 .figure-flat .figure-canvas { padding: 0; }
-.figure-canvas > svg { width: 100%; height: auto; }
-@media (max-width: 1023px) { .figure-canvas > svg { min-width: var(--min-w); } }
+.figure-canvas > svg { width: 100%; height: auto; max-width: 100%; }
+@media (max-width: 767px) { .figure-canvas { padding: var(--s-3); } }
+
+/* "Enlarge": only where the diagram is drawn smaller than its readable size */
+.fig-zoom { position: absolute; top: 8px; right: 8px; z-index: 2; display: none; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-full); background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(6px); font: 500 13px/1 var(--font-body); color: var(--ink-muted); cursor: pointer; box-shadow: var(--e-1); }
+.fig-zoom:hover { color: var(--primary-700); border-color: var(--primary-100); }
+.figure-flat .fig-zoom { top: -4px; right: 0; }
+@media (max-width: 1023px) { .fig-zoom { display: inline-flex; } .figure-canvas { cursor: zoom-in; } }
+
+/* Full-screen diagram viewer (opened by scripts/alive.ts) */
+.viewer { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: var(--snow); color: var(--ink); }
+.viewer::backdrop { background: rgba(14, 26, 43, .4); }
+.viewer[open] { display: grid; grid-template-rows: auto 1fr; animation: viewer-in 220ms var(--ease); }
+@keyframes viewer-in { from { opacity: 0; transform: scale(.98); } }
+.viewer-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px 10px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.viewer-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.viewer-btn { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: var(--r-control); background: var(--surface); color: var(--ink); cursor: pointer; }
+.viewer-btn:hover { background: var(--primary-50); }
+.viewer-body { overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px; }
+.viewer-body > svg { display: block; height: auto; }
+.viewer-hint { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); padding: 6px 12px; border-radius: var(--r-full); background: var(--ink); color: #fff; font-size: 13px; pointer-events: none; animation: hint-out 2.6s 1.2s var(--ease) forwards; }
+@keyframes hint-out { to { opacity: 0; transform: translate(-50%, 8px); } }
+
+/* Sideways scrollers (tables, code): fade the edge that has more content */
+[data-scroll="start"] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
+[data-scroll="middle"] { -webkit-mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
+[data-scroll="end"] { -webkit-mask-image: linear-gradient(to right, transparent, #000 36px); mask-image: linear-gradient(to right, transparent, #000 36px); }
 .figure figcaption { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; padding: 14px var(--s-6); border-top: 1px solid var(--line); background: var(--surface-2); font-size: var(--fs-ui); color: var(--ink-muted); }
 .figure-flat figcaption { background: none; padding: 12px 0 0; border: 0; }
 .figure-caption { margin-left: auto; }
@@ -64,7 +89,7 @@
 .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 1279px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 767px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+@media (max-width: 767px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- Lists ---------- */
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -87,6 +112,8 @@
 .stat .l { margin-top: 6px; font-size: var(--fs-ui); color: var(--ink-muted); line-height: 1.4; }
 @media (max-width: 1279px) { .stat-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } .stat:nth-child(4) { border-left: 0; } .stat:nth-child(n+4) { border-top: 1px solid var(--line); } }
 @media (max-width: 767px) { .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stat { border-left: 0; border-top: 1px solid var(--line); } .stat:nth-child(even) { border-left: 1px solid var(--line); } .stat:nth-child(-n+2) { border-top: 0; } .stat:nth-child(4) { border-left: 1px solid var(--line); } .stat:last-child:nth-child(odd) { grid-column: 1 / -1; } }
+
+@media (max-width: 400px) { .stat { padding: var(--s-4); } .stat .v { font-size: 1.625rem; } }
 
 /* Mono code block */
 .code { margin: 0; padding: var(--s-5) var(--s-6); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); font: 400 15px/1.65 var(--font-mono); color: var(--ink); overflow-x: auto; }

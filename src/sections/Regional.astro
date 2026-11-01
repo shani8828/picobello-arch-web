@@ -1,0 +1,430 @@
+---
+// 16 Regional content, AI and agents. Source: arch/16-regional-content-ai-agents.txt
+// (dataCycle vision, Oct 2026, and Seva's MCP / voice requirements, 31 Oct).
+import Takeaway from '../components/Takeaway.astro';
+import Pill from '../components/Pill.astro';
+import Icon from '../components/Icon.astro';
+import Figure from '../components/diagram/Figure.astro';
+import Box from '../components/diagram/Box.astro';
+import Arrow from '../components/diagram/Arrow.astro';
+import Sequence from '../components/diagram/Sequence.astro';
+
+const modules: [string, string][] = [
+  ['regional', 'dataCycle adapter, cache of regional items per language, images, sync jobs'],
+  ['recommend', 'Stay signals, candidate filter, AI ranking, "Today" feed per stay, fallback without AI'],
+  ['insights', 'Anonymised view / tap events and daily aggregates'],
+  ['agent', 'Tool registry (one list of actions with schemas), MCP server and voice later, AI provider adapter'],
+];
+
+const signals: { icon: string; name: string; text: string; open?: boolean }[] = [
+  { icon: 'cloud-sun', name: 'Weather', text: 'today and tomorrow at the house', open: true },
+  { icon: 'calendar-days', name: 'Stay', text: 'arrival, departure, "day 3 of 7"' },
+  { icon: 'users', name: 'Guest profile', text: 'family, couple, group; children age bands' },
+  { icon: 'languages', name: 'Origin + language', text: 'Switzerland, Europe, Gulf states, USA' },
+  { icon: 'clock', name: 'Season + time', text: 'winter / summer, morning / evening' },
+  { icon: 'ticket', name: 'Booking extras', text: 'ski pass, half board, packages', open: true },
+];
+
+const steps: [string, string][] = [
+  ['Filter in code', 'Open at that time, in season, within reach, not ended, fits the group. Deterministic and tested.'],
+  ['AI ranking', 'Signals + 30–60 candidates in; ordered ids in 2–4 headings with a short reason out. It can only pick from candidates.'],
+  ['Cache', 'One feed per stay and day part (morning, midday, evening); rebuilt when the weather changes or a railway closes.'],
+  ['Fallback', 'If the AI is slow or down, a simple score (weather fit, distance, profile) orders the same candidates.'],
+  ['Translation', 'Texts missing in the guest\'s language are translated once by the AI, stored, marked "machine translated".'],
+];
+
+interface Scenario {
+  tag: string; title: string; signals: string; decision: string; source: string;
+  weather: string; hello: string; where: string; when: string; langs: string;
+  heading: string; items: [string, string][]; region: [string, string][];
+}
+const scenarios: Scenario[] = [
+  { tag: 'Scenario 1', title: 'It\'s raining. A family at the Lenk.',
+    signals: 'Rain until 15:00 · family with two children · day 2 of 7',
+    decision: 'Bad-weather programme up, mountain railway info down',
+    source: 'Indoor offers, opening hours, events today',
+    weather: '11° · rain until 15:00', hello: 'Hallo Familie Müller', where: 'Chalet Wassermandli · Whg 2', when: 'Di 10.02. · Tag 2 von 7', langs: 'DE FR EN',
+    heading: 'Ideen für drinnen',
+    items: [['Hallenbad Lenk', 'offen bis 20:00'], ['Tropenhaus Frutigen', '45 Min. · Familien-Tipp'], ['Brauereiführung', '16:00 · Simmentaler Bier']],
+    region: [['Bergbahnen', 'eingeschränkt'], ['Events heute', '2 Anlässe']] },
+  { tag: 'Scenario 2', title: 'A family from the Gulf states has arrived.',
+    signals: 'Origin Emirates · English / Arabic · summer, sun · arrival day',
+    decision: 'Photo spots and viewpoints first, railways with operating hours below',
+    source: 'POIs with images, tours, mountain railways, gastronomy',
+    weather: '24° · sunny all day', hello: 'Welcome, Al-Rashid family', where: 'Alpsunne A&B · Apartment B3', when: 'Sat 18.07. · Arrival day', langs: 'EN AR DE',
+    heading: 'Best photo spots',
+    items: [['Betelberg panorama', 'Gondola · 20 min'], ['Simmenfälle', 'Waterfalls · 15 min by car'], ['Iffigfall', 'Easy walk · 40 min']],
+    region: [['Gondolas', 'until 16:30'], ['Restaurants', 'open now']] },
+  { tag: 'Scenario 3', title: 'Sunny winter day. A couple with ski pass.',
+    signals: 'Sun, fresh snow · ski pass in the partner package · departure tomorrow',
+    decision: 'Piste status and operating hours first, evening event and check-out below',
+    source: 'Mountain railways, piste report, events',
+    weather: '−4° · 20 cm fresh snow', hello: 'Hallo Anna & Luca', where: 'Wohnung Leiterli', when: 'Fr 13.02. · Abreise morgen', langs: 'DE FR EN',
+    heading: 'Pisten heute',
+    items: [['Betelberg', 'alle Anlagen offen'], ['Metsch', 'ab 8:30'], ['Skipass', 'Abholung Talstation Betelberg']],
+    region: [['Konzert Lenk', '20:00'], ['Check-out', 'bis 10:00']] },
+];
+
+const needs: { icon: string; name: string; text: string; open?: boolean }[] = [
+  { icon: 'database', name: 'Data access', text: 'All categories: POIs, opening hours, events, tours, bad-weather programme, gastronomy, mountain railways, images. We don\'t pre-filter; the AI picks per guest.' },
+  { icon: 'plug', name: 'Interface', text: 'Read access through the dataCycle API, structured and continuously updated. No double maintenance.' },
+  { icon: 'languages', name: 'Languages', text: 'Content in all available languages; missing languages are translated by the AI.' },
+  { icon: 'image', name: 'Images', text: 'Usage rights for display in the Guest App.', open: true },
+];
+
+const tools: { role: string; list: string[] }[] = [
+  { role: 'Guest', list: ['get_stay', 'get_apartment_info', 'get_regional_suggestions', 'get_guest_cards', 'get_access_status', 'quote_extension', 'request_extension*', 'quote_date_change', 'request_date_change*', 'request_late_checkout'] },
+  { role: 'Owner', list: ['get_calendar', 'get_quota', 'check_reservation', 'create_reservation*', 'cancel_reservation*', 'get_account'] },
+  { role: 'Staff', list: ['list_arrivals', 'list_missing_checkins', 'get_stay_timeline', 'get_integration_status', 'retry_job*'] },
+];
+
+const rules: [string, string][] = [
+  ['Acts as a person', 'A guest agent uses the stay session; owners and staff connect with OAuth on our login. Exactly that person\'s rights, never more.'],
+  ['Quote, then confirm', 'Writes that cost money or change a stay: the agent may quote, the person confirms or pays in our app. The agent never pays alone.'],
+  ['Audited', 'Every tool call in the audit log with via = agent, tool and inputs. Rate limits per person and tool.'],
+  ['Data, not instructions', 'Text from dataCycle or guest messages is data for the AI; tools only accept typed parameters.'],
+];
+
+const timeline: [string, string, string][] = [
+  ['by 10 Nov 2026', 'Clarify access', 'Which data categories exist, how the API works. Test access for Picobello.'],
+  ['Nov 2026 – Jan 2027', 'Test phase at the Lenk', 'Connection in Picobello\'s apartments at the Lenk. Rain, sun, events tested in real operation.'],
+  ['15 – 31 Jan 2027', 'Go-live', 'Regional data live for all guests. Then evaluation and extension to Saanenland.'],
+];
+
+const open: [string, 'open' | 'verify'][] = [
+  ['Which 8 Guest App languages; Arabic (right-to-left) in Phase 1?', 'open'],
+  ['AI provider and model (data location, retention, cost)', 'open'],
+  ['Weather source: MeteoSwiss open data or a weather API', 'open'],
+  ['Image usage rights, in writing, from both tourism offices', 'open'],
+  ['"Ask me" chat in Phase 1 or later?', 'open'],
+  ['When to build the MCP server; first audience (staff?)', 'open'],
+  ['Booking extras signal (ski pass, half board) needs partner offers (Phase 2)', 'open'],
+  ['Insights export for the tourism offices: format, frequency', 'open'],
+  ['dataCycle API: auth, endpoints, format, rate limits, change webhooks, live railway status', 'verify'],
+  ['MCP remote-server auth (OAuth) in the current spec', 'verify'],
+];
+
+// Data-flow frame
+const P = { x: 320, y: 40, w: 570, h: 360 };
+---
+<Takeaway>dataCycle stays the single source for regional content: we read it, cache it and let the AI pick what matters for each guest right now. Agents (MCP, voice) use the same actions and rights as our apps, so they plug in later without new business rules.</Takeaway>
+
+<div class="block">
+  <h3 class="block-title">The idea · the apartment explains itself, the region doesn't yet</h3>
+  <p class="block-sub">For everything outside the apartment the guest searches on five different websites today. The data already exists in dataCycle, maintained by Lenk-Simmental Tourismus and Gstaad Saanenland Tourismus. It just doesn't reach the guest in their apartment. Maintained once in dataCycle, automatically with the guest.</p>
+  <Figure label="Data flow: dataCycle synced into our cache, ranked with stay signals and AI, shown in the Guest App" minWidth={940}>
+    <svg viewBox="0 0 1200 570" xmlns="http://www.w3.org/2000/svg">
+      <rect x={P.x} y={P.y} width={P.w} height={P.h} rx="16" class="grp" />
+      <text x={P.x + 20} y={P.y + 30} class="grp-label">Picobello Platform</text>
+
+      <Box x={20} y={90} w={260} h={120} title="dataCycle" sub={['tourism offices\' data hub', 'POIs, hours, events,', 'tours, railways, images']} icon="database" variant="ext" />
+      <text x="20" y="240" class="svg-note">Data ownership stays with</text>
+      <text x="20" y="259" class="svg-note">the tourism offices. We read,</text>
+      <text x="20" y="278" class="svg-note">we never write to dataCycle.</text>
+      <Arrow d={`M280 150 H345`} label={['read-only', 'sync']} lx={312} ly={118} />
+
+      <Box x={345} y={90} w={230} h={120} title="regional" sub={['cache per language', 'every 15 min + nightly', 'last good data if down']} icon="database-zap" />
+      <Box x={635} y={90} w={230} h={120} title="recommend" sub={['1 filter in code', '2 AI ranking', '3 cache per day part']} icon="sparkles" variant="accent" />
+      <Arrow d="M575 150 H635" label="candidates" lx={605} ly={140} />
+
+      <Box x={345} y={250} w={230} h={110} title="Stays + check-in" sub={['dates, day 3 of 7,', 'family / couple, language']} icon="calendar-days" />
+      <Box x={635} y={250} w={230} h={110} title="Signals per stay" sub={['no names, no contact', 'data, no ID data']} icon="list-checks" />
+      <Arrow d="M575 305 H635" />
+      <Arrow d="M750 250 V210" />
+
+      <Box x={930} y={90} w={250} h={120} title="Guest App" sub={['Today – picked for you', 'in the guest\'s language', 'no search, no download']} icon="smartphone" variant="app" />
+      <Arrow d="M865 150 H930" label="feed" lx={897} ly={140} />
+
+      <Box x={930} y={250} w={250} h={110} title="AI provider" sub={['ranks candidates,', 'translates missing texts']} icon="bot" variant="ext" tag="Open" />
+      <Arrow d="M840 210 V232 H1055 V250" start={false} label="signals + candidates" lx={960} ly={226} />
+      <Arrow d="M1010 250 V238" muted={true} end={false} />
+
+      <Box x={635} y={460} w={230} h={90} title="Weather" sub="today + tomorrow" icon="cloud-sun" variant="ext" tag="Open" />
+      <Arrow d="M750 460 V360" label="hourly" lx={762} ly={430} anchor="start" />
+      <Box x={345} y={460} w={230} h={90} title="insights" sub={['anonymous views / taps', 'no stay or person id']} icon="chart-column" />
+      <Arrow d={`M1055 360 V505 H575`} muted={true} label="view / tap events" lx={900} ly={496} />
+    </svg>
+    <Fragment slot="legend">
+      <span class="legend-item"><span class="legend-swatch box soft"></span>Our system</span>
+      <span class="legend-item"><span class="legend-swatch box"></span>Outside system</span>
+      <span class="legend-item"><span class="legend-swatch"></span>Data flow</span>
+    </Fragment>
+  </Figure>
+  <div class="mods">
+    {modules.map(([n, t]) => <div><code>{n}</code><p>{t}</p></div>)}
+  </div>
+  <p class="note">Four new modules, following the same module rules as the rest of the backend. dataCycle, weather and the AI provider sit behind ports with a real and a fake adapter, like Lodgify.</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">All data in, the AI decides what comes first</h3>
+  <p class="block-sub">We don't pre-filter categories. The more complete the data, the more often an offer reaches the right guest.</p>
+  <div class="signals">
+    {signals.map((s) => (
+      <div class="sig"><Icon name={s.icon} size={20} /><div><b>{s.name}{s.open && <Pill kind="open" />}</b><span>{s.text}</span></div></div>
+    ))}
+  </div>
+  <ol class="steps">
+    {steps.map(([t, d], i) => <li><span class="n tnum">{i + 1}</span><b>{t}</b><p>{d}</p></li>)}
+  </ol>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Three scenarios · the test cases for the feed</h3>
+  <p class="block-sub">From the vision. Sample content; times and offers come live from dataCycle.</p>
+  <div class="scen">
+    {scenarios.map((s) => (
+      <figure class="sc">
+        <div class="phone">
+          <div class="ph-top"><span>{s.weather}</span><span class="langs">{s.langs}</span></div>
+          <p class="ph-hello">{s.hello}</p>
+          <p class="ph-meta">{s.where}<br />{s.when}</p>
+          <p class="ph-k">Today · picked for you</p>
+          <p class="ph-h">{s.heading}</p>
+          <ul class="ph-items">{s.items.map(([a, b]) => <li><span>{a}</span><em>{b}</em><Icon name="chevron-right" size={16} /></li>)}</ul>
+          <p class="ph-k">From the region</p>
+          <ul class="ph-reg">{s.region.map(([a, b]) => <li><span>{a}</span><em>{b}</em></li>)}</ul>
+          <div class="ph-tabs"><span class="on">Start</span><span>Check-in</span><span>Access</span><span>Maps</span><span>Help</span></div>
+        </div>
+        <figcaption>
+          <span class="sc-tag">{s.tag}</span>
+          <b>{s.title}</b>
+          <dl>
+            <dt>Signals</dt><dd>{s.signals}</dd>
+            <dt>AI decision</dt><dd>{s.decision}</dd>
+            <dt>From dataCycle</dt><dd>{s.source}</dd>
+          </dl>
+        </figcaption>
+      </figure>
+    ))}
+  </div>
+  <p class="note">The vision shows the Guest App in German, English and six more languages, incl. Arabic. The current plan says DE / FR / EN. <Pill kind="open" /> Which 8 languages, and is right-to-left needed in Phase 1?</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">dataCycle integration · read-only</h3>
+  <div class="needs">
+    {needs.map((n) => (
+      <article><Icon name={n.icon} size={22} /><b>{n.name}{n.open && <Pill kind="open" />}</b><p>{n.text}</p></article>
+    ))}
+  </div>
+  <div class="table-wrap kv">
+    <table class="data">
+      <tbody>
+        <tr><th>Port</th><td><code>RegionalContentPort</code>: listItems(category, changedSince), getItem(id), listEvents(from, to); real + fake adapter</td></tr>
+        <tr><th>Sync</th><td>Changes every 15 min, full re-sync 03:00, events today + 14 days hourly, railway status every 10 min in season <Pill kind="verify" /></td></tr>
+        <tr><th>Cache</th><td><code>regional_items</code>: content per language (JSONB), geo point, category, opening hours. The Guest App never calls dataCycle directly.</td></tr>
+        <tr><th>Auth</th><td>API token in Secret Manager <Pill kind="verify" /> auth method, endpoints, format, rate limits, change webhooks</td></tr>
+        <tr><th>Failure</th><td>Retries with backoff; the app keeps showing the last good data with "updated hh:mm"</td></tr>
+        <tr><th>Regions</th><td>Lenk-Simmental first, Saanenland after go-live: a new region row, no code change</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">MCP and agents · one set of actions</h3>
+  <p class="block-sub">Requirement (Seva, 31 Oct): it must be possible to connect the platform to MCP. An agent is just another client, like the Guest App: same actions, same rules, same permissions, no back door into the database.</p>
+  <Figure label="One set of actions: apps use REST, AI agents use MCP, both go through the same tool registry and permission check" minWidth={940}>
+    <svg viewBox="0 0 1200 470" xmlns="http://www.w3.org/2000/svg">
+      <text x="20" y="28" class="grp-label muted">Clients</text>
+      <Box x={20} y={44} w={230} h={64} title="Guest App" sub="stay session" icon="smartphone" variant="app" />
+      <Box x={20} y={124} w={230} h={64} title="Owner Portal" sub="owner session" icon="laptop" variant="app" />
+      <Box x={20} y={204} w={230} h={64} title="Back Office" sub="staff session + 2FA" icon="monitor" variant="app" />
+      <Box x={20} y={316} w={230} h={84} title="AI agent" sub={['voice, chat, MCP clients', 'acts as the person']} icon="bot" variant="phase2" tag="later" />
+
+      <Box x={320} y={110} w={200} h={90} title="REST" sub={['/api/v1', 'our apps, today']} icon="globe" />
+      <Box x={320} y={316} w={200} h={84} title="MCP" sub={['/mcp', 'Streamable HTTP']} icon="cable" variant="phase2" tag="later" />
+      <Arrow d="M250 76 H285 V140 H320" />
+      <Arrow d="M250 156 H320" />
+      <Arrow d="M250 236 H285 V172 H320" />
+      <Arrow d="M250 358 H320" dashed={true} muted={true} />
+
+      <Box x={590} y={150} w={270} h={170} title="Tool registry" sub={['named action + Zod schema', 'which roles may call it', 'read or write', 'needs confirmation?', 'e.g. quote_extension']} icon="list-checks" variant="accent" />
+      <Arrow d="M520 155 H555 V200 H590" />
+      <Arrow d="M520 358 H555 V270 H590" dashed={true} muted={true} />
+
+      <Box x={920} y={150} w={260} h={74} title="Permission check" sub="same rules as the apps" icon="shield-check" />
+      <Box x={920} y={246} w={260} h={74} title="Modules + one DB" sub="rules, audit log, outbox" icon="server" />
+      <Arrow d="M860 187 H920" />
+      <Arrow d="M1050 224 V246" />
+
+      <rect x="590" y="360" width="590" height="84" rx="12" class="grp-plain" />
+      <text x="610" y="392" class="svg-note"><tspan font-weight="600" fill="var(--ink)">Writes:</tspan> the agent may quote; the person confirms or</text>
+      <text x="610" y="416" class="svg-note">pays in our app. Every call audited with via = agent.</text>
+    </svg>
+    <Fragment slot="legend">
+      <span class="legend-item"><span class="legend-swatch box soft"></span>Built in Phase 1</span>
+      <span class="legend-item"><span class="legend-swatch box p2"></span>Later</span>
+      <span class="legend-item"><span class="legend-swatch dashed"></span>Later flow</span>
+    </Fragment>
+  </Figure>
+  <div class="rules">
+    {rules.map(([t, d]) => <article><b>{t}</b><p>{d}</p></article>)}
+  </div>
+  <h4 class="sm-title">Example tools <span class="muted">· names final at build time · * needs confirmation by the person</span></h4>
+  <div class="tools">
+    {tools.map((g) => (
+      <div><span class="role">{g.role}</span><div class="chips">{g.list.map((t) => <code class={t.endsWith('*') ? 'w' : ''}>{t}</code>)}</div></div>
+    ))}
+  </div>
+  <p class="note"><b>What is built when.</b> Phase 1: every action a named service function with a schema. We do this for the REST API anyway, so it costs almost nothing. Later: the MCP server on <code>/mcp</code>, an AI chat and voice. <Pill kind="open" /> When, and is read-only staff MCP the first step?</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Voice memo · "I want to stay for two days longer"</h3>
+  <p class="block-sub">Future, not built now. Steps 3–8 use only actions that already exist for the Guest App (extension quote). That is what makes it future-proof.</p>
+  <Figure label="Sequence: voice memo transcribed, agent calls get_stay and quote_extension, guest confirms and pays, existing extension flow runs" minWidth={980}>
+    <Sequence label="Voice memo"
+      parts={[
+        { id: 'G', label: 'Guest', ext: true },
+        { id: 'A', label: 'Guest App' },
+        { id: 'AG', label: 'Agent', sub: 'later' },
+        { id: 'T', label: 'Our actions', sub: 'tool registry' },
+        { id: 'X', label: 'Stripe · Lodgify', sub: 'SALTO · Feratel', ext: true },
+      ]}
+      steps={[
+        { from: 'G', to: 'A', label: 'voice memo' },
+        { from: 'A', to: 'AG', label: 'text + guest\'s tools' },
+        { from: 'AG', to: 'T', label: 'get_stay' },
+        { from: 'T', to: 'AG', label: 'departs Sun 14.02', reply: true },
+        { from: 'AG', to: 'T', label: 'quote_extension(16.02)' },
+        { from: 'T', to: 'AG', label: '2 nights, CHF 380.00, held', reply: true },
+        { from: 'AG', to: 'A', label: 'confirm card', reply: true },
+        { note: ['G', 'A'], label: 'Guest taps "Confirm and pay"', tone: 'success' },
+        { from: 'A', to: 'T', label: 'confirm extension (existing)' },
+        { from: 'T', to: 'X', label: 'pay, update, extend' },
+        { from: 'T', to: 'A', label: 'confirmed', reply: true },
+      ]} />
+  </Figure>
+  <p class="note">If the nights are booked, the agent answers from the quote result, e.g. "you could stay one night longer". The audio is deleted after transcription.</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Privacy and insights</h3>
+  <ul class="priv">
+    <li><Icon name="shield-check" size={18} /><span>The AI gets only pseudonymous signals ("family, 2 children 6–12, day 2 of 7, rain until 15:00, de"). Never names, contact or ID data.</span></li>
+    <li><Icon name="shield-check" size={18} /><span>AI provider as a new processor: data processing agreement, no training on our data, short retention, EU / CH region where offered. <Pill kind="verify" /></span></li>
+    <li><Icon name="chart-column" size={18} /><span>Insights: which offers are viewed when, with no stay id, no person id and no free text. Counts below 5 hidden; raw events kept 13 months. Useful for visitor guidance: on rainy days all guests see the indoor offers of the whole region.</span></li>
+  </ul>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Timeline · from the vision</h3>
+  <ol class="tl">
+    {timeline.map(([d, t, x], i) => <li><span class="n tnum">{i + 1}</span><span class="d">{d}</span><b>{t}</b><p>{x}</p></li>)}
+  </ol>
+  <p class="note">The regional go-live comes after the Phase 1 go-live (~10 Jan). Phase 1 ships with the feed behind a feature flag, switched on per house when the test phase is passed.</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Open points</h3>
+  <ul class="openl">
+    {open.map(([t, k]) => <li><Pill kind={k} /><span>{t}</span></li>)}
+  </ul>
+</div>
+
+<style>
+  .note { margin-top: var(--s-4); font-size: 15px; color: var(--ink-muted); line-height: 1.55; max-width: var(--measure); }
+  .note b { color: var(--ink); }
+  .note :global(.pill), .sig :global(.pill), .needs :global(.pill), .priv :global(.pill), td :global(.pill) { font-size: 12.5px; margin-left: 6px; vertical-align: 0.1em; }
+  code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.92em; }
+
+  .mods { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-5); }
+  .mods div { padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-control); }
+  .mods code { font-weight: 600; color: var(--primary-800); }
+  .mods p { margin-top: 4px; font-size: 14px; color: var(--ink-muted); line-height: 1.45; }
+  @media (max-width: 900px) { .mods { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .mods { grid-template-columns: 1fr; } }
+
+  .signals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+  @media (max-width: 860px) { .signals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .signals { grid-template-columns: 1fr; } }
+  .sig { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-control); }
+  .sig > :global(svg) { flex: none; color: var(--primary-600); margin-top: 2px; }
+  .sig b { display: block; font-size: 15px; }
+  .sig span { font-size: 14px; color: var(--ink-muted); }
+
+  .steps { list-style: none; margin: var(--s-6) 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-3); counter-reset: s; }
+  @media (max-width: 960px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .steps { grid-template-columns: 1fr; } }
+  .steps li { padding: 14px; border-radius: var(--r-control); background: var(--primary-50); border: 1px solid var(--primary-100); }
+  .steps li:nth-child(2) { background: var(--accent-50); border-color: var(--accent-500); }
+  .steps .n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--surface); font-size: 13px; font-weight: 700; color: var(--primary-700); margin-right: 8px; }
+  .steps b { font-size: 15px; }
+  .steps p { margin-top: 6px; font-size: 14px; color: var(--ink-muted); line-height: 1.45; }
+
+  .scen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-6); align-items: start; }
+  @media (max-width: 1000px) { .scen { grid-template-columns: 1fr; } .sc { grid-template-columns: 290px 1fr; align-items: start; } }
+  @media (max-width: 640px) { .sc { grid-template-columns: 1fr; } }
+  .sc { margin: 0; display: grid; gap: var(--s-4); justify-items: stretch; }
+  .phone { width: 100%; max-width: 300px; justify-self: center; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 24px; padding: 14px 16px 12px; box-shadow: var(--e-1); display: grid; gap: 6px; font-size: 13.5px; }
+  .ph-top { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-muted); }
+  .ph-top .langs { letter-spacing: .06em; font-weight: 600; }
+  .ph-hello { font-family: var(--font-head); font-weight: 700; font-size: 18px; margin-top: 4px; }
+  .ph-meta { font-size: 12.5px; color: var(--ink-muted); line-height: 1.4; }
+  .ph-k { margin-top: 6px; font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-700); }
+  .ph-h { font-weight: 600; font-size: 15px; }
+  .ph-items, .ph-reg { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .ph-items li { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+  .ph-items li span { font-weight: 600; }
+  .ph-items li em { grid-row: 2; font-style: normal; font-size: 12.5px; color: var(--ink-muted); }
+  .ph-items li :global(svg) { grid-row: 1 / 3; grid-column: 2; align-self: center; color: var(--ink-faint); }
+  .ph-reg li { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 2px; border-bottom: 1px solid var(--line); }
+  .ph-reg li em { font-style: normal; color: var(--ink-muted); }
+  .ph-tabs { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--ink-faint); }
+  .ph-tabs .on { color: var(--primary-700); font-weight: 600; }
+  .sc figcaption { display: grid; gap: 6px; font-size: 15px; }
+  .sc-tag { font-size: 12.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); }
+  .sc dl { display: grid; gap: 2px; margin: 4px 0 0; }
+  .sc dt { font-size: 12.5px; font-weight: 600; color: var(--primary-800); margin-top: 6px; }
+  .sc dd { margin: 0; font-size: 14.5px; color: var(--ink-muted); line-height: 1.45; }
+
+  .needs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-3); margin-bottom: var(--s-5); }
+  @media (max-width: 900px) { .needs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .needs { grid-template-columns: 1fr; } }
+  .needs article { padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-control); display: grid; gap: 6px; align-content: start; }
+  .needs article > :global(svg) { color: var(--primary-600); }
+  .needs b { font-size: 15.5px; }
+  .needs p { font-size: 14px; color: var(--ink-muted); line-height: 1.45; }
+  .kv th { width: 120px; text-align: left; vertical-align: top; font-weight: 600; white-space: nowrap; }
+  .kv td { font-size: 15px; line-height: 1.5; }
+  @media (max-width: 767px) {
+    .kv tr { display: block; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .kv tr:last-child { border-bottom: 0; }
+    .kv th, .kv td { display: block; width: auto; padding: 0; border: 0; white-space: normal; background: none; }
+    .kv th { margin-bottom: 4px; }
+  }
+
+  .rules { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-5); }
+  @media (max-width: 900px) { .rules { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .rules { grid-template-columns: 1fr; } }
+  .rules article { padding: 14px 16px; border-left: 3px solid var(--primary-600); background: var(--surface); border-radius: 0 var(--r-control) var(--r-control) 0; border-top: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .rules b { font-size: 15px; }
+  .rules p { margin-top: 4px; font-size: 14px; color: var(--ink-muted); line-height: 1.45; }
+  .sm-title { margin: var(--s-6) 0 var(--s-3); font-size: 16px; font-weight: 600; }
+  .sm-title .muted { font-weight: 400; color: var(--ink-muted); font-size: 14px; }
+  .tools { display: grid; gap: var(--s-3); }
+  .tools > div { display: grid; grid-template-columns: 80px 1fr; gap: var(--s-3); align-items: start; }
+  .tools .role { font-weight: 600; font-size: 15px; padding-top: 3px; }
+  .tools .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tools code { padding: 3px 8px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); font-size: 13.5px; }
+  .tools code.w { background: var(--warning-soft); border-color: var(--warning-vivid); color: var(--warning-text); }
+
+  .priv { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-3); max-width: var(--measure); }
+  .priv li { display: flex; gap: 10px; align-items: flex-start; font-size: 15.5px; line-height: 1.5; }
+  .priv li > :global(svg) { flex: none; margin-top: 3px; color: var(--success-vivid); }
+
+  .tl { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+  @media (max-width: 760px) { .tl { grid-template-columns: 1fr; } }
+  .tl li { padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); display: grid; gap: 4px; }
+  .tl .n { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--primary-600); color: #fff; font-weight: 700; font-size: 14px; }
+  .tl .d { font-size: 13px; font-weight: 600; color: var(--accent-700); margin-top: 6px; }
+  .tl b { font-size: 16px; }
+  .tl p { font-size: 14.5px; color: var(--ink-muted); line-height: 1.45; }
+
+  .openl { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px var(--s-6); }
+  @media (max-width: 760px) { .openl { grid-template-columns: 1fr; } }
+  .openl li { display: flex; gap: 10px; align-items: baseline; font-size: 15px; line-height: 1.45; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .openl :global(.pill) { flex: none; font-size: 12.5px; }
+</style>

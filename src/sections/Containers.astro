@@ -44,6 +44,12 @@ const rowC = [
   { n: 'reporting', s: 'ZWG, tourist tax' },
   { n: 'stweg', s: 'Phase 3' },
 ];
+const rowD = [
+  { n: 'regional', s: 'dataCycle cache' },
+  { n: 'recommend', s: 'signals, AI ranking' },
+  { n: 'insights', s: 'anonymous stats' },
+  { n: 'agent', s: 'tool registry, MCP' },
+];
 const A_Y = 64, BUS_Y = 176, B_Y = 252, C_Y = 404;
 
 const events: [string, string, string][] = [
@@ -133,13 +139,17 @@ const events: [string, string, string][] = [
       <!-- Worker out -->
       <text x="1030" y="212" class="svg-note">worker calls,</text>
       <text x="1030" y="231" class="svg-note">HTTPS + retries</text>
-      {['Lodgify', 'Stripe', 'Feratel', 'SALTO', 'Postmark'].map((n, i) => (
+      {['Lodgify', 'Stripe', 'Feratel', 'SALTO', 'Postmark', 'dataCycle', 'Weather', 'AI provider'].map((n, i) => (
         <Fragment>
           <Box x={1040} y={246 + i * 52} w={140} h={40} title={n} variant="ext" />
           <Arrow d={`M1010 ${266 + i * 52} H1040`} />
         </Fragment>
       ))}
-      <path d="M970 288 H1010 M1010 266 V474" fill="none" stroke="var(--primary-600)" stroke-width="1.75" />
+      <path d="M970 288 H1010 M1010 266 V630" fill="none" stroke="var(--primary-600)" stroke-width="1.75" />
+
+      <!-- MCP clients (later) -->
+      <Box x={20} y={372} w={150} h={56} title="MCP clients" sub="later" variant="phase2" />
+      <Arrow d="M170 400 H200 V320 H230" dashed={true} muted={true} />
     </svg>
     <Fragment slot="legend">
       <span class="legend-item"><span class="legend-swatch box soft"></span>Google Cloud, Zurich</span>
@@ -168,8 +178,8 @@ const events: [string, string, string][] = [
   <h3 class="block-title">Modules inside the backend · C4 level 3</h3>
   <p class="block-sub">Modules talk through domain events or through each other's public service functions, never through internals.</p>
   <Figure label="Module diagram: ten Phase 1 modules around a domain-event bus, the pure rules module, the integrations module as the only door to outside systems, and greyed Phase 2 modules" minWidth={960}>
-    <svg viewBox="0 0 1200 500" xmlns="http://www.w3.org/2000/svg">
-      <rect x="10" y="10" width="1180" height="480" rx="16" class="grp-plain" />
+    <svg viewBox="0 0 1200 610" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="1180" height="590" rx="16" class="grp-plain" />
       <text x="30" y="38" class="grp-label muted">Backend · one codebase · API + worker</text>
 
       <!-- calls to rules -->
@@ -199,6 +209,12 @@ const events: [string, string, string][] = [
       {rowC.map((m, i) => <path d={`M${mx(i) + 86} 376 V${C_Y}`} class="stub" />)}
       <text x="996" y="368" class="ar-label" text-anchor="end">April: new listeners, no change to Phase 1 code</text>
       {rowC.map((m, i) => <Box x={mx(i)} y={C_Y} w={MW} h={64} title={m.n} sub={m.s} variant="phase2" />)}
+
+      <!-- Regional content + AI (section 16) -->
+      <text x="30" y="508" class="grp-label">Regional content + AI · live 15–31 Jan</text>
+      {rowD.map((m, i) => <Box x={mx(i)} y={520} w={MW} h={64} title={m.n} sub={m.s} variant={m.n === 'agent' ? 'accent' : 'default'} />)}
+      <text x={mx(4)} y="548" class="svg-note">through integrations:</text>
+      <text x={mx(4)} y="568" class="svg-note">dataCycle, weather, AI</text>
     </svg>
     <Fragment slot="legend">
       <span class="legend-item"><span class="legend-swatch"></span>Direct call through the public service (index.ts)</span>

@@ -22,6 +22,8 @@ const adrs: { n: string; t: string; d: string; alt?: string; c: string; ref?: nu
   { n: '012', t: 'Three frontends, one UI library', d: 'Separate Guest App (PWA), Owner Portal, Back Office.', c: 'Small fast guest app, isolated deploys; shared components.', ref: [4] },
   { n: '013', t: 'Better Auth + stay tokens', d: 'No passwords for guests and owners; staff with 2FA.', alt: 'Auth0 / Clerk, Firebase Auth', c: 'User data stays in our Swiss DB; no per-user fees.', ref: [14] },
   { n: '014', t: 'Stripe Embedded Checkout', d: 'Stripe-hosted payment form embedded in the Guest App.', c: 'TWINT, Apple / Google Pay, cards; minimal PCI scope.', ref: [15] },
+  { n: '015', t: 'dataCycle into our cache', d: 'Worker syncs dataCycle read-only into regional_items; the Guest App reads only our API. Filter in code, AI ranking, fallback without AI.', alt: 'live calls from the app, copying content by hand', c: 'Fast feed, works during outages, one place for translations and insights; data ownership stays with the tourism offices.', ref: [22, 23] },
+  { n: '016', t: 'One set of actions (MCP-ready)', d: 'Every action a named service function with a Zod schema in a tool registry; REST for apps and MCP for agents are two doors on it. Agents act as the person; writes need human confirmation.', alt: 'separate AI backend with own DB access, no agent layer now', c: 'Almost no extra Phase 1 cost; MCP, chat and voice plug in later without new business rules.', ref: [24], open: 'When the MCP server is built (Seva, 31 Oct: must be possible)' },
 ];
 
 const sockets: { s: string; plug: string; plugSub: string }[] = [
@@ -45,7 +47,11 @@ const plugs: [string, string][] = [
   ['Another PMS than Lodgify', 'new adapter implementing LodgifyPort ("PmsPort")'],
   ['Mobile native app', 'same OpenAPI, generated client'],
   ['STWEG module', 'new module + accounts in money circle stweg'],
-  ['Partner offers', 'new module + Guest App screen'],
+  ['Partner offers', 'new module + Guest App screen; also feeds the "booking extras" signal'],
+  ['MCP connection', 'MCP server on /mcp generated from the tool registry'],
+  ['AI chat ("Ask me")', 'agent with read-only tools in the Guest App'],
+  ['Voice requests', 'speech-to-text → agent → existing tools (quote_extension …) → person confirms'],
+  ['Saanenland content', 'new region row in the regional module; no code change'],
 ];
 
 const quality: [string, string, string][] = [
@@ -58,7 +64,8 @@ const quality: [string, string, string][] = [
   ['Money', '0', 'unbalanced transactions; every Stripe payment has a ledger transaction'],
   ['Security', '2FA', 'for staff; OWASP ASVS L1; no card data stored'],
   ['Privacy', 'CH', 'all personal data in Switzerland; ID data deleted after legal period'],
-  ['Languages', '3', 'Guest App DE/FR/EN; Owner Portal and Back Office DE/EN'],
+  ['Languages', '3', 'Guest App DE/FR/EN (8 languages open); Owner Portal and Back Office DE/EN'],
+  ['Regional feed', '< 1 s', 'from cache; always shown (fallback if AI down); dataCycle changes < 30 min'],
   ['Accessibility', 'AA', 'WCAG 2.1 target'],
   ['Tests', '100 %', 'rule engine + state machines; all permission rows; E2E for 5 flows'],
 ];
@@ -82,21 +89,24 @@ const risks: [string, string, boolean?][] = [
   ['Personal data breach', 'Swiss hosting, least privilege, 2FA, encryption, retention job'],
   ['Tight timeline over the holidays', 'Clear milestones, scope fixed at 5 Nov, buffer 21 Dec-5 Jan'],
   ['Team capacity', 'Who builds which parts', true],
+  ['dataCycle access or docs late', 'Fake adapter with the vision\'s sample data; feed behind a flag, Phase 1 not blocked'],
+  ['AI ranking poor, slow or costly', 'Filter in code, fallback score, cache per day part (3–4 calls per stay per day)'],
+  ['An agent does something unwanted', 'Same permissions as the person, quote → confirm, audit log, rate limits'],
 ];
 ---
 <Takeaway>Later features plug into Phase 1 without a rewrite: April modules listen to existing events, read the existing ledger and add adapters, so Phase 1 tables and code stay as they are.</Takeaway>
 
 <div class="block">
   <h3 class="block-title">Architecture decision records</h3>
-  <p class="block-sub">Context, decision, alternatives, consequences. The full comparison for each one is in section 14.</p>
+  <p class="block-sub">Context, decision, alternatives, consequences. The full comparison for each one is in <a href="#comparisons">Why this over that</a>.</p>
   <div class="adrs">
     {adrs.map((a) => (
       <article class="adr">
-        <header><span class="adr-n mono">ADR-{a.n}</span>{a.ref && <span class="adr-ref">{a.ref.map((r) => <a href={`#d${r}`}>D{r}</a>)}</span>}</header>
         <h4>{a.t}</h4>
         <p class="adr-d">{a.d}</p>
         {a.alt && <p class="adr-alt"><span>Instead of</span> {a.alt}</p>}
         <p class="adr-c">{a.c}</p>
+        {a.ref && <a class="adr-link" href={`#d${a.ref[0]}`}>Compare the options →</a>}
         {a.open && <p class="adr-open"><Pill kind="open" text="5 Nov" /> {a.open}</p>}
       </article>
     ))}
@@ -169,11 +179,8 @@ const risks: [string, string, boolean?][] = [
   @media (min-width: 1600px) { .adrs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 767px) { .adrs { grid-template-columns: 1fr; } }
   .adr { display: grid; gap: 6px; align-content: start; padding: var(--s-4) var(--s-5) var(--s-5); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
-  .adr header { display: flex; justify-content: space-between; align-items: center; }
-  .adr-n { font-size: 12.5px; font-weight: 700; color: var(--primary-700); letter-spacing: .02em; }
-  .adr-ref { display: flex; gap: 6px; }
-  .adr-ref a { font-size: 12px; font-weight: 600; color: var(--ink-muted); text-decoration: none; padding: 1px 6px; border-radius: 5px; background: var(--surface-2); }
-  .adr-ref a:hover { background: var(--primary-50); color: var(--primary-800); }
+  .adr-link { justify-self: start; font-size: 13.5px; font-weight: 600; color: var(--primary-700); text-decoration: none; }
+  .adr-link:hover { text-decoration: underline; }
   .adr h4 { font-size: 1.0625rem; font-weight: 700; }
   .adr-d { font-size: 15px; line-height: 1.5; }
   .adr-alt { font-size: 14px; color: var(--ink-muted); line-height: 1.45; }

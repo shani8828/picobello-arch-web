@@ -4,27 +4,33 @@
 import Pill from '../components/Pill.astro';
 
 const decide: [string, string, string][] = [
-  ['Extension price: Lodgify nightly rate or our own? Max nights?', '12 F1 · 07 extension.price_source', '#logic'],
-  ['Shortening a stay: refund rules?', '12 F2 · 07 date change', '#logic'],
-  ['Editing guest details (names, number of people): free or request?', '12 F3', '#decisions'],
-  ['SALTO badges and Feratel guest card: both in Phase 1?', '12 F4', '#integrations'],
-  ['High-season weeks rule: per period (Christmas, Feb/Mar, summer) or per winter/summer?', '12 F5 · 07 check C5 (prototype counts per period)', '#logic'],
-  ['Who builds which parts? Domains (picobello.ch subdomains)?', '12 F6 · 11 domains · 12 team capacity', '#infrastructure'],
-  ['ID document retention period?', '12 F7 · 06 · 10', '#database'],
-  ['Database host: Cloud SQL (one cloud, failover) or Supabase Zurich (lower cost, faster setup)?', '12 ADR-004 · 14 D8', '#d8'],
+  ['Extension price: Lodgify nightly rate or our own? Max nights?', 'Business logic', '#logic'],
+  ['Shortening a stay: refund rules?', 'Business logic', '#logic'],
+  ['Editing guest details (names, number of people): free or request?', 'Decisions', '#decisions'],
+  ['SALTO badges and Feratel guest card: both in Phase 1?', 'Integrations', '#integrations'],
+  ['High-season weeks rule: per period (Christmas, Feb/Mar, summer) or per winter/summer?', 'Business logic', '#logic'],
+  ['Who builds which parts? Domains (picobello.ch subdomains)?', 'Infrastructure', '#infrastructure'],
+  ['ID document retention period?', 'Database', '#database'],
+  ['Database host: Cloud SQL (one cloud, failover) or Supabase Zurich (lower cost, faster setup)?', 'Why this over that', '#d8'],
+  ['Guest App languages: which 8, and Arabic (right-to-left) in Phase 1?', 'Regional content', '#regional'],
+  ['AI provider / model and weather source?', 'Regional content', '#regional'],
+  ['When to build the MCP server and the "Ask me" chat?', 'Regional content', '#regional'],
 ];
 
 const open: [string, string, string][] = [
-  ['Feratel guest card: wallet format (fer-04)', '08 Feratel', '#integrations'],
-  ['Archipex export format, agreed with Archipex (OP-05)', '08 Archipex', '#integrations'],
-  ['With Immer AG (OP-13): how the person identifies at the badge dispenser, what happens if the dispenser fails, night support', '08 SALTO', '#integrations'],
-  ['External pen-test before Phase 2: budget', '10 application security', '#security'],
+  ['Feratel guest card: wallet format', 'Integrations', '#integrations'],
+  ['Archipex export format, agreed with Archipex', 'Integrations', '#integrations'],
+  ['With Immer AG: how the person identifies at the badge dispenser, what happens if the dispenser fails, night support', 'Integrations', '#integrations'],
+  ['External pen-test before Phase 2: budget', 'Security', '#security'],
+  ['dataCycle: image usage rights in writing from both tourism offices; test access by 10 Nov', 'Regional content', '#regional'],
+  ['Booking extras signal (ski pass, half board) needs partner offers (Phase 2)', 'Regional content', '#regional'],
+  ['Insights export for the tourism offices: format and frequency', 'Regional content', '#regional'],
 ];
 
 const verify: { file: string; href: string; items: string[] }[] = [
-  { file: '06 Database', href: '#database', items: ['ID document retention period, with Picobello / Feratel rules'] },
-  { file: '07 Business logic', href: '#logic', items: ['Rounding to 5 Rappen where shown as cash amounts, with Picobello'] },
-  { file: '08 Integrations · Lodgify', href: '#integrations', items: [
+  { file: 'Database', href: '#database', items: ['ID document retention period, with Picobello / Feratel rules'] },
+  { file: 'Business logic', href: '#logic', items: ['Rounding to 5 Rappen where shown as cash amounts, with Picobello'] },
+  { file: 'Integrations · Lodgify', href: '#integrations', items: [
     'Webhook subscribe path and payload (docs.lodgify.com)',
     'Webhook event names (from a third-party connector list)',
     'Whether Lodgify signs webhooks; if yes, also check the signature',
@@ -33,12 +39,18 @@ const verify: { file: string; href: string; items: string[] }[] = [
     'Exact field names in the booking mapping',
     'Rate limits',
   ] },
-  { file: '08 Integrations · Stripe', href: '#integrations', items: ['TWINT activation on the account', 'Current card-authorisation expiry (about 7 days) for deposits'] },
-  { file: '08 Integrations · Feratel', href: '#integrations', items: ['Everything in the Feratel section, with Feratel / LST: interface, credentials, category codes, test environment'] },
-  { file: '08 Integrations · SALTO', href: '#integrations', items: ['Endpoints for users, access groups and time schedules (Connect API reference)'] },
-  { file: '10 Security', href: '#security', items: ['ID document retention period'] },
-  { file: '11 Infrastructure', href: '#infrastructure', items: ['Monthly cost estimate, with the GCP pricing calculator'] },
-  { file: '14 Comparisons', href: '#d8', items: ['Supabase Zurich region', 'Neon data location (EU, not CH)', 'Supabase high-availability plan', 'Supabase Storage data location'] },
+  { file: 'Integrations · Stripe', href: '#integrations', items: ['TWINT activation on the account', 'Current card-authorisation expiry (about 7 days) for deposits'] },
+  { file: 'Integrations · Feratel', href: '#integrations', items: ['Everything in the Feratel section, with Feratel / LST: interface, credentials, category codes, test environment'] },
+  { file: 'Integrations · SALTO', href: '#integrations', items: ['Endpoints for users, access groups and time schedules (Connect API reference)'] },
+  { file: 'Security', href: '#security', items: ['ID document retention period'] },
+  { file: 'Infrastructure', href: '#infrastructure', items: ['Monthly cost estimate, with the GCP pricing calculator'] },
+  { file: 'Regional content, AI, agents', href: '#regional', items: [
+    'dataCycle API: auth method, endpoints, format, rate limits',
+    'dataCycle change webhooks; whether live railway status is in dataCycle',
+    'AI provider: region, retention, no training on our data',
+    'MCP remote-server auth (OAuth) in the current spec',
+  ] },
+  { file: 'Comparisons', href: '#d8', items: ['Supabase Zurich region', 'Neon data location (EU, not CH)', 'Supabase high-availability plan', 'Supabase Storage data location'] },
 ];
 const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
 ---
@@ -57,7 +69,7 @@ const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
       <li><span class="i tnum">{i + 1}</span><div><p>{q}</p><a href={href} class="src">{src}</a></div><span class="ans" aria-hidden="true"></span></li>
     ))}
   </ol>
-  <p class="note">After the meeting the decisions are recorded with their date in file 12 (part F) and the affected files move to v1.1 (file 15, week 0).</p>
+  <p class="note">After the meeting each decision is recorded with its date and the affected parts of the architecture are updated.</p>
 </div>
 
 <div class="block">
@@ -67,7 +79,7 @@ const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
 
 <div class="block">
   <h3 class="block-title">To verify once we have access <Pill kind="verify" /></h3>
-  <p class="block-sub">Taken from third-party descriptions or assumptions; to check in the vendor's own docs (file 08).</p>
+  <p class="block-sub">Taken from third-party descriptions or assumptions; to check in the vendor's own docs.</p>
   <div class="vgroups">
     {verify.map((g) => (
       <section class="vg">

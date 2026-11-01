@@ -55,7 +55,7 @@ const tables: { m: string; rows: [string, string][] }[] = [
     ['ownerships', 'id, house_id, unit_id, person_id, share_percent, valid_from, valid_to, tourist_tax_mode (yearly_flat | per_stay), cost_account_id · no overlapping periods for the same unit + person'],
     ['users, user_roles', 'id, person_id, email, status, last_login_at · role (admin, backoffice, bookkeeping, owner), house_id (null = all) · Better Auth tables alongside'],
     ['settings_sets', 'id, scope (global | house | unit), scope_id, valid_from, values (jsonb, Zod-validated), schema_version, created_by, note · old sets never edited'],
-    ['audit_log', 'id, at, actor_type, actor_id, house_id, object_type, object_id, action, before, after, request_id · append-only'],
+    ['audit_log', 'id, at, actor_type, actor_id, via (app | agent | system), house_id, object_type, object_id, action, before, after, request_id · append-only'],
   ] },
   { m: 'stays', rows: [
     ['stays', 'id, house_id, unit_id, kind (guest | own_use | friends), channel, lodgify_booking_id, owner_person_id, main_guest_person_id, arrival, departure, adults, children_ages[], cost_payer, status, guaranteed, amounts (jsonb), language, invite_sent_at, link_token_hash, link_expires_at, version'],
@@ -93,6 +93,14 @@ const tables: { m: string; rows: [string, string][] }[] = [
     ['outbox_jobs', 'pg-boss tables (job, archive, schedule) + view integration_jobs_v'],
     ['integration_status', 'provider, house_id, last_success_at, last_error_at, last_error, pending_count, failed_count'],
     ['import_runs', 'id, source (archipex), file_key, status, report, applied_at, applied_by'],
+  ] },
+  { m: 'regional · recommend · insights', rows: [
+    ['regional_items', 'id, source (datacycle), source_id, region, category, name + text per language (machine translations flagged), geo, opening_hours, valid_from/to, tags, image_urls, live_status, source_updated_at, synced_at, active'],
+    ['regional_sync_runs', 'id, started_at, finished_at, mode (changes | full), counts, status, last_error'],
+    ['weather_snapshots', 'id, house_id, for_date, day_part, summary, temp_c, precip, snow_cm, fetched_at'],
+    ['stay_feeds', 'id, stay_id, for_date, day_part, signals (no personal data), sections (headings + item ids + reasons), method (ai | fallback), model, created_at'],
+    ['insight_events', 'id, at_hour, house_id, item_id, category, feed_heading, position, action, buckets · NO stay_id, NO person_id · kept 13 months'],
+    ['insight_daily', 'day, house_id, item_id, action, buckets_key, count'],
   ] },
 ];
 const phase2 = ['cleaning_orders', 'tickets', 'ticket_events', 'quotes', 'approvals', 'contractor_documents', 'statements', 'statement_lines', 'payouts', 'bank_statements', 'bank_transactions', 'bank_matches', 'bexio_exports', 'zwg_reports'];
