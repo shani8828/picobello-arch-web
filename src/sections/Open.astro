@@ -15,7 +15,7 @@ const decide: [string, string, string, string?][] = [
 ];
 
 const decided: [string, string, string][] = [
-  ['Extension: the guest extends in the app. Same apartment if free, otherwise another free apartment is offered; the guest confirms and pays. On a move, the old departure time (10:00) is the new arrival time. Price and availability come from Lodgify.', 'Business logic', '#logic'],
+  ['Extension: the guest extends in the app. Same apartment if free, otherwise the apartment empty the longest (ready at 10:00, same house first) is offered; the guest confirms and pays. On a move, the old departure time (10:00) is the new arrival time. Price and availability come from Lodgify.', 'Business logic', '#logic'],
   ['Guest details: guests edit names and number of people themselves; extra people are added after they pay.', 'Business logic', '#logic'],
   ['Languages: Guest App in DE / FR / EN for Phase 1; more languages later without code changes.', 'Frontend', '#frontend'],
   ['Feratel guest card: shown in whatever format Feratel returns.', 'Integrations', '#integrations'],

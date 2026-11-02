@@ -38,7 +38,7 @@ const groups: { key: string; name: string; auth: string; eps: Ep[] }[] = [
     ['POST', '/guest/stay/payments', 'create Stripe session → client secret'],
     ['GET', '/guest/stay/guest-cards', 'cards per person'],
     ['GET', '/guest/stay/access', 'badge status'],
-    ['POST', '/guest/stay/extensions/quote', 'price for extra nights, same or another free apartment (also holds the nights)'],
+    ['POST', '/guest/stay/extensions/quote', 'price for extra nights: same apartment, else the one empty the longest (also holds the nights)'],
     ['POST', '/guest/stay/extensions', 'confirm → payment session'],
     ['PATCH', '/guest/stay/guests', 'edit guest details; extra people → payment first'],
     ['POST', '/guest/stay/date-change/quote', 'availability + difference'],

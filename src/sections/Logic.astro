@@ -114,7 +114,7 @@ const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
         <div><dt>Owner own stay</dt><dd>cleaning (unit type) + laundry × persons, + tourist tax only if mode = per stay. Charged to the owner account.</dd></div>
         <div><dt>Friends stay</dt><dd>cleaning + laundry × persons + tourist tax. Payer: owner (account) or friends (Stripe, before check-in).</dd></div>
         <div><dt>Extra persons</dt><dd>extra-nights price per person from the Lodgify quote + tourist tax (direct bookings)</dd></div>
-        <div><dt>Extension</dt><dd>nightly price for new nights (Lodgify rate quote) + tourist tax for all persons. Same apartment first; if it is taken, another free one is offered at its price. Move at 10:00: the old departure time is the new arrival time.</dd></div>
+        <div><dt>Extension</dt><dd>nightly price for new nights (Lodgify rate quote) + tourist tax for all persons. Same apartment first; if it is taken, the apartment empty the longest is offered at its price (free for all new nights, big enough, empty the night before so it is ready; same house breaks a tie). Move at 10:00: the old departure time is the new arrival time.</dd></div>
         <div><dt>Guest details</dt><dd>guests edit names and number of people; more people → unit maximum checked, extra-persons price + tourist tax paid, then added</dd></div>
         <div><dt>Date change</dt><dd>new price − old price: pay the difference or refund <Pill kind="open" text="Open: refund rules" /></dd></div>
       </dl>
