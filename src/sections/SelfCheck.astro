@@ -6,7 +6,7 @@ import Icon from '../components/Icon.astro';
 import { plan, groups } from '../data/selfcheck';
 
 const total = groups.reduce((n, g) => n + g.items.length, 0);
-const milestones = ['M1', 'M2', 'M3', 'M4', 'M5', '15 Jan', 'Later'];
+const milestones = ['M1', 'M2', 'M3', 'M4', 'M5', 'M7', 'Later'];
 const byCount = milestones.map((m) => [m, groups.reduce((n, g) => n + g.items.filter((i) => i.by === m).length, 0)] as const);
 const tools = [
   ['OWASP ZAP', 'scans the running site like a basic attacker'],
@@ -17,7 +17,7 @@ const tools = [
   ['SSL Labs · securityheaders.com', 'TLS and browser headers'],
 ];
 ---
-<Takeaway>For go-live we prove security with our own checklist of {total} checks instead of a paid pen-test. Each check says how to test it and by which milestone, so the last one is ticked before the dress rehearsal on 5 Jan.</Takeaway>
+<Takeaway>For go-live we prove security with our own checklist of {total} checks instead of a paid pen-test. Each check says how to test it and by which milestone, so the bookings items are ticked before the dress rehearsal on 5 Jan and the guest items before the first guests.</Takeaway>
 
 <div class="block">
   <div class="grid grid-2 sc-split">

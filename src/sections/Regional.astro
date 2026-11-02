@@ -95,9 +95,7 @@ const open: [string, 'open' | 'verify'][] = [
   ['AI provider and model (data location, retention, cost)', 'open'],
   ['Weather source: MeteoSwiss open data or a weather API', 'open'],
   ['Image usage rights, in writing, from both tourism offices', 'open'],
-  ['"Ask me" chat in Phase 1 or later?', 'open'],
-  ['When to build the MCP server; first audience (staff?)', 'open'],
-  ['Booking extras signal (ski pass, half board) needs partner offers (Phase 2)', 'open'],
+  ['MCP server and "Ask me" chat: first audience (staff?); built after go-live', 'open'],
   ['Insights export for the tourism offices: format, frequency', 'open'],
   ['dataCycle API: auth, endpoints, format, rate limits, change webhooks, live railway status', 'verify'],
   ['MCP remote-server auth (OAuth) in the current spec', 'verify'],
@@ -313,7 +311,7 @@ const P = { x: 320, y: 40, w: 570, h: 360 };
   <ol class="tl">
     {timeline.map(([d, t, x], i) => <li><span class="n tnum">{i + 1}</span><span class="d">{d}</span><b>{t}</b><p>{x}</p></li>)}
   </ol>
-  <p class="note">The regional go-live comes after the Phase 1 go-live (~10 Jan). Phase 1 ships with the feed behind a feature flag, switched on per house when the test phase is passed.</p>
+  <p class="note">The regional go-live comes after the bookings go-live (~10 Jan). The feed ships behind a feature flag, switched on per house when the test phase is passed. Picobello's first guests arrive around May, so they see it from their arrival; the region's own dates stay as planned.</p>
 </div>
 
 <div class="block">

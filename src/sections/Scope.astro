@@ -19,14 +19,16 @@ const roles = [
     actions: ['Everything the back office can do', 'Users and roles', 'System settings, prices, rules', 'Archipex import'] },
 ];
 
-const phase1 = [
+const phase1a = [
+  'Owner magic link / passkey', 'Owner calendar', 'Own-use quota', 'Own-use reservation with rule check', 'Booking for friends',
+  'Cancel / change (CHF 50 fee)', 'Owner account balance', 'Today view', 'Stays + timeline', 'Apartments / listing editor',
+  'Channel sync + "What\'s missing"', 'Owners and ownerships', 'Settings with valid-from', 'Integrations page', 'Audit log',
+  'Archipex import', 'Feratel connection', 'Ledger from first live booking', 'Webhooks stored + retried',
+];
+const phase1b = [
   'Personal guest link', 'DE / FR / EN', 'Pre-arrival info + Maps link', 'Online check-in', 'Digital guest cards',
   'Badge access (SALTO)', 'Extra persons payment', 'Extend stay', 'Edit guest details', 'Change / shorten dates', 'Late check-in / check-out requests',
-  'Link locked after departure', 'Friends pay in check-in', 'Owner magic link / passkey', 'Owner calendar', 'Own-use quota',
-  'Own-use reservation with rule check', 'Owner check-in (per-stay tax)', 'Booking for friends', 'Cancel / change (CHF 50 fee)',
-  'Owner account balance', 'Today view', 'Stays + timeline', 'Apartments / listing editor', 'Channel sync + "What\'s missing"',
-  'Owners and ownerships', 'Settings with valid-from', 'Integrations page', 'Audit log', 'Archipex import',
-  'Ledger from first live booking', 'Webhooks stored + retried',
+  'Link locked after departure', 'Friends pay in check-in', 'Owner check-in (per-stay tax)',
 ];
 const phase2 = [
   'WhatsApp messaging', 'Repairs: tickets, quotes, approval > CHF 500, DocuSign', 'Cleaning via PicobelloAI 2.0',
@@ -125,10 +127,15 @@ const months = [
   <h3 class="block-title">Scope by phase</h3>
   <div class="board">
     <section class="col col-p1">
-      <header><span class="col-title">Phase 1</span><span class="col-meta">~10 Jan 2027 · must</span><span class="count tnum">{phase1.length}</span></header>
-      <div class="chips">{phase1.map((c) => <span class="chip chip-soft">{c}</span>)}</div>
+      <header><span class="col-title">Phase 1</span><span class="col-meta">must</span><span class="count tnum">{phase1a.length + phase1b.length}</span></header>
+      <span class="col-title small">1a · ~10 Jan 2027 · bookings</span>
+      <div class="chips">{phase1a.map((c) => <span class="chip chip-soft">{c}</span>)}</div>
       <div class="p3">
-        <span class="col-title small">Regional content + AI · test Nov–Jan, live 15–31 Jan</span>
+        <span class="col-title small">1b · by 15 Apr · first guests ~May</span>
+        <div class="chips">{phase1b.map((c) => <span class="chip chip-soft">{c}</span>)}</div>
+      </div>
+      <div class="p3">
+        <span class="col-title small">Regional content + AI · test at the Lenk, on for guests after the test</span>
         <div class="chips">
           <a class="chip chip-soft" href="#regional">"Today · picked for you" from dataCycle</a>
           <a class="chip chip-soft" href="#regional">AI ranking per guest and moment</a>
@@ -154,7 +161,7 @@ const months = [
 
 <div class="block">
   <h3 class="block-title">Timeline</h3>
-  <Figure label="Timeline from the architecture review on 5 Nov 2026 to Phase 2 in April 2027" minWidth={760}>
+  <Figure label="Timeline from the architecture review on 5 Nov 2026: bookings live 10 Jan, guest journey ready 15 Apr, Phase 2 from April 2027" minWidth={760}>
     <svg viewBox="0 0 1120 170" xmlns="http://www.w3.org/2000/svg">
       {months.map((mo) => (
         <g>
@@ -165,8 +172,8 @@ const months = [
       <line x1={X0} x2={X1} y1="100" y2="100" stroke="var(--line-strong)" stroke-width="2" />
       <rect x={xd(10, 6)} y="92" width={xd(0, 10) - xd(10, 6)} height="16" rx="8" fill="var(--primary-600)" />
       <rect x={xd(0, 11) + 6} y="92" width={X1 - xd(0, 11) - 6} height="16" rx="8" fill="var(--primary-100)" />
-      <text x={(xd(10, 6) + xd(0, 10)) / 2} y="78" text-anchor="middle" class="tl-band">Phase 1 build</text>
-      <text x={(xd(0, 11) + X1) / 2} y="78" text-anchor="middle" class="tl-band muted">Phase 2 · Jan to April</text>
+      <text x={(xd(10, 6) + xd(0, 10)) / 2} y="78" text-anchor="middle" class="tl-band">Phase 1a build</text>
+      <text x={(xd(0, 11) + X1) / 2} y="78" text-anchor="middle" class="tl-band muted">Phase 1b · guest journey</text>
 
       <g class="tl-mark"><circle cx={xd(10, 5)} cy="100" r="7" fill="var(--surface)" stroke="var(--ink)" stroke-width="2" />
         <text x={xd(10, 5) - 4} y="30" class="tl-date" text-anchor="start">5 Nov</text>
@@ -179,17 +186,17 @@ const months = [
       <g class="tl-mark">
         <path d={`M${xd(0, 10)} 89 l11 11 -11 11 -11 -11z`} fill="var(--accent-500)" stroke="var(--surface)" stroke-width="2" />
         <text x={xd(0, 10)} y="30" class="tl-date" text-anchor="middle">~10 Jan 2027</text>
-        <text x={xd(0, 10)} y="50" class="tl-what" text-anchor="middle">Phase 1 go-live</text></g>
+        <text x={xd(0, 10)} y="50" class="tl-what" text-anchor="middle">Bookings live</text></g>
       <g class="tl-mark"><circle cx={xd(3, 15)} cy="100" r="7" fill="var(--surface)" stroke="var(--primary-600)" stroke-width="2" />
-        <text x={xd(3, 15)} y="30" class="tl-date" text-anchor="middle">April 2027</text>
-        <text x={xd(3, 15)} y="50" class="tl-what" text-anchor="middle">Phase 2</text></g>
+        <text x={xd(3, 15)} y="30" class="tl-date" text-anchor="middle">15 Apr 2027</text>
+        <text x={xd(3, 15)} y="50" class="tl-what" text-anchor="middle">Guests ready · Phase 2</text></g>
     </svg>
   </Figure>
 </div>
 
 <div class="block">
   <h3 class="block-title">User stories, Phase 1</h3>
-  <p class="block-sub">All are must-haves for ~10 Jan 2027. Open a group to read its stories.</p>
+  <p class="block-sub">All are must-haves. Owner, back office and system stories go live ~10 Jan 2027 (1a); guest and friend stories are ready by 15 Apr (1b). Open a group to read its stories.</p>
   {stories.map((g, i) => (
     <details class="disclose" open={i === 0 ? true : undefined}>
       <summary>{g.group}<span class="count">{g.items.length} stories</span><Icon name="chevron-right" size={18} class="chev" /></summary>

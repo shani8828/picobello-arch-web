@@ -49,17 +49,22 @@ const alerts: [string, string][] = [
 ];
 
 const checklist = [
-  'Production keys from Picobello: Lodgify, Stripe, Feratel, SALTO, Postmark',
-  'Units mapped to Lodgify properties and SALTO doors',
+  'Production keys from Picobello: Lodgify, Feratel, Postmark',
+  'Units mapped to Lodgify properties',
   'Settings (fees, rules) reviewed by Picobello',
   'Archipex final import applied (cutoff 31.12.2026)',
-  'Webhooks registered in Lodgify and Stripe (production URLs)',
-  'Dress rehearsal on production: booking → check-in → guest card → badge → tourist tax → ledger',
-  'Friends-pay and extension flows tested with a real CHF payment and refund',
+  'Webhook registered in Lodgify (production URL)',
+  'Dress rehearsal on production: real booking → stay → Feratel → ledger; owner reservation → block; channel cancellation frees the nights',
   'Backups verified, alerts tested',
   'Staff trained on Back Office; owner portal invitation emails ready',
-  'Security self-check: every item up to M5 ticked',
+  'Security self-check: every item due by M5 ticked',
   'Rollback plan agreed',
+];
+const checklist1b = [
+  'Stripe keys and webhook (production); SALTO / Immer AG access',
+  'Units mapped to SALTO doors; dispenser process agreed',
+  'Full guest journey on Tristan\'s apartments with real bookings: invite → check-in → payment (real CHF, refund) → guest card → badge → extension → ledger',
+  'Security self-check: Phase 1b items ticked',
 ];
 
 const costs: [string, string][] = [
@@ -165,8 +170,10 @@ const costs: [string, string][] = [
 <div class="block">
   <div class="grid grid-2 infra-split">
     <div>
-      <h3 class="block-title">Go-live checklist · ~10 Jan 2027</h3>
+      <h3 class="block-title">Go-live checklist · Phase 1a, ~10 Jan 2027</h3>
       <ul class="checklist">{checklist.map((c) => <li><span class="box" aria-hidden="true"></span>{c}</li>)}</ul>
+      <h3 class="block-title after-1b">Phase 1b · by 15 Apr 2027</h3>
+      <ul class="checklist">{checklist1b.map((c) => <li><span class="box" aria-hidden="true"></span>{c}</li>)}</ul>
     </div>
     <div>
       <h3 class="block-title">Monthly cost, rough <Pill kind="verify" text="Verify with GCP pricing calculator" /></h3>
@@ -240,6 +247,7 @@ const costs: [string, string][] = [
   .tv { font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
   .tv small { font-size: 0.5em; color: var(--ink-muted); font-weight: 500; margin-left: 3px; }
   .tl { font-size: 13.5px; color: var(--ink-muted); }
+  .after-1b { margin-top: var(--s-6); }
   .checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .checklist li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 15.5px; line-height: 1.45; }
   .checklist .box { width: 18px; height: 18px; margin-top: 2px; border: 1.5px solid var(--line-strong); border-radius: 5px; background: var(--surface); }

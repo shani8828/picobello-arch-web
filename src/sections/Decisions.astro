@@ -73,10 +73,11 @@ const quality: [string, string, string][] = [
 const milestones: [string, string, string][] = [
   ['M1', '15 Nov', 'staging online, login works, units visible'],
   ['M2', '29 Nov', 'real Lodgify bookings appear; owner can reserve'],
-  ['M3', '13 Dec', 'guest can check in and pay (test mode)'],
-  ['M4', '20 Dec', 'guest card + badge in staging'],
-  ['M5', '5 Jan', 'dress rehearsal passed, security self-check signed off'],
-  ['M6', '10 Jan', 'live'],
+  ['M3', '13 Dec', 'every booking and owner charge in the ledger; Feratel test registration'],
+  ['M4', '20 Dec', 'Apartments tab, Archipex trial import, production ready'],
+  ['M5', '5 Jan', 'dress rehearsal (bookings) passed, security self-check signed off'],
+  ['M6', '10 Jan', 'Phase 1a live: bookings'],
+  ['M7', '15 Apr', 'Phase 1b ready: guest journey incl. badges'],
 ];
 
 const risks: [string, string, boolean?][] = [
@@ -132,7 +133,7 @@ const risks: [string, string, boolean?][] = [
         );
       })}
       <rect x="30" y="222" width="1140" height="44" rx="12" class="core" />
-      <text x="40" y="330" class="svg-note">Phase 1 core: modules, events, ledger, settings, adapters, OpenAPI. Built by 10 Jan.</text>
+      <text x="40" y="330" class="svg-note">Phase 1 core: modules, events, ledger, settings, adapters, OpenAPI. Bookings by 10 Jan, guests by 15 Apr.</text>
       <text x="40" y="354" class="svg-note">Plugs above: April and later. No Phase 1 rewrite.</text>
       {sockets.map((s, i) => { const cx = 130 + i * 188; return <rect x={cx - 24} y="222" width="48" height="18" rx="4" class="socket" />; })}
       {sockets.map((s, i) => { const cx = 130 + i * 188; return <Fragment><circle cx={cx - 12} cy="231" r="3" class="hole" /><circle cx={cx + 12} cy="231" r="3" class="hole" /></Fragment>; })}
@@ -155,7 +156,7 @@ const risks: [string, string, boolean?][] = [
 
 <div class="block">
   <h3 class="block-title">Build plan · after the 5 Nov review</h3>
-  <Figure label="Gantt chart from 5 Nov 2026 to go-live on 10 Jan 2027 with milestones M0 to M6, then Phase 2 until April" minWidth={960}>
+  <Figure label="Gantt chart from 5 Nov 2026 to the bookings go-live on 10 Jan 2027 with milestones M0 to M6, then Phase 1b to 15 Apr" minWidth={960}>
     <Gantt label="Build plan" />
   </Figure>
   <ol class="ms-strip">

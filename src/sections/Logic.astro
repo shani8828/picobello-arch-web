@@ -14,7 +14,7 @@ const settings: [string, string, boolean?][] = [
   ['own_use.max_weeks_per_high_season', '3'],
   ['own_use.short_notice_min_nights', '4'],
   ['own_use.guarantee_days_ahead', '366'],
-  ['own_use.cancel_fee_rappen', '5000'],
+  ['own_use.cancel_fee_rappen', '5000', true],
   ['own_use.cancel_fee_days_before', '90'],
   ['guest.max_days_ahead', '365'],
   ['times.checkin / times.checkout', '"16:00" / "10:00"'],
@@ -25,6 +25,7 @@ const settings: [string, string, boolean?][] = [
   ['tourist_tax.adult_per_night_rappen', '500 (age 16+)'],
   ['tourist_tax.child_per_night_rappen', '250 (age 6-15)'],
   ['tourist_tax.child_free_below_age', '6'],
+  ['privacy.id_document_retention_days', '30', true],
   ['extension.price_source', '"lodgify_rate" (Picobello sets rates)'],
   ['vat.accommodation_bp / vat.standard_bp', '380 / 810'],
 ];
@@ -116,7 +117,8 @@ const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
         <div><dt>Extra persons</dt><dd>extra-nights price per person from the Lodgify quote + tourist tax (direct bookings)</dd></div>
         <div><dt>Extension</dt><dd>nightly price for new nights (Lodgify rate quote) + tourist tax for all persons. Same apartment first; if it is taken, the apartment empty the longest is offered at its price (free for all new nights, big enough, empty the night before so it is ready; same house breaks a tie). Move at 10:00: the old departure time is the new arrival time.</dd></div>
         <div><dt>Guest details</dt><dd>guests edit names and number of people; more people → unit maximum checked, extra-persons price + tourist tax paid, then added</dd></div>
-        <div><dt>Date change</dt><dd>new price − old price: pay the difference or refund <Pill kind="open" text="Open: refund rules" /></dd></div>
+        <div><dt>Date change</dt><dd>new price − old price: pay the difference or refund <Pill kind="open" text="Open: rules for direct bookings, shortened stays" /></dd></div>
+        <div><dt>Channel cancellation</dt><dd>Airbnb / Booking handle the cancellation and refund; Lodgify syncs it, the nights are free again, we pay no refund</dd></div>
       </dl>
       <p class="muted-p">All amounts are integers in Rappen; rounding only at the end of each line, to 5 Rappen where shown as cash amounts <Pill kind="open" text="Proposed" /></p>
     </div>
@@ -255,7 +257,7 @@ const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
           ]}
         />
       </Figure>
-      <p class="sm-note">Below 366 days the request waits for Picobello. Cancelling costs CHF 50 if less than 90 days before arrival.</p>
+      <p class="sm-note">Below 366 days the request waits for Picobello. Cancelling costs CHF 50 if less than 90 days before arrival (to confirm).</p>
     </div>
     <div>
       <h4 class="sm-title">Listing field × channel</h4>
@@ -325,7 +327,7 @@ const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
   .logic-split { gap: var(--s-8); align-items: start; }
   .lead-p { font-size: var(--fs-label); line-height: 1.55; margin-bottom: var(--s-4); }
   .muted-p { margin-top: var(--s-4); font-size: var(--fs-ui); color: var(--ink-muted); line-height: 1.55; }
-  .muted-p :global(.pill), .calc :global(.pill) { font-size: 12.5px; margin-left: 4px; }
+  .muted-p :global(.pill), .calc :global(.pill) { font-size: 12.5px; margin-left: 4px; white-space: normal; max-width: 100%; }
   code { color: var(--primary-800); font-size: 0.9em; }
   .resolve { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
   .resolve .fn { font-size: 15px; font-weight: 600; }
@@ -366,8 +368,8 @@ const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
   @media (max-width: 1023px) { .rc-body { grid-template-columns: minmax(0, 1fr); } .rc-side { border-left: 0; border-top: 1px solid var(--line); } }
 
   .calc { margin: 0; display: grid; border-top: 1px solid var(--line); }
-  .calc div { display: grid; grid-template-columns: 130px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-label); line-height: 1.5; }
-  .calc dt { font-weight: 600; }
+  .calc div { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-label); line-height: 1.5; }
+  .calc dt { font-weight: 600; overflow-wrap: anywhere; }
   .calc dd { margin: 0; color: var(--ink-muted); }
 
   .receipt { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card) var(--r-card) 0 0; padding: var(--s-6) var(--s-6) var(--s-8); box-shadow: var(--e-1); max-width: 460px; }

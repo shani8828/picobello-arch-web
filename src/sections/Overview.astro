@@ -6,22 +6,20 @@ import Icon from '../components/Icon.astro';
 import { stack } from '../data/stack';
 
 const delivers = [
-  { who: 'Guests', what: 'check in online, pay, get one guest card per person and badge access.' },
+  { who: 'Guests', what: 'check in online, pay, get one guest card per person and badge access; ready by 15 Apr, before the first arrivals (~May).' },
   { who: 'Owners', what: 'reserve for themselves and for friends, with the contract rules checked instantly.' },
   { who: 'Staff', what: 'manage stays and apartments, including listing content for every channel.' },
   { who: 'Money', what: 'every franc is recorded in the ledger from the first live booking.' },
-  { who: 'Region', what: 'the dataCycle "Today" feed ships switched off; it goes live for guests 15 to 31 Jan 2027 after the test phase at the Lenk.' },
+  { who: 'Region', what: 'the dataCycle "Today" feed ships switched off and is switched on after the test phase at the Lenk.' },
 ];
 
 const decide = [
   'Database host: Cloud SQL (one cloud, failover) or Supabase (lower cost, faster setup)?',
-  'Shortening or cancelling a stay: refund rules and deadline?',
-  'SALTO badges and Feratel guest card: both in Phase 1?',
-  'ID document retention period?',
-  'When to build the MCP server and the "Ask me" chat?',
-  'Badge dispenser: how guests identify, failure, night support?',
-  'Ski pass / half board signal: Phase 2?',
-  'Prices: round to 5 Rappen?',
+  'Refund rules for direct bookings and shortened stays (Seva checks with Tristan)',
+  'Owner cancellation fee: about CHF 50, to confirm',
+  'ID document retention: about 30 days, to confirm',
+  'Badge dispenser: exact process, failure, night support',
+  'Rounding to 5 Rappen: settle together',
 ];
 ---
 <Takeaway>Phase 1 records every franc from the first live booking. The April features (statements, Bexio, VAT, bank) only read that data, so no Phase 1 table has to change.</Takeaway>
@@ -31,7 +29,8 @@ const decide = [
     <div class="stat"><div class="v">22</div><div class="l">rentable apartments in Lenk</div></div>
     <div class="stat"><div class="v">2</div><div class="l">houses: Alpsunne A&amp;B, Chalet Spitzacker</div></div>
     <div class="stat"><div class="v">3</div><div class="l">apps on one backend and one database</div></div>
-    <div class="stat"><div class="v">10 Jan<small>2027</small></div><div class="l">Phase 1 go-live (approx.)</div></div>
+    <div class="stat"><div class="v">10 Jan<small>2027</small></div><div class="l">Phase 1a: bookings live</div></div>
+    <div class="stat"><div class="v">15 Apr<small>2027</small></div><div class="l">Phase 1b: ready for the first guests (~May)</div></div>
     <div class="stat"><div class="v">April<small>2027</small></div><div class="l">Phase 2: messaging, cleaning, statements, accounting</div></div>
   </div>
 </div>
@@ -67,8 +66,8 @@ const decide = [
 </div>
 
 <div class="block">
-  <h3 class="block-title">To decide on 5 Nov</h3>
-  <p class="block-sub">The questions to settle in the review. Extensions, guest details, languages, the guest card format and the Archipex export were decided on 3 Nov; see <a href="#open">Open questions</a>.</p>
+  <h3 class="block-title">Still open for 5 Nov</h3>
+  <p class="block-sub">The questions to settle in the review. Seva answered the rest on 3 Nov; see <a href="#open">Open questions</a>.</p>
   <ol class="decide">
     {decide.map((q, i) => (
       <li><span class="i tnum">{i + 1}</span><span>{q}</span><Pill kind="open" /></li>

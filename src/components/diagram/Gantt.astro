@@ -1,6 +1,6 @@
 ---
 // Phase 1 Gantt: 2 Nov 2026 -> 17 Jan 2027 to scale, plus a compressed
-// tail for Phase 2 (April). Blocks and milestones from arch/12 part D
+// tail for Phase 1b (guest journey, to 15 Apr). Blocks and milestones from arch/12 part D
 // and arch/15.
 interface Props { label: string; showBuffer?: boolean }
 const { showBuffer = true } = Astro.props;
@@ -15,10 +15,10 @@ const rows: { label: string; sub: string; a: [number, number]; b: [number, numbe
   { label: 'Architecture review', sub: 'Week 0 · 5 Nov', a: [10, 5], b: [10, 6], ms: 'M0', tone: 'review' },
   { label: 'Foundation', sub: 'Week 1 · 6-15 Nov', a: [10, 6], b: [10, 16], ms: 'M1' },
   { label: 'Lodgify + Owner Portal', sub: 'Weeks 2-3 · 16-29 Nov', a: [10, 16], b: [10, 30], ms: 'M2' },
-  { label: 'Guest App + payments', sub: 'Weeks 4-5 · 30 Nov-13 Dec', a: [10, 30], b: [11, 14], ms: 'M3' },
-  { label: 'Guest card, access, Apartments', sub: 'Week 6 · 14-20 Dec', a: [11, 14], b: [11, 21], ms: 'M4' },
+  { label: 'Ledger, Feratel, Back Office', sub: 'Weeks 4-5 · 30 Nov-13 Dec', a: [10, 30], b: [11, 14], ms: 'M3' },
+  { label: 'Apartments, Archipex, production', sub: 'Week 6 · 14-20 Dec', a: [11, 14], b: [11, 21], ms: 'M4' },
   { label: 'Hardening + dress rehearsal', sub: 'Weeks 7-8 · 21 Dec-5 Jan', a: [11, 21], b: [0, 6], ms: 'M5' },
-  { label: 'Delivery', sub: 'Week 9 · 6-10 Jan', a: [0, 6], b: [0, 11], ms: 'M6', tone: 'go' },
+  { label: 'Delivery: bookings live', sub: 'Week 9 · 6-10 Jan', a: [0, 6], b: [0, 11], ms: 'M6', tone: 'go' },
 ];
 const ms: { id: string; m: number; d: number; t: string }[] = [
   { id: 'M0', m: 10, d: 5, t: '5 Nov' }, { id: 'M1', m: 10, d: 15, t: '15 Nov' }, { id: 'M2', m: 10, d: 29, t: '29 Nov' },
@@ -69,9 +69,10 @@ const mx = (m: number, d: number) => x(m, d + 1); // milestones mark the end of 
   <!-- tail: Phase 2 -->
   <path d={`M${X1 + 6} ${TOP - 30} l6 -6 m-6 12 l6 -6`} class="g-break" />
   <rect x={TAIL} y={TOP + 12} width={1190 - TAIL} height={rows.length * RH - 24} rx="10" class="g-p2" />
-  <text x={(TAIL + 1190) / 2} y={TOP + rows.length * RH / 2 - 6} text-anchor="middle" class="g-p2-t">Phase 2</text>
-  <text x={(TAIL + 1190) / 2} y={TOP + rows.length * RH / 2 + 16} text-anchor="middle" class="g-p2-s">Jan-Apr</text>
-  <text x={(TAIL + 1190) / 2} y={TOP + rows.length * RH / 2 + 36} text-anchor="middle" class="g-p2-s">2027</text>
+  <text x={(TAIL + 1190) / 2} y={TOP + rows.length * RH / 2 - 16} text-anchor="middle" class="g-p2-t">Phase 1b</text>
+  <text x={(TAIL + 1190) / 2} y={TOP + rows.length * RH / 2 + 6} text-anchor="middle" class="g-p2-s">guests</text>
+  <text x={(TAIL + 1190) / 2} y={TOP + rows.length * RH / 2 + 26} text-anchor="middle" class="g-p2-s">→ M7</text>
+  <text x={(TAIL + 1190) / 2} y={TOP + rows.length * RH / 2 + 46} text-anchor="middle" class="g-p2-s">15 Apr</text>
 </svg>
 
 <style>
