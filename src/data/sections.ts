@@ -46,6 +46,8 @@ export const sections: SectionMeta[] = [
     lead: 'Deliver Phase 1 to Picobello on Sunday 10 January 2027, fully working in production: guests check in, pay, get guest cards and badge access; owners reserve for themselves and friends; staff manage stays and apartments; every franc is recorded.', step: 6 },
   { id: 'design', num: '16', title: 'Design system', file: '13-design-system.txt', leadLabel: 'Question this answers',
     lead: 'How does the platform look and feel, which exact colours, fonts, sizes and spacing do we use in each app (and in the presentation), and which craft rules make it look premium and hand-designed?', step: 6 },
+  { id: 'selfcheck', num: '17', title: 'Security self-check', file: '17-security-self-check.txt', leadLabel: 'Question this answers',
+    lead: 'How do we prove the platform is secure before go-live on 10 Jan, without paying for a full pen-test, and when is each check done?', step: 6 },
   { id: 'open', num: '—', title: 'Open questions', file: '12-decisions-extensibility-plan.txt', leadLabel: 'For 5 Nov',
     lead: 'The decisions needed in the review, plus every point that is still open or still to be checked with a vendor.', step: 6 },
 ];

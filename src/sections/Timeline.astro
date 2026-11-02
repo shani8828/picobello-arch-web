@@ -12,26 +12,26 @@ const milestones: [string, string, string][] = [
   ['M2', '29 Nov', 'A real booking in Lodgify (test property) appears in the Back Office within a minute; an owner reservation appears as a block in Lodgify'],
   ['M3', '13 Dec', 'On staging, a test guest checks in, a friend pays by card / TWINT (test mode) and an extension updates Lodgify'],
   ['M4', '20 Dec', 'Full guest journey on staging, including guest card and badge (vendor test systems); the Apartments tab works'],
-  ['M5', '5 Jan', 'Dress rehearsal passed, sign-off from Seva'],
+  ['M5', '5 Jan', 'Dress rehearsal passed, security self-check signed off, sign-off from Seva'],
   ['M6', '10 Jan', 'Phase 1 delivered and live'],
 ];
 
 // Needed-by dates from the file. The file gives no delivery status, so the
 // colour shows urgency by date only.
 const deps: [string, string, number][] = [
+  ['dataCycle test access + API docs', '10 Nov', 1],
   ['Domain / DNS access (picobello.ch)', '15 Nov', 1],
   ['Lodgify API key + test property', '16 Nov', 1],
   ['Stripe restricted key (test + live)', '30 Nov', 2],
   ['Real fee values and texts for emails', '30 Nov', 2],
-  ['Feratel / LST interface docs + test access', '7 Dec', 2],
+  ['AI provider account / decision', '30 Nov', 2],
+  ['Archipex data access (we export ourselves)', '1 Dec', 2],
+  ['Feratel / LST interface docs + test access (ask now: LST must activate it)', '7 Dec', 2],
   ['SALTO / Immer AG API access + test site', '7 Dec', 2],
   ['Listing content (photos, texts) to migrate', '14 Dec', 3],
-  ['Archipex data access (we export ourselves)', '1 Dec', 2],
+  ['Image usage rights (both tourism offices)', '14 Dec', 3],
   ['Production keys for all systems', '28 Dec', 3],
   ['Staff available for training', '6-8 Jan', 3],
-  ['dataCycle test access + API docs', '10 Nov', 1],
-  ['AI provider account / decision', '30 Nov', 2],
-  ['Image usage rights (both tourism offices)', '14 Dec', 3],
 ];
 const regional: [string, string][] = [
   ['6-10 Nov', 'dataCycle test access, API study, list of categories (vision step 1)'],
@@ -45,10 +45,10 @@ const regional: [string, string][] = [
 const weeks: { w: string; d: string; m?: string; groups: [string, string[]][] }[] = [
   { w: 'Week 0', d: '5 Nov (Thu) · architecture review', m: 'M0', groups: [
     ['Review meeting with Seva', ['Walk through the architecture (this web page, screen share)', 'Decide the open questions and the database host (Cloud SQL vs Supabase)', 'Confirm Phase 1 scope']],
-    ['After the meeting', ['Record each decision with its date and update the affected parts of the architecture', 'Send the final PDF to Seva', 'Request access from Picobello: Lodgify, Stripe, Feratel/LST, SALTO/Immer AG, domain/DNS, Archipex data access']],
+    ['After the meeting', ['Record each decision with its date and update the affected parts of the architecture', 'Send the final PDF to Seva', 'Request access from Picobello: Lodgify, Stripe, Feratel/LST, SALTO/Immer AG, domain/DNS, Archipex data access, dataCycle test access (by 10 Nov), image rights']],
   ] },
   { w: 'Week 1', d: '6-15 Nov · foundation', m: 'M1', groups: [
-    ['Repository and tooling', ['Monorepo (pnpm + Turborepo), apps/ and packages/', 'TypeScript strict, ESLint, Prettier, dependency-cruiser', 'Commit conventions, PR template, CODEOWNERS']],
+    ['Repository and tooling', ['Monorepo (pnpm + Turborepo), apps/ and packages/', 'TypeScript strict, ESLint, Prettier, dependency-cruiser', 'Commit conventions, PR template, CODEOWNERS', 'Security tools in CI: gitleaks, npm audit / OSV, Semgrep, Renovate']],
     ['CI/CD and environments', ['GitHub Actions on every PR', 'Terraform: GCP staging project, Cloudflare Pages projects', 'Workload Identity Federation; auto-deploy main → staging; preview URLs']],
     ['Database, backend, auth', ['Drizzle + first migrations; seed: 2 houses, 22 units, demo owners', 'Hono API with OpenAPI, errors, pipeline, logging, Sentry; worker with pg-boss', 'Better Auth: staff login + 2FA, owner magic link; guest stay-token design']],
     ['Design system and Back Office basics', ['Tokens, self-hosted fonts, base components, app shells', 'Houses, units, owners, ownerships, settings, audit log screens']],
@@ -63,15 +63,16 @@ const weeks: { w: string; d: string; m?: string; groups: [string, string[]][] }[
     ['Guest App foundation + invitations', ['PWA, offline cache, personal link, locked page, home, DE/FR/EN, arrival info', 'Email templates (Postmark); invite 3 days before arrival; resend']],
     ['Online check-in', ['Main guest, companions, arrival time, consent, done', 'Extra-persons detection; owner check-in in the portal']],
     ['Stripe', ['Restricted key, Embedded Checkout, signed webhook, idempotency', 'Friends pay inside check-in; extra persons; ledger entries; nightly reconciliation']],
-    ['Extensions, date changes, requests', ['Live availability + night holds; pay → apply; failure path with refund offer', 'Late check-in / check-out: request, approve / decline with price']],
+    ['Extensions, date changes, requests', ['Live availability + night holds; same apartment, else the one empty the longest; pay → apply; failure path with refund offer', 'Guests edit their details; extra people pay, then are added', 'Late check-in / check-out: request, approve / decline with price']],
   ] },
   { w: 'Week 6', d: '14-20 Dec · guest card, access, Apartments', m: 'M4', groups: [
-    ['Feratel + SALTO adapters', ['Registration after check-in, guest cards back, update / cancel; manual fallback', 'Access 16:00 → 10:00, doors per unit, extend / revoke; access screen']],
+    ['Feratel + SALTO adapters', ['Registration after check-in, guest cards back, update (extension, dates, guests) / cancel; manual fallback', 'Access 16:00 → 10:00, doors per unit, extend / revoke; access screen']],
     ['Apartments tab + Today view', ['Listing editor, photo pipeline, sync rules + per-field states, push or copy + confirm, "What\'s missing"', 'Arrivals, departures, missing check-ins, unpaid friends, failed integrations, open requests']],
     ['Archipex + production infrastructure', ['Import screen, validation report, trial import on staging', 'Terraform prod, Cloud SQL HA, load balancer, domains, certificates, alerts, backups']],
+    ['Security', ['First OWASP ZAP scan of staging', 'Self-check items for M2-M4 ticked']],
   ] },
   { w: 'Weeks 7-8', d: '21 Dec-5 Jan · hardening + dress rehearsal (also the buffer)', m: 'M5', groups: [
-    ['Quality', ['Playwright E2E for the 5 key flows; permission-matrix tests', 'Accessibility, performance (bundle < 200 KB, API p95), OWASP ASVS L1, secrets + dependency scans']],
+    ['Quality', ['Playwright E2E for the 5 key flows; permission-matrix tests', 'Accessibility, performance (bundle < 200 KB, API p95)', 'Security self-check: walk through all items, fix; ZAP, headers and TLS on production']],
     ['Polish and data', ['All empty / loading / error states; copy review DE/FR/EN by a native speaker', 'Final settings confirmed; units mapped in production; Archipex final import on 31.12']],
     ['Go-live preparation + dress rehearsal', ['Production keys, webhooks, backups + restore test, alerts, runbooks', 'Test booking → invite → check-in → payment (real CHF, refund) → guest card → badge → extension → ledger; owner reservation → block → owner check-in']],
   ] },

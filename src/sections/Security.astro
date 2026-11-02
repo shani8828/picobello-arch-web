@@ -35,6 +35,7 @@ const matrix: [string, P[]][] = [
   ['Check-in', ['O', 'O**', 'Y', '-', 'Y']],
   ['Pay (Stripe)', ['O', '-', '-', '-', '-']],
   ['Extend / change dates', ['O', 'O*', 'Y', '-', 'Y']],
+  ['Edit guest details', ['O', 'O*', 'Y', '-', 'Y']],
   ['Request late check-in/out', ['O', '-', '-', '-', '-']],
   ['Approve late check-in/out', ['-', '-', 'Y', '-', 'Y']],
   ['Unit calendar', ['-', 'O', 'Y', 'R', 'Y']],
@@ -148,7 +149,7 @@ const cellText = (p: P) => (p === 'Y' ? 'Yes' : p === 'R' ? 'Read' : p === '-' ?
     <div>
       <h3 class="block-title">Data protection · revDSG</h3>
       <ul class="list">
-        <li>Data minimisation: ID document number only if legally required; deleted by the nightly retention job after the legal period <Pill kind="verify" text="Verify period" /></li>
+        <li>Data minimisation: ID document number only if legally required; deleted by the nightly retention job after the legal period <Pill kind="open" text="Open: period" /></li>
         <li>Marketing consent: separate, optional, with timestamp and revocation.</li>
         <li>Guest links expire after the stay. Owners never see guests' personal data.</li>
         <li>Right of access / deletion: export per person; deletion anonymises personal fields but keeps ledger amounts (legal retention).</li>
@@ -163,7 +164,7 @@ const cellText = (p: P) => (p === 'Y' ? 'Yes' : p === 'R' ? 'Read' : p === '-' ?
         <li>Uploads via signed URLs with type and size checks; images re-encoded by sharp.</li>
         <li>Secrets in Secret Manager, none in Git (gitleaks in CI); Renovate + dependency audit in CI. Card data never touches our servers.</li>
         <li>Least privilege: separate DB users (API has no ledger UPDATE/DELETE); one service account per Cloud Run service. Audit log for every write.</li>
-        <li>OWASP ASVS level 1 checklist before go-live; external pen-test recommended before Phase 2 <Pill kind="open" text="Open: budget" /></li>
+        <li>OWASP ASVS level 1 as our own <a href="#selfcheck">security self-check</a>: 72 checks, all ticked by the dress rehearsal (5 Jan). Outside expert review optional before Phase 2 <Pill kind="open" text="Open: budget" /></li>
       </ul>
     </div>
   </div>

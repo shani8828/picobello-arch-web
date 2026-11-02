@@ -1,0 +1,146 @@
+---
+// 17 Security self-check. Source: arch/17-security-self-check.txt
+import Takeaway from '../components/Takeaway.astro';
+import Pill from '../components/Pill.astro';
+import Icon from '../components/Icon.astro';
+import { plan, groups } from '../data/selfcheck';
+
+const total = groups.reduce((n, g) => n + g.items.length, 0);
+const milestones = ['M1', 'M2', 'M3', 'M4', 'M5', '15 Jan', 'Later'];
+const byCount = milestones.map((m) => [m, groups.reduce((n, g) => n + g.items.filter((i) => i.by === m).length, 0)] as const);
+const tools = [
+  ['OWASP ZAP', 'scans the running site like a basic attacker'],
+  ['gitleaks', 'finds secrets committed to Git'],
+  ['npm audit / OSV', 'known holes in our libraries'],
+  ['Semgrep', 'risky code patterns'],
+  ['Renovate', 'keeps libraries up to date'],
+  ['SSL Labs · securityheaders.com', 'TLS and browser headers'],
+];
+---
+<Takeaway>For go-live we prove security with our own checklist of {total} checks instead of a paid pen-test. Each check says how to test it and by which milestone, so the last one is ticked before the dress rehearsal on 5 Jan.</Takeaway>
+
+<div class="block">
+  <div class="grid grid-2 sc-split">
+    <div>
+      <h3 class="block-title">What this is · decided 3 Nov</h3>
+      <ul class="list">
+        <li>One list based on OWASP ASVS level 1 (see <a href="#security">Security, roles, privacy</a>), made specific to Picobello: guest links, owner money, Stripe, Lodgify, Feratel, SALTO, personal data.</li>
+        <li>Shani tests every item, with free tools where they help. Automated items run in CI on every change, so they stay checked after go-live.</li>
+        <li>It is a <b>self-check, not a pen-test</b>: it finds the known weaknesses, not the ones nobody thought of. An outside expert review stays optional before Phase 2 <Pill kind="open" text="Open: budget" />; it starts from this list, so it needs fewer days.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="block-title">Free tools</h3>
+      <dl class="tools">
+        {tools.map(([t, d]) => <div><dt>{t}</dt><dd>{d}</dd></div>)}
+      </dl>
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <h3 class="block-title">When each check happens</h3>
+  <p class="block-sub">Fits the <a href="#timeline">Phase 1 timeline</a>. Sign-off: every item up to M5 ticked, or a written reason, before the dress rehearsal is passed.</p>
+  <ol class="when">
+    {plan.map(([code, dates, what]) => (
+      <li><span class="w-code">{code}</span><span class="w-dates">{dates}</span><p>{what}</p></li>
+    ))}
+  </ol>
+  <div class="by-counts">
+    {byCount.map(([m, n]) => <span><b>{m}</b> {n}</span>)}
+  </div>
+</div>
+
+<div class="block" data-selfcheck>
+  <div class="sc-head">
+    <h3 class="block-title">The checklist · {total} items</h3>
+    <p class="sc-progress" aria-live="polite"><span data-sc-done>0</span> / {total} ticked <span class="muted">(saved in this browser)</span></p>
+  </div>
+  <div class="sc-groups">
+    {groups.map((g) => (
+      <section class="sc-group">
+        <header><span class="g-id">{g.id}</span><h4>{g.name}</h4><span class="g-n tnum">{g.items.length}</span></header>
+        <ul>
+          {g.items.map((it) => (
+            <li>
+              <label>
+                <input type="checkbox" data-sc-id={it.id} />
+                <span class="box" aria-hidden="true"><Icon name="check" size={14} /></span>
+                <span class="c-body">
+                  <span class="c-top"><span class="c-id mono">{it.id}</span><span class="c-text">{it.check}</span></span>
+                  <span class="c-how">{it.how}</span>
+                </span>
+                <span class="c-by">{it.by}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </div>
+</div>
+
+<script>
+  const KEY = 'picobello-selfcheck';
+  const root = document.querySelector('[data-selfcheck]');
+  if (root) {
+    const boxes = [...root.querySelectorAll<HTMLInputElement>('input[data-sc-id]')];
+    const out = root.querySelector('[data-sc-done]');
+    let saved: string[] = [];
+    try { saved = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch {}
+    const update = () => {
+      const done = boxes.filter((b) => b.checked).map((b) => b.dataset.scId!);
+      if (out) out.textContent = String(done.length);
+      try { localStorage.setItem(KEY, JSON.stringify(done)); } catch {}
+    };
+    boxes.forEach((b) => { b.checked = saved.includes(b.dataset.scId!); b.addEventListener('change', update); });
+    update();
+  }
+</script>
+
+<style>
+  .sc-split { gap: var(--s-8); align-items: start; }
+  .tools { display: grid; gap: 0; margin: 0; border-top: 1px solid var(--line); }
+  .tools div { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr); gap: var(--s-3); padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .tools dt { font-weight: 600; font-size: 15px; }
+  .tools dd { margin: 0; font-size: 14.5px; color: var(--ink-muted); }
+  @media (max-width: 480px) { .tools div { grid-template-columns: 1fr; gap: 2px; } }
+  li :global(.pill) { font-size: 12.5px; margin-left: 4px; }
+
+  .when { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--s-3); }
+  @media (max-width: 1100px) { .when { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .when { grid-template-columns: 1fr; } }
+  .when li { display: grid; align-content: start; gap: 4px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--primary-500); border-radius: var(--r-control); }
+  .when li:last-child { border-top-color: var(--line-strong); }
+  .w-code { font-family: var(--font-head); font-weight: 700; font-size: 1.125rem; color: var(--primary-800); }
+  .w-dates { font-size: 13.5px; font-weight: 600; color: var(--ink-muted); }
+  .when p { font-size: 14.5px; line-height: 1.45; color: var(--ink-muted); margin-top: 4px; }
+  .by-counts { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: var(--s-4); font-size: 14.5px; color: var(--ink-muted); }
+  .by-counts b { color: var(--ink); font-weight: 600; margin-right: 2px; }
+
+  .sc-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 24px; }
+  .sc-progress { font-size: 15px; font-weight: 600; }
+  .sc-progress .muted { font-weight: 400; color: var(--ink-muted); font-size: 14px; }
+  .sc-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); align-items: start; }
+  @media (max-width: 900px) { .sc-groups { grid-template-columns: 1fr; } }
+  .sc-group { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--e-1); overflow: hidden; }
+  .sc-group header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+  .g-id { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--primary-600); color: #fff; font-weight: 700; font-size: 13px; }
+  .sc-group h4 { flex: 1; font-size: 1.0625rem; font-weight: 700; }
+  .g-n { font-size: 13px; color: var(--ink-muted); }
+  .sc-group ul { list-style: none; margin: 0; padding: 0; }
+  .sc-group li + li { border-top: 1px solid var(--line); }
+  .sc-group label { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 11px 16px; cursor: pointer; }
+  .sc-group label:hover { background: var(--primary-50); }
+  .sc-group input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .box { display: grid; place-items: center; width: 22px; height: 22px; margin-top: 1px; border: 1.5px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: transparent; transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease); }
+  input:checked + .box { background: var(--success-vivid); border-color: var(--success-vivid); color: #fff; }
+  input:focus-visible + .box { outline: 2px solid var(--primary-500); outline-offset: 2px; }
+  .c-body { display: grid; gap: 3px; }
+  .c-top { display: flex; gap: 8px; }
+  .c-id { flex: none; font-size: 12.5px; font-weight: 600; color: var(--ink-muted); padding-top: 2px; }
+  .c-text { font-size: 15px; font-weight: 500; line-height: 1.4; }
+  input:checked ~ .c-body .c-text { color: var(--ink-muted); text-decoration: line-through; text-decoration-color: var(--line-strong); }
+  .c-how { font-size: 13.5px; color: var(--ink-muted); line-height: 1.45; }
+  .c-by { font-size: 12.5px; font-weight: 600; color: var(--primary-800); background: var(--primary-50); border-radius: 5px; padding: 2px 7px; white-space: nowrap; margin-top: 1px; }
+</style>

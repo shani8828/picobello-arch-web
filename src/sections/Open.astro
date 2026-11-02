@@ -21,20 +21,19 @@ const decided: [string, string, string][] = [
   ['Feratel guest card: shown in whatever format Feratel returns.', 'Integrations', '#integrations'],
   ['Archipex: our developers produce the export themselves; no format to agree.', 'Integrations', '#integrations'],
   ['Who builds: Shani builds the platform.', 'Decisions', '#decisions'],
+  ['Security: our own self-check of 72 items for go-live, instead of a paid pen-test.', 'Security self-check', '#selfcheck'],
 ];
 
 const open: [string, string, string][] = [
   ['High-season weeks rule: per period (Christmas, Feb/Mar, summer) or per winter/summer?', 'Business logic', '#logic'],
   ['Domains (picobello.ch subdomains)', 'Infrastructure', '#infrastructure'],
   ['AI provider / model and weather source', 'Regional content', '#regional'],
-  ['External pen-test before Phase 2: budget', 'Security', '#security'],
+  ['Outside expert security review before Phase 2 (optional, starts from the self-check): budget', 'Security self-check', '#selfcheck'],
   ['dataCycle: image usage rights in writing from both tourism offices; test access by 10 Nov', 'Regional content', '#regional'],
-  ['Booking extras signal (ski pass, half board) needs partner offers (Phase 2)', 'Regional content', '#regional'],
   ['Insights export for the tourism offices: format and frequency', 'Regional content', '#regional'],
 ];
 
 const verify: { file: string; href: string; items: string[] }[] = [
-  { file: 'Database', href: '#database', items: ['ID document retention period, with Picobello / Feratel rules'] },
   { file: 'Integrations · Lodgify', href: '#integrations', items: [
     'Webhook subscribe path and payload (docs.lodgify.com)',
     'Webhook event names (from a third-party connector list)',
@@ -47,7 +46,6 @@ const verify: { file: string; href: string; items: string[] }[] = [
   { file: 'Integrations · Stripe', href: '#integrations', items: ['TWINT activation on the account', 'Current card-authorisation expiry (about 7 days) for deposits'] },
   { file: 'Integrations · Feratel', href: '#integrations', items: ['Everything in the Feratel section, with Feratel / LST: interface, credentials, category codes, test environment'] },
   { file: 'Integrations · SALTO', href: '#integrations', items: ['Endpoints for users, access groups and time schedules (Connect API reference)'] },
-  { file: 'Security', href: '#security', items: ['ID document retention period'] },
   { file: 'Infrastructure', href: '#infrastructure', items: ['Monthly cost estimate, with the GCP pricing calculator'] },
   { file: 'Regional content, AI, agents', href: '#regional', items: [
     'dataCycle API: auth method, endpoints, format, rate limits',

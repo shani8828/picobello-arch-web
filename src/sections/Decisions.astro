@@ -62,7 +62,7 @@ const quality: [string, string, string][] = [
   ['Guest card', '< 10 min', 'after check-in, when Feratel is up'],
   ['Data loss', 'RPO 5 min', 'RTO 4 h'],
   ['Money', '0', 'unbalanced transactions; every Stripe payment has a ledger transaction'],
-  ['Security', '2FA', 'for staff; OWASP ASVS L1; no card data stored'],
+  ['Security', '2FA', 'for staff; OWASP ASVS L1 self-check (72 items); no card data stored'],
   ['Privacy', 'CH', 'all personal data in Switzerland; ID data deleted after legal period'],
   ['Languages', '3', 'Guest App DE/FR/EN (more languages later); Owner Portal and Back Office DE/EN'],
   ['Regional feed', '< 1 s', 'from cache; always shown (fallback if AI down); dataCycle changes < 30 min'],
@@ -75,7 +75,7 @@ const milestones: [string, string, string][] = [
   ['M2', '29 Nov', 'real Lodgify bookings appear; owner can reserve'],
   ['M3', '13 Dec', 'guest can check in and pay (test mode)'],
   ['M4', '20 Dec', 'guest card + badge in staging'],
-  ['M5', '5 Jan', 'dress rehearsal passed'],
+  ['M5', '5 Jan', 'dress rehearsal passed, security self-check signed off'],
   ['M6', '10 Jan', 'live'],
 ];
 
