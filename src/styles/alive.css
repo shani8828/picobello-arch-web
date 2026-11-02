@@ -33,7 +33,7 @@ html.motion svg.live .bx > .icon[data-icon="sparkles"] { animation: breathe 2.4s
 /* Gantt: bars grow from their start, milestones pop in */
 html.motion .reveal .gantt .g-bar { transform-box: fill-box; transform-origin: left center; transform: scaleX(0); transition: transform 900ms var(--ease) calc(var(--i, 0) * 80ms); }
 html.motion .reveal .gantt .g-ms { transform-box: fill-box; transform-origin: center; transform: scale(0); transition: transform 500ms cubic-bezier(.3, 1.6, .5, 1) calc(400ms + var(--i, 0) * 60ms); }
-html.motion .reveal.in .gantt .g-bar, html.motion .reveal.in .gantt .g-ms { transform: none; }
+html.motion .reveal.rv-in .gantt .g-bar, html.motion .reveal.rv-in .gantt .g-ms { transform: none; }
 .g-today line { stroke: var(--accent-500); stroke-width: 2; stroke-dasharray: 4 4; }
 .g-today-dot { fill: var(--accent-500); }
 .g-today-ring { fill: none; stroke: var(--accent-500); stroke-width: 2; transform-box: fill-box; transform-origin: center; }
@@ -43,17 +43,17 @@ html.motion svg.live .g-today-ring { animation: ring 2s ease-out infinite; }
 
 /* Reveal on scroll: blocks rise, grid/list items follow one by one (--d) */
 html.motion .reveal { opacity: 0; transform: translateY(22px); transition: opacity 700ms var(--ease) var(--d, 0ms), transform 700ms var(--ease) var(--d, 0ms); }
-html.motion .reveal.in { opacity: 1; transform: none; }
+html.motion .reveal.rv-in { opacity: 1; transform: none; }
 /* Section headings: number, title and question slide in in sequence */
 html.motion .reveal-head > * { opacity: 0; transform: translateX(-18px); transition: opacity 650ms var(--ease), transform 650ms var(--ease); }
 html.motion .reveal-head > :nth-child(2) { transition-delay: 90ms; }
 html.motion .reveal-head > :nth-child(3) { transition-delay: 180ms; }
-html.motion .reveal-head.in > * { opacity: 1; transform: none; }
+html.motion .reveal-head.rv-in > * { opacity: 1; transform: none; }
 /* Key takeaway: slides in from the side, its diamond spins into place */
 html.motion .reveal-side { opacity: 0; transform: translateX(-26px); transition: opacity 700ms var(--ease), transform 700ms var(--ease); }
-html.motion .reveal-side.in { opacity: 1; transform: none; }
+html.motion .reveal-side.rv-in { opacity: 1; transform: none; }
 html.motion .reveal-side .mark { transform: rotate(-135deg) scale(0); transition: transform 600ms cubic-bezier(.3, 1.5, .5, 1) 300ms; }
-html.motion .reveal-side.in .mark { transform: rotate(45deg) scale(1); }
+html.motion .reveal-side.rv-in .mark { transform: rotate(45deg) scale(1); }
 
 /* Document title: rises in on load */
 html.motion .doc-head > * { animation: rise 800ms var(--ease) both; }
@@ -64,7 +64,7 @@ html.motion .doc-head > :nth-child(4) { animation-delay: 240ms; }
 
 /* Hover lift on cards and tiles */
 /* (after the reveal has finished, so the stagger delay is not lost) */
-html.motion :is(.card, .items li, .vg, .rd-list li):is(.done, :not(.reveal)) { transition: transform 220ms var(--ease), box-shadow 220ms var(--ease), opacity 700ms var(--ease); }
+html.motion :is(.card, .items li, .vg, .rd-list li):is(.rv-done, :not(.reveal)) { transition: transform 220ms var(--ease), box-shadow 220ms var(--ease), opacity 700ms var(--ease); }
 @media (hover: hover) { html.motion :is(.card, .items li, .vg, .rd-list li):hover { transform: translateY(-3px); box-shadow: var(--e-2, 0 8px 20px rgba(14, 26, 43, .08)); } }
 
 /* Reading progress bar */

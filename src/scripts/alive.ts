@@ -203,13 +203,13 @@ const countUp = (el: HTMLElement) => {
   requestAnimationFrame(tick);
 };
 const show = (el: HTMLElement) => {
-  el.classList.add('in');
+  el.classList.add('rv-in');
   // Hover transitions take over only once the reveal has played
-  window.setTimeout(() => el.classList.add('done'), 760 + (parseInt(el.style.getPropertyValue('--d'), 10) || 0));
+  window.setTimeout(() => el.classList.add('rv-done'), 760 + (parseInt(el.style.getPropertyValue('--d'), 10) || 0));
   (el.matches('.v') ? [el] : Array.from(el.querySelectorAll<HTMLElement>('.v'))).forEach(countUp);
 };
 if (reduce || !('IntersectionObserver' in window)) {
-  revealables.forEach((el) => el.classList.add('in'));
+  revealables.forEach((el) => el.classList.add('rv-in'));
 } else {
   const io = new IntersectionObserver((entries) => {
     entries.forEach((en) => {
@@ -220,7 +220,7 @@ if (reduce || !('IntersectionObserver' in window)) {
   }, { threshold: 0, rootMargin: '0px 0px -8% 0px' });
   revealables.forEach((el) => io.observe(el));
 }
-window.addEventListener('beforeprint', () => revealables.forEach((el) => el.classList.add('in')));
+window.addEventListener('beforeprint', () => revealables.forEach((el) => el.classList.add('rv-in')));
 
 /* ---------- Reading progress + back to top ---------- */
 const progress = document.createElement('div');

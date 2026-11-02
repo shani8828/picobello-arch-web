@@ -339,17 +339,17 @@ const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
   .rc-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s-4); padding: var(--s-5) var(--s-6); border-bottom: 1px solid var(--line); }
   .rc-title { font-family: var(--font-head); font-weight: 700; font-size: 1.125rem; margin-top: 2px; }
   .rc-result { font-size: 15px; padding: 4px 14px 4px 12px; }
-  .rc-body { display: grid; grid-template-columns: 1.3fr 1fr; }
+  .rc-body { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
   .rc-checks { list-style: none; margin: 0; padding: var(--s-4) var(--s-6); display: grid; gap: 2px; }
-  .rc-checks li { display: grid; grid-template-columns: 24px 34px 1fr; align-items: start; gap: 8px; padding: 8px 0; font-size: var(--fs-label); border-bottom: 1px solid var(--line); }
+  .rc-checks li { display: grid; grid-template-columns: 24px 34px minmax(0, 1fr); align-items: start; gap: 8px; padding: 8px 0; font-size: var(--fs-label); border-bottom: 1px solid var(--line); }
   .rc-checks li:last-child { border-bottom: 0; }
   .rc-icon { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; margin-top: 1px; }
   .rc-pass .rc-icon { background: var(--success-soft); color: var(--success-text); }
   .rc-fail .rc-icon { background: var(--danger-soft); color: var(--danger-text); }
   .rc-info .rc-icon { background: var(--info-soft); color: var(--info-text); }
   .rc-c { font-size: 13px; font-weight: 600; color: var(--ink-muted); padding-top: 3px; }
-  .rc-t { line-height: 1.45; }
-  .rc-t :global(.pill) { font-size: 12px; margin-left: 8px; }
+  .rc-t { line-height: 1.45; overflow-wrap: anywhere; }
+  .rc-t :global(.pill) { font-size: 12px; margin-left: 8px; white-space: normal; max-width: 100%; }
   .rc-fail .rc-t { font-weight: 600; }
   .rc-reason { display: block; margin-top: 4px; font-weight: 500; color: var(--danger-text); font-size: var(--fs-ui); }
   .rc-side { display: grid; gap: var(--s-4); align-content: start; padding: var(--s-5) var(--s-6); background: var(--surface-2); border-left: 1px solid var(--line); }
@@ -363,7 +363,7 @@ const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
   .rc-code { font-size: 13px; padding: 12px 14px; white-space: pre-wrap; }
   .rc-foot { display: flex; flex-wrap: wrap; gap: 6px 28px; padding: 14px var(--s-6); border-top: 1px solid var(--line); font-size: var(--fs-ui); color: var(--ink-muted); }
   .rc-foot b { color: var(--ink); font-weight: 600; }
-  @media (max-width: 1023px) { .rc-body { grid-template-columns: 1fr; } .rc-side { border-left: 0; border-top: 1px solid var(--line); } }
+  @media (max-width: 1023px) { .rc-body { grid-template-columns: minmax(0, 1fr); } .rc-side { border-left: 0; border-top: 1px solid var(--line); } }
 
   .calc { margin: 0; display: grid; border-top: 1px solid var(--line); }
   .calc div { display: grid; grid-template-columns: 130px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-label); line-height: 1.5; }

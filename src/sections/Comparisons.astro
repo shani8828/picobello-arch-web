@@ -103,7 +103,7 @@ const labels: Record<string, string> = { '3': 'excellent', '2': 'good', '1': 'ok
   .win .dots i.on, .legend-row .dots i.on { background: var(--primary-600); }
   .neg { display: inline-block; min-width: 22px; font-weight: 700; color: var(--danger-text); letter-spacing: 1px; font-size: 16px; line-height: 1; vertical-align: middle; }
 
-  .dcards { display: grid; gap: var(--s-5); }
+  .dcards { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
   @media (min-width: 1800px) { .dcards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .dcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--e-1); scroll-margin-top: var(--s-8); overflow: hidden; }
   .dcard:target { box-shadow: 0 0 0 3px var(--primary-100), var(--e-2); }
@@ -111,7 +111,7 @@ const labels: Record<string, string> = { '3': 'excellent', '2': 'good', '1': 'ok
   .dn { display: inline-grid; place-items: center; min-width: 40px; height: 26px; padding: 0 8px; border-radius: 6px; background: var(--primary-50); color: var(--primary-800); font-size: 13px; font-weight: 700; }
   .dcard h4 { font-size: 1.125rem; font-weight: 700; }
   .dcard header :global(.pill) { font-size: 12.5px; }
-  .dt-wrap { overflow-x: auto; border-top: 1px solid var(--line); }
+  .dt-wrap { position: relative; overflow-x: auto; border-top: 1px solid var(--line); }
   table.dt { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 560px; }
   .dt th { text-align: left; font-weight: 600; font-size: 14px; padding: 10px 14px; background: var(--surface-2); color: var(--ink); border-bottom: 1px solid var(--line-strong); vertical-align: bottom; }
   .dt th.win { background: var(--primary-600); color: #fff; }

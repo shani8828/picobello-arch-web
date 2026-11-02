@@ -528,7 +528,7 @@ const fam = (f: string) => (f === 'head' ? 'var(--font-head)' : 'var(--font-body
   .mo-key span { display: inline-flex; align-items: center; gap: 4px; }
   .mo-key i { width: 9px; height: 9px; border-radius: 3px; }
   .mo-key .own { background: var(--violet-600); } .mo-key .fr { background: var(--violet-300); } .mo-key .gu { background: var(--stay-guest); }
-  .m-bo { display: grid; grid-template-columns: 112px 1fr; height: 360px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); overflow: hidden; font-size: 12.5px; }
+  .m-bo { display: grid; grid-template-columns: 112px minmax(0, 1fr); min-height: 360px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); overflow: hidden; font-size: 12.5px; }
   .mb-side { display: grid; align-content: start; gap: 2px; padding: 12px 8px; background: var(--surface-2); border-right: 1px solid var(--line); }
   .mb-side b { font-family: var(--font-head); font-weight: 800; color: var(--primary-900); padding: 0 6px 10px; }
   .mb-side span { padding: 6px; border-radius: 6px; color: var(--ink-muted); }
@@ -546,6 +546,11 @@ const fam = (f: string) => (f === 'head' ? 'var(--font-head)' : 'var(--font-body
   .mb-t tr:first-child td { border-top: 0; }
   .mb-t .mono { font-size: 12px; }
   .mb-t .pill { font-size: 11.5px; }
+  @media (max-width: 560px) {
+    .m-bo { grid-template-columns: minmax(0, 1fr); }
+    .mb-side { display: none; }
+    .mb-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
 
   table.avd th { font-size: 14px; }
   table.avd th :global(svg) { display: inline; vertical-align: -2px; margin-right: 4px; }
