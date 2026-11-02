@@ -25,7 +25,7 @@ const settings: [string, string, boolean?][] = [
   ['tourist_tax.adult_per_night_rappen', '500 (age 16+)'],
   ['tourist_tax.child_per_night_rappen', '250 (age 6-15)'],
   ['tourist_tax.child_free_below_age', '6'],
-  ['extension.price_source', '"lodgify_rate"', true],
+  ['extension.price_source', '"lodgify_rate" (Picobello sets rates)'],
   ['vat.accommodation_bp / vat.standard_bp', '380 / 810'],
 ];
 
@@ -114,10 +114,11 @@ const checks: [string, string, 'pass' | 'fail' | 'info', string?][] = [
         <div><dt>Owner own stay</dt><dd>cleaning (unit type) + laundry × persons, + tourist tax only if mode = per stay. Charged to the owner account.</dd></div>
         <div><dt>Friends stay</dt><dd>cleaning + laundry × persons + tourist tax. Payer: owner (account) or friends (Stripe, before check-in).</dd></div>
         <div><dt>Extra persons</dt><dd>extra-nights price per person from the Lodgify quote + tourist tax (direct bookings)</dd></div>
-        <div><dt>Extension</dt><dd>nightly price for new nights (Lodgify rate quote) + tourist tax for all persons</dd></div>
+        <div><dt>Extension</dt><dd>nightly price for new nights (Lodgify rate quote) + tourist tax for all persons. If the apartment is taken, another free one is offered at its price.</dd></div>
+        <div><dt>Guest details</dt><dd>guests edit names and number of people; more people → unit maximum checked, extra-persons price + tourist tax paid, then added</dd></div>
         <div><dt>Date change</dt><dd>new price − old price: pay the difference or refund <Pill kind="open" text="Open: refund rules" /></dd></div>
       </dl>
-      <p class="muted-p">All amounts are integers in Rappen; rounding only at the end of each line, to 5 Rappen where shown as cash amounts <Pill kind="verify" text="Verify with Picobello" /></p>
+      <p class="muted-p">All amounts are integers in Rappen; rounding only at the end of each line, to 5 Rappen where shown as cash amounts <Pill kind="open" text="Proposed" /></p>
     </div>
     <div>
       <h3 class="block-title">Example · friends stay</h3>

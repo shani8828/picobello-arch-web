@@ -59,7 +59,7 @@ const tables: { m: string; rows: [string, string][] }[] = [
   ] },
   { m: 'stays', rows: [
     ['stays', 'id, house_id, unit_id, kind (guest | own_use | friends), channel, lodgify_booking_id, owner_person_id, main_guest_person_id, arrival, departure, adults, children_ages[], cost_payer, status, guaranteed, amounts (jsonb), language, invite_sent_at, link_token_hash, link_expires_at, version'],
-    ['stay_segments', 'id, stay_id, kind (original | extension | date_change), arrival, departure, nights, price_rappen, payment_request_id, lodgify_ref, status'],
+    ['stay_segments', 'id, stay_id, unit_id (another unit if an extension moves the guest), kind (original | extension | date_change), arrival, departure, nights, price_rappen, payment_request_id, lodgify_ref, status'],
     ['stay_guests', 'id, stay_id, person_id, is_main, birth_date (PII), nationality, id_document_no (PII, only if legally needed), tax_category'],
     ['checkins', 'id, stay_id, submitted_at, submitted_by (guest | owner), persons_reported, arrival_time, parking_needed, extra_persons, completed_at'],
     ['change_requests', 'id, stay_id, kind (late_checkin | late_checkout), requested, status (open, approved, declined), price_rappen, answered_by, answered_at'],

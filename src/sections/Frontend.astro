@@ -8,7 +8,7 @@ import ScreenFlow from '../components/diagram/ScreenFlow.astro';
 import Wireframes from './Wireframes.astro';
 
 const apps = [
-  { name: 'Guest App', users: 'Guests, friends of owners', device: 'Phone first', lang: 'DE / FR / EN (8 languages open)', login: 'Personal link', url: 'guest.picobello.ch/s/<token>', kind: 'phone' },
+  { name: 'Guest App', users: 'Guests, friends of owners', device: 'Phone first', lang: 'DE / FR / EN (more later)', login: 'Personal link', url: 'guest.picobello.ch/s/<token>', kind: 'phone' },
   { name: 'Owner Portal', users: 'Owners', device: 'Phone + desktop', lang: 'DE / EN (FR later)', login: 'Magic link', url: 'owner.picobello.ch', kind: 'laptop' },
   { name: 'Back Office', users: 'Picobello staff', device: 'Desktop first', lang: 'DE / EN', login: 'Password + 2FA or passkey', url: 'admin.picobello.ch', kind: 'desktop' },
 ];
@@ -39,11 +39,11 @@ const guestItems = [
   { title: 'Check-in', sub: 'multi-step', chainNote: 'step 5 only if friends pay, or extra persons on a direct booking',
     chain: [{ title: '1 Main guest', sub: 'prefilled' }, { title: '2 Companions', sub: 'name, birth date' }, { title: '3 Arrival time', sub: '+ parking' },
             { title: '4 Consent', sub: 'optional, separate' }, { title: '5 Costs + pay', sub: 'Stripe' }, { title: '6 Done', sub: 'card + access' }], optional: [4] },
-  { title: 'Guest cards', sub: 'one per person, QR, wallet' },
+  { title: 'Guest cards', sub: 'one per person, as Feratel sends it' },
   { title: 'Access', sub: 'badge status, dispenser, help' },
   { title: 'Apartment', sub: 'Wi-Fi, rules · works offline' },
   { title: 'My booking', sub: 'change the stay',
-    chain: [{ title: 'Extend stay', sub: 'nights, price, pay' }, { title: 'Change dates', sub: 'pay or refund' }, { title: 'Late in / out', sub: 'pending → answer' }] },
+    chain: [{ title: 'Extend stay', sub: 'same or other flat, pay' }, { title: 'Edit guests', sub: 'extra people pay' }, { title: 'Change dates', sub: 'pay or refund' }, { title: 'Late in / out', sub: 'pending → answer' }] },
   { title: 'Help / contact', sub: 'phone, email; WhatsApp April', variant: 'muted' as const },
 ];
 const ownerItems = [

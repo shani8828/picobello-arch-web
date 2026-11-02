@@ -1,26 +1,32 @@
 ---
-// Appendix: every [Open] and [Verify] item in arch/01-15, plus the
-// 5 Nov questions (file 12 part F) and the database host (file 14 D8).
+// Appendix: the 5 Nov questions (file 12 part F), what was decided
+// before the review, and every [Open] and [Verify] item.
 import Pill from '../components/Pill.astro';
 
-const decide: [string, string, string][] = [
-  ['Extension price: Lodgify nightly rate or our own? Max nights?', 'Business logic', '#logic'],
-  ['Shortening a stay: refund rules?', 'Business logic', '#logic'],
-  ['Editing guest details (names, number of people): free or request?', 'Decisions', '#decisions'],
-  ['SALTO badges and Feratel guest card: both in Phase 1?', 'Integrations', '#integrations'],
-  ['High-season weeks rule: per period (Christmas, Feb/Mar, summer) or per winter/summer?', 'Business logic', '#logic'],
-  ['Who builds which parts? Domains (picobello.ch subdomains)?', 'Infrastructure', '#infrastructure'],
+const decide: [string, string, string, string?][] = [
+  ['Database host: Cloud SQL (one cloud, failover) or Supabase Zurich (lower cost, faster setup)?', 'Why this over that', '#d8', 'Cloud SQL'],
+  ['Shortening or cancelling a stay (also fewer people): refund rules and deadline?', 'Business logic', '#logic'],
+  ['SALTO badges and Feratel guest card: both in Phase 1? Feratel has no public API; LST must activate our access.', 'Integrations', '#integrations'],
   ['ID document retention period?', 'Database', '#database'],
-  ['Database host: Cloud SQL (one cloud, failover) or Supabase Zurich (lower cost, faster setup)?', 'Why this over that', '#d8'],
-  ['Guest App languages: which 8, and Arabic (right-to-left) in Phase 1?', 'Regional content', '#regional'],
-  ['AI provider / model and weather source?', 'Regional content', '#regional'],
-  ['When to build the MCP server and the "Ask me" chat?', 'Regional content', '#regional'],
+  ['When to build the MCP server and the "Ask me" chat?', 'Regional content', '#regional', 'after go-live'],
+  ['Badge dispenser (Immer AG): how guests identify, what happens if it fails, night support?', 'Integrations', '#integrations'],
+  ['Ski pass / half board signal for the "Today" feed: Phase 2?', 'Regional content', '#regional', 'yes, partner offers first'],
+  ['Prices: round to 5 Rappen where shown as cash amounts?', 'Business logic', '#logic', 'yes'],
+];
+
+const decided: [string, string, string][] = [
+  ['Extension: the guest extends in the app. Same apartment if free, otherwise another free apartment is offered; the guest confirms and pays. Price and availability come from Lodgify.', 'Business logic', '#logic'],
+  ['Guest details: guests edit names and number of people themselves; extra people are added after they pay.', 'Business logic', '#logic'],
+  ['Languages: Guest App in DE / FR / EN for Phase 1; more languages later without code changes.', 'Frontend', '#frontend'],
+  ['Feratel guest card: shown in whatever format Feratel returns.', 'Integrations', '#integrations'],
+  ['Archipex: our developers produce the export themselves; no format to agree.', 'Integrations', '#integrations'],
+  ['Who builds: Shani builds the platform.', 'Decisions', '#decisions'],
 ];
 
 const open: [string, string, string][] = [
-  ['Feratel guest card: wallet format', 'Integrations', '#integrations'],
-  ['Archipex export format, agreed with Archipex', 'Integrations', '#integrations'],
-  ['With Immer AG: how the person identifies at the badge dispenser, what happens if the dispenser fails, night support', 'Integrations', '#integrations'],
+  ['High-season weeks rule: per period (Christmas, Feb/Mar, summer) or per winter/summer?', 'Business logic', '#logic'],
+  ['Domains (picobello.ch subdomains)', 'Infrastructure', '#infrastructure'],
+  ['AI provider / model and weather source', 'Regional content', '#regional'],
   ['External pen-test before Phase 2: budget', 'Security', '#security'],
   ['dataCycle: image usage rights in writing from both tourism offices; test access by 10 Nov', 'Regional content', '#regional'],
   ['Booking extras signal (ski pass, half board) needs partner offers (Phase 2)', 'Regional content', '#regional'],
@@ -29,7 +35,6 @@ const open: [string, string, string][] = [
 
 const verify: { file: string; href: string; items: string[] }[] = [
   { file: 'Database', href: '#database', items: ['ID document retention period, with Picobello / Feratel rules'] },
-  { file: 'Business logic', href: '#logic', items: ['Rounding to 5 Rappen where shown as cash amounts, with Picobello'] },
   { file: 'Integrations · Lodgify', href: '#integrations', items: [
     'Webhook subscribe path and payload (docs.lodgify.com)',
     'Webhook event names (from a third-party connector list)',
@@ -57,6 +62,7 @@ const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
 <div class="block">
   <div class="counts">
     <div><span class="v tnum">{decide.length}</span><span class="l">decisions for 5 Nov</span></div>
+    <div><span class="v tnum">{decided.length}</span><span class="l">decided on 3 Nov</span></div>
     <div><span class="v tnum">{open.length}</span><span class="l">further open points</span></div>
     <div><span class="v tnum">{verifyCount}</span><span class="l">items to verify with vendors</span></div>
   </div>
@@ -65,11 +71,16 @@ const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
 <div class="block">
   <h3 class="block-title">To decide on 5 Nov</h3>
   <ol class="qs">
-    {decide.map(([q, src, href], i) => (
-      <li><span class="i tnum">{i + 1}</span><div><p>{q}</p><a href={href} class="src">{src}</a></div><span class="ans" aria-hidden="true"></span></li>
+    {decide.map(([q, src, href, prop], i) => (
+      <li><span class="i tnum">{i + 1}</span><div><p>{q}</p>{prop && <p class="prop">Proposed: {prop}</p>}<a href={href} class="src">{src}</a></div><span class="ans" aria-hidden="true"></span></li>
     ))}
   </ol>
   <p class="note">After the meeting each decision is recorded with its date and the affected parts of the architecture are updated.</p>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Decided before the review <Pill kind="success" text="3 Nov" /></h3>
+  <ul class="items done-items">{decided.map(([t, src, href]) => <li><p>{t}</p><a href={href} class="src">{src}</a></li>)}</ul>
 </div>
 
 <div class="block">
@@ -91,11 +102,12 @@ const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
 </div>
 
 <style>
-  .counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--e-1); }
+  .counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--e-1); }
   .counts div { display: grid; gap: 4px; padding: var(--s-5) var(--s-6); border-left: 1px solid var(--line); }
   .counts div:first-child { border-left: 0; background: var(--accent-50); border-radius: var(--r-card) 0 0 var(--r-card); }
   .counts .v { font-size: 2.25rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
   .counts .l { font-size: var(--fs-ui); color: var(--ink-muted); }
+  @media (max-width: 900px) { .counts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .counts div:nth-child(3) { border-left: 0; } .counts div:nth-child(n+3) { border-top: 1px solid var(--line); } }
   @media (max-width: 640px) { .counts { grid-template-columns: 1fr; } .counts div { border-left: 0; border-top: 1px solid var(--line); } .counts div:first-child { border-top: 0; border-radius: var(--r-card) var(--r-card) 0 0; } }
 
   .qs { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
@@ -113,6 +125,8 @@ const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
   @media (max-width: 767px) { .items { grid-template-columns: 1fr; } }
   .items li { padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--warning-vivid); border-radius: var(--r-control); }
   .items p { font-size: 15.5px; line-height: 1.45; }
+  .done-items li { border-left-color: var(--success-vivid); }
+  .prop { margin-top: 2px; font-size: 14px !important; font-weight: 600 !important; color: var(--primary-700); }
 
   .vgroups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); align-items: start; }
   @media (max-width: 767px) { .vgroups { grid-template-columns: 1fr; } }

@@ -14,17 +14,14 @@ const delivers = [
 ];
 
 const decide = [
-  'Extension price: Lodgify nightly rate or our own? Max nights?',
-  'Shortening a stay: refund rules?',
-  'Editing guest details (names, number of people): free or request?',
-  'SALTO badges and Feratel guest card: both in Phase 1?',
-  'High-season weeks rule: per period or per winter/summer?',
-  'Who builds which parts? Domains (picobello.ch subdomains)?',
-  'ID document retention period?',
   'Database host: Cloud SQL (one cloud, failover) or Supabase (lower cost, faster setup)?',
-  'Guest App languages: which 8, and Arabic (right-to-left) in Phase 1?',
-  'AI provider / model and weather source?',
+  'Shortening or cancelling a stay: refund rules and deadline?',
+  'SALTO badges and Feratel guest card: both in Phase 1?',
+  'ID document retention period?',
   'When to build the MCP server and the "Ask me" chat?',
+  'Badge dispenser: how guests identify, failure, night support?',
+  'Ski pass / half board signal: Phase 2?',
+  'Prices: round to 5 Rappen?',
 ];
 ---
 <Takeaway>Phase 1 records every franc from the first live booking. The April features (statements, Bexio, VAT, bank) only read that data, so no Phase 1 table has to change.</Takeaway>
@@ -71,7 +68,7 @@ const decide = [
 
 <div class="block">
   <h3 class="block-title">To decide on 5 Nov</h3>
-  <p class="block-sub">The questions to settle in the review. Every other open point is listed under <a href="#open">Open questions</a>.</p>
+  <p class="block-sub">The questions to settle in the review. Extensions, guest details, languages, the guest card format and the Archipex export were decided on 3 Nov; see <a href="#open">Open questions</a>.</p>
   <ol class="decide">
     {decide.map((q, i) => (
       <li><span class="i tnum">{i + 1}</span><span>{q}</span><Pill kind="open" /></li>

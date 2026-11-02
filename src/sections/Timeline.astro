@@ -26,9 +26,8 @@ const deps: [string, string, number][] = [
   ['Feratel / LST interface docs + test access', '7 Dec', 2],
   ['SALTO / Immer AG API access + test site', '7 Dec', 2],
   ['Listing content (photos, texts) to migrate', '14 Dec', 3],
-  ['Archipex export (trial)', '14 Dec', 3],
+  ['Archipex data access (we export ourselves)', '1 Dec', 2],
   ['Production keys for all systems', '28 Dec', 3],
-  ['Archipex final export', '31 Dec', 3],
   ['Staff available for training', '6-8 Jan', 3],
   ['dataCycle test access + API docs', '10 Nov', 1],
   ['AI provider account / decision', '30 Nov', 2],
@@ -45,8 +44,8 @@ const regional: [string, string][] = [
 
 const weeks: { w: string; d: string; m?: string; groups: [string, string[]][] }[] = [
   { w: 'Week 0', d: '5 Nov (Thu) · architecture review', m: 'M0', groups: [
-    ['Review meeting with Seva', ['Walk through the architecture (this web page, screen share)', 'Decide the open questions and the database host (Cloud SQL vs Supabase)', 'Confirm Phase 1 scope and who builds what']],
-    ['After the meeting', ['Record each decision with its date and update the affected parts of the architecture', 'Send the final PDF to Seva', 'Request access from Picobello: Lodgify, Stripe, Feratel/LST, SALTO/Immer AG, domain/DNS, Archipex export']],
+    ['Review meeting with Seva', ['Walk through the architecture (this web page, screen share)', 'Decide the open questions and the database host (Cloud SQL vs Supabase)', 'Confirm Phase 1 scope']],
+    ['After the meeting', ['Record each decision with its date and update the affected parts of the architecture', 'Send the final PDF to Seva', 'Request access from Picobello: Lodgify, Stripe, Feratel/LST, SALTO/Immer AG, domain/DNS, Archipex data access']],
   ] },
   { w: 'Week 1', d: '6-15 Nov · foundation', m: 'M1', groups: [
     ['Repository and tooling', ['Monorepo (pnpm + Turborepo), apps/ and packages/', 'TypeScript strict, ESLint, Prettier, dependency-cruiser', 'Commit conventions, PR template, CODEOWNERS']],
