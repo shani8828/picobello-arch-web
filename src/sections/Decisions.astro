@@ -11,19 +11,19 @@ const adrs: { n: string; t: string; d: string; alt?: string; c: string; ref?: nu
   { n: '001', t: 'Modular monolith', d: 'One backend codebase, one DB, modules with strict boundaries, API + worker processes.', alt: 'microservices (too much overhead), plain monolith (hard to extend)', c: 'Simple deploys, one transaction for money; modules can be split out later.', ref: [1] },
   { n: '002', t: 'TypeScript end-to-end', d: 'TypeScript for frontends, backend and shared domain.', alt: 'Python/Django, Java/Kotlin, PHP/Laravel', c: 'One language, shared Zod schemas and rule engine, prototype reusable; huge talent pool.', ref: [2] },
   { n: '003', t: 'PostgreSQL 16', d: 'The only database: data + job queue.', alt: 'MySQL, MongoDB, Cloudflare D1', c: 'ACID, exclusion constraints for overlapping stays, JSONB, open source and portable.', ref: [7] },
-  { n: '004', t: 'GCP Zurich + Cloudflare', d: 'Cloud Run + Cloud SQL + Cloud Storage in europe-west6; frontends on Cloudflare.', alt: 'AWS eu-central-2, Azure Switzerland North, Infomaniak / Exoscale, Cloudflare-only', c: 'Swiss data location, no servers, Docker = portable. Two providers to manage.', ref: [8, 9, 10], open: 'Database host for Seva on 5 Nov: Supabase (Zurich) as plain Postgres is the documented alternative' },
+  { n: '004', t: 'GCP Zurich + Cloudflare', d: 'Cloud Run + Cloud SQL + Cloud Storage in europe-west6; frontends on Cloudflare.', alt: 'AWS eu-central-2, Azure Switzerland North, Infomaniak / Exoscale, Cloudflare-only', c: 'Swiss data location, no servers, Docker = portable. Two providers to manage.', ref: [8, 9, 10], open: 'Database host still open: Supabase (Zurich) as plain Postgres is the documented alternative' },
   { n: '005', t: 'Hono + OpenAPI + Zod', d: 'REST/JSON with an OpenAPI contract generated from Zod.', alt: 'NestJS, Express, tRPC, GraphQL', c: 'Typed client for our apps, documented API for future partners.', ref: [5, 6] },
   { n: '006', t: 'Drizzle ORM', d: 'Drizzle with SQL migrations.', alt: 'Prisma, Kysely, raw SQL', c: 'Typed queries close to SQL, reviewable migrations.', ref: [12] },
   { n: '007', t: 'pg-boss + outbox', d: 'Job queue in the same database.', alt: 'Pub/Sub or Cloud Tasks, Redis/BullMQ', c: 'Data change and job saved atomically; no extra infrastructure. Revisit above ~100 jobs/s.', ref: [13] },
   { n: '008', t: 'Ports & adapters', d: 'Interface + real + fake implementation per outside system.', c: 'Build before keys arrive; tests without vendors; a vendor swap touches one adapter.', ref: [19] },
   { n: '009', t: 'Double-entry ledger from Phase 1', d: 'Record all money events from the first live booking.', c: 'April features only read data; corrections via reversals; full audit.', ref: [20] },
-  { n: '010', t: 'Settings as scoped, dated data', d: 'settings_sets with scope (global / house / unit) and valid_from.', c: 'Per house / unit prices later = new rows, no code change (Seva, 29 Oct).' },
+  { n: '010', t: 'Settings as scoped, dated data', d: 'settings_sets with scope (global / house / unit) and valid_from.', c: 'Per house / unit prices later = new rows, no code change.' },
   { n: '011', t: 'Platform owns listing content', d: 'All listing fields in our DB; per field × channel sync rule and state.', c: '"What\'s missing" view; fields move from manual to automatic by config.' },
   { n: '012', t: 'Three frontends, one UI library', d: 'Separate Guest App (PWA), Owner Portal, Back Office.', c: 'Small fast guest app, isolated deploys; shared components.', ref: [4] },
   { n: '013', t: 'Better Auth + stay tokens', d: 'No passwords for guests and owners; staff with 2FA.', alt: 'Auth0 / Clerk, Firebase Auth', c: 'User data stays in our Swiss DB; no per-user fees.', ref: [14] },
   { n: '014', t: 'Stripe Embedded Checkout', d: 'Stripe-hosted payment form embedded in the Guest App.', c: 'TWINT, Apple / Google Pay, cards; minimal PCI scope.', ref: [15] },
   { n: '015', t: 'dataCycle into our cache', d: 'Worker syncs dataCycle read-only into regional_items; the Guest App reads only our API. Filter in code, AI ranking, fallback without AI.', alt: 'live calls from the app, copying content by hand', c: 'Fast feed, works during outages, one place for translations and insights; data ownership stays with the tourism offices.', ref: [22, 23] },
-  { n: '016', t: 'One set of actions (MCP-ready)', d: 'Every action a named service function with a Zod schema in a tool registry; REST for apps and MCP for agents are two doors on it. Agents act as the person; writes need human confirmation.', alt: 'separate AI backend with own DB access, no agent layer now', c: 'Almost no extra Phase 1 cost; MCP, chat and voice plug in later without new business rules.', ref: [24], open: 'When the MCP server is built (Seva, 31 Oct: must be possible)' },
+  { n: '016', t: 'One set of actions (MCP-ready)', d: 'Every action a named service function with a Zod schema in a tool registry; REST for apps and MCP for agents are two doors on it. Agents act as the person; writes need human confirmation.', alt: 'separate AI backend with own DB access, no agent layer now', c: 'Almost no extra Phase 1 cost; MCP, chat and voice plug in later without new business rules.', ref: [24] },
 ];
 
 const sockets: { s: string; plug: string; plugSub: string }[] = [
@@ -84,12 +84,12 @@ const risks: [string, string, boolean?][] = [
   ['Lodgify API can\'t write some content fields or extensions in the needed way', 'Platform is source of truth; field marked manual; stay segments support linked bookings'],
   ['API keys / test accounts arrive late', 'Fake adapters from day one; request test keys by 1 Dec'],
   ['Feratel interface details unknown (no public docs)', 'Ask LST early for docs + test access; manual fallback in Deskline'],
-  ['Extension paid outside Airbnb/Booking (platform payment rules)', 'Picobello\'s decision (29 Oct); extra nights kept as a separate segment'],
+  ['Extension paid outside Airbnb/Booking (platform payment rules)', 'Picobello\'s decision; extra nights kept as a separate segment'],
   ['Two guests buy the same night', 'Night holds + live re-check'],
   ['Money data lost or inconsistent', 'Ledger, raw events, nightly reconciliation, backups'],
   ['Personal data breach', 'Swiss hosting, least privilege, 2FA, encryption, retention job'],
   ['Tight timeline over the holidays', 'Clear milestones, scope fixed at 5 Nov, buffer 21 Dec-5 Jan'],
-  ['Team capacity (one developer: Shani builds the platform)', 'Fixed scope, fake adapters, buffer 21 Dec-5 Jan; Phase 2 after go-live'],
+  ['Team capacity (one developer)', 'Fixed scope, fake adapters, buffer 21 Dec-5 Jan; Phase 2 after go-live'],
   ['dataCycle access or docs late', 'Fake adapter with the vision\'s sample data; feed behind a flag, Phase 1 not blocked'],
   ['AI ranking poor, slow or costly', 'Filter in code, fallback score, cache per day part (3–4 calls per stay per day)'],
   ['An agent does something unwanted', 'Same permissions as the person, quote → confirm, audit log, rate limits'],
@@ -108,7 +108,7 @@ const risks: [string, string, boolean?][] = [
         {a.alt && <p class="adr-alt"><span>Instead of</span> {a.alt}</p>}
         <p class="adr-c">{a.c}</p>
         {a.ref && <a class="adr-link" href={`#d${a.ref[0]}`}>Compare the options →</a>}
-        {a.open && <p class="adr-open"><Pill kind="open" text="5 Nov" /> {a.open}</p>}
+        {a.open && <p class="adr-open"><Pill kind="open" /> {a.open}</p>}
       </article>
     ))}
   </div>

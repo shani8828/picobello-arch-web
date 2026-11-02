@@ -1,32 +1,15 @@
 ---
-// Appendix: the 5 Nov questions (file 12 part F), what was decided
-// before the review, and every [Open] and [Verify] item.
+// Appendix: every question still open (file 12 part F) and every
+// [Open] and [Verify] item.
 import Pill from '../components/Pill.astro';
 
 const decide: [string, string, string, string?][] = [
-  ['Database host: Cloud SQL (one cloud, failover) or Supabase Zurich (lower cost, faster setup)? Decided on 5 Nov; until then we plan and develop locally.', 'Why this over that', '#d8', 'Cloud SQL'],
-  ['Refund rules for direct bookings (website) and shortened stays. Seva checks with Tristan.', 'Business logic', '#logic'],
-  ['Owner cancellation fee: about CHF 50 if less than 90 days before. Seva confirms.', 'Business logic', '#logic'],
-  ['ID document retention: about 30 days, then deleted. Seva confirms with Tristan.', 'Database', '#database', '30 days, store as little as possible'],
-  ['Badge dispenser: guests enter a code; exact process, what happens if it fails, night support. Seva clarifies with Tristan.', 'Integrations', '#integrations'],
-  ['Rounding to 5 Rappen where shown as cash amounts. Seva leans yes; settle together.', 'Business logic', '#logic', 'yes'],
-];
-
-const decided: [string, string, string][] = [
-  ['Go-live in January is for bookings: everything booking-related works and every booking is recorded for accounting from day one. Settlement comes later. First guests arrive around May.', 'Phase 1 timeline', '#timeline'],
-  ['Feratel: Picobello has an API and sets it up; needed in January.', 'Integrations', '#integrations'],
-  ['SALTO badges: later, ready before the first arrivals.', 'Integrations', '#integrations'],
-  ['Cancellations via Airbnb / Booking: the channel handles them and the refund; Lodgify frees the dates.', 'Business logic', '#logic'],
-  ['MCP server and "Ask me" chat: architecture from the start, built after go-live.', 'Regional content', '#regional'],
-  ['Ski pass / half board signal: Phase 2.', 'Regional content', '#regional'],
-  ['Testing before go-live on Tristan\'s holiday apartments, with real bookings.', 'Phase 1 timeline', '#timeline'],
-  ['Extension: the guest extends in the app. Same apartment if free, otherwise the apartment empty the longest (ready at 10:00, same house first) is offered; the guest confirms and pays. On a move, the old departure time (10:00) is the new arrival time. Price and availability come from Lodgify.', 'Business logic', '#logic'],
-  ['Guest details: guests edit names and number of people themselves; extra people are added after they pay.', 'Business logic', '#logic'],
-  ['Languages: Guest App in DE / FR / EN for Phase 1; more languages later without code changes.', 'Frontend', '#frontend'],
-  ['Feratel guest card: shown in whatever format Feratel returns.', 'Integrations', '#integrations'],
-  ['Archipex: our developers produce the export themselves; no format to agree.', 'Integrations', '#integrations'],
-  ['Who builds: Shani builds the platform.', 'Decisions', '#decisions'],
-  ['Security: our own self-check of 72 items for go-live, instead of a paid pen-test.', 'Security self-check', '#selfcheck'],
+  ['Database host: Cloud SQL (one cloud, failover) or Supabase Zurich (lower cost, faster setup)? Until decided, development runs locally.', 'Why this over that', '#d8', 'Cloud SQL'],
+  ['Refund rules for direct bookings (website) and shortened stays', 'Business logic', '#logic'],
+  ['Owner cancellation fee: about CHF 50 if less than 90 days before, to confirm', 'Business logic', '#logic'],
+  ['ID document retention: about 30 days, then deleted; to confirm', 'Database', '#database', '30 days, store as little as possible'],
+  ['Badge dispenser: guests enter a code; exact process, what happens if it fails, night support', 'Integrations', '#integrations'],
+  ['Rounding to 5 Rappen where shown as cash amounts', 'Business logic', '#logic', 'yes'],
 ];
 
 const open: [string, string, string][] = [
@@ -64,27 +47,20 @@ const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
 ---
 <div class="block">
   <div class="counts">
-    <div><span class="v tnum">{decide.length}</span><span class="l">still open for 5 Nov</span></div>
-    <div><span class="v tnum">{decided.length}</span><span class="l">decided on 3 Nov</span></div>
+    <div><span class="v tnum">{decide.length}</span><span class="l">questions still open</span></div>
     <div><span class="v tnum">{open.length}</span><span class="l">further open points</span></div>
     <div><span class="v tnum">{verifyCount}</span><span class="l">items to verify with vendors</span></div>
   </div>
 </div>
 
 <div class="block">
-  <h3 class="block-title">Still open for 5 Nov</h3>
+  <h3 class="block-title">Questions still open</h3>
   <ol class="qs">
     {decide.map(([q, src, href, prop], i) => (
       <li><span class="i tnum">{i + 1}</span><div><p>{q}</p>{prop && <p class="prop">Proposed: {prop}</p>}<a href={href} class="src">{src}</a></div><span class="ans" aria-hidden="true"></span></li>
     ))}
   </ol>
-  <p class="note">After the meeting each decision is recorded with its date and the affected parts of the architecture are updated.</p>
-</div>
-
-<div class="block">
-  <h3 class="block-title">Decided before the review <Pill kind="success" text="3 Nov" /></h3>
-  <p class="block-sub">From Shani's answers and Seva's reply on 3 Nov.</p>
-  <ul class="items done-items">{decided.map(([t, src, href]) => <li><p>{t}</p><a href={href} class="src">{src}</a></li>)}</ul>
+  <p class="note">Each answer is built into the architecture and the question is removed from this list.</p>
 </div>
 
 <div class="block">
@@ -106,12 +82,11 @@ const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
 </div>
 
 <style>
-  .counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--e-1); }
+  .counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--e-1); }
   .counts div { display: grid; gap: 4px; padding: var(--s-5) var(--s-6); border-left: 1px solid var(--line); }
   .counts div:first-child { border-left: 0; background: var(--accent-50); border-radius: var(--r-card) 0 0 var(--r-card); }
   .counts .v { font-size: 2.25rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
   .counts .l { font-size: var(--fs-ui); color: var(--ink-muted); }
-  @media (max-width: 900px) { .counts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .counts div:nth-child(3) { border-left: 0; } .counts div:nth-child(n+3) { border-top: 1px solid var(--line); } }
   @media (max-width: 640px) { .counts { grid-template-columns: 1fr; } .counts div { border-left: 0; border-top: 1px solid var(--line); } .counts div:first-child { border-top: 0; border-radius: var(--r-card) var(--r-card) 0 0; } }
 
   .qs { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
@@ -129,7 +104,6 @@ const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
   @media (max-width: 767px) { .items { grid-template-columns: 1fr; } }
   .items li { padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--warning-vivid); border-radius: var(--r-control); }
   .items p { font-size: 15.5px; line-height: 1.45; }
-  .done-items li { border-left-color: var(--success-vivid); }
   .prop { margin-top: 2px; font-size: 14px !important; font-weight: 600 !important; color: var(--primary-700); }
 
   .vgroups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); align-items: start; }

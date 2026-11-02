@@ -314,7 +314,7 @@ export const groups: CheckGroup[] = [
       {
         "id": "F4",
         "check": "ID numbers are deleted by the nightly job after the legal period",
-        "how": "Job test with the clock moved past the period (period still open with Seva)",
+        "how": "Job test with the clock moved past the period (period still to confirm)",
         "by": "M4"
       },
       {

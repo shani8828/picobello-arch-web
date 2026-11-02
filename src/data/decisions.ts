@@ -66,7 +66,7 @@ export const decisions: Decision[] = [
     ['Setup speed', '+', '+++', '+++', '+'],
     ['Monthly cost (prod)', '~CHF 150-200', '~USD 50-110', '~USD 20-70', '~CHF 150+'],
     ['Lock-in', 'low', 'low if plain Postgres only', 'low', 'low'],
-  ], choice: 'Cloud SQL Zurich · documented alternative: Supabase (Zurich), used only as plain Postgres (no Supabase Auth, RLS or Functions)', why: 'For a system holding owners\' money, private networking, one-switch failover and included point-in-time restore matter more than the lower price. Because we only use standard Postgres, switching is a dump and restore. Decision for Seva on 5 Nov: lower cost and faster setup (Supabase) vs one cloud with failover (Cloud SQL).' },
+  ], choice: 'Cloud SQL Zurich · documented alternative: Supabase (Zurich), used only as plain Postgres (no Supabase Auth, RLS or Functions)', why: 'For a system holding owners\' money, private networking, one-switch failover and included point-in-time restore matter more than the lower price. Because we only use standard Postgres, switching is a dump and restore. Open decision: lower cost and faster setup (Supabase) vs one cloud with failover (Cloud SQL).' },
   { n: 9, title: 'Cloud for backend', options: ['GCP Zurich', 'AWS Zurich', 'Azure CH North', 'Swiss hosters (Infomaniak, Exoscale)', 'Cloudflare only'], winner: 0, rows: [
     ['Data in Switzerland', '+++', '+++', '+++', '+++', '- (no CH Postgres)'],
     ['Managed containers', '+++ Cloud Run', '++ (App Runner/ECS)', '++', '+ (more DIY)', '++ Workers'],

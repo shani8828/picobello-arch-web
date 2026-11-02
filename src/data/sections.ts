@@ -48,6 +48,6 @@ export const sections: SectionMeta[] = [
     lead: 'How does the platform look and feel, which exact colours, fonts, sizes and spacing do we use in each app (and in the presentation), and which craft rules make it look premium and hand-designed?', step: 6 },
   { id: 'selfcheck', num: '17', title: 'Security self-check', file: '17-security-self-check.txt', leadLabel: 'Question this answers',
     lead: 'How do we prove the platform is secure before each go-live, without paying for a full pen-test, and when is each check done?', step: 6 },
-  { id: 'open', num: '—', title: 'Open questions', file: '12-decisions-extensibility-plan.txt', leadLabel: 'For 5 Nov',
+  { id: 'open', num: '—', title: 'Open questions', file: '12-decisions-extensibility-plan.txt', leadLabel: 'Still open',
     lead: 'The decisions needed in the review, plus every point that is still open or still to be checked with a vendor.', step: 6 },
 ];

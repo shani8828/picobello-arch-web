@@ -39,7 +39,7 @@ const cards: Card[] = [
     trigger: 'After check-in, or at reservation for own use with yearly-flat tourist tax',
     auth: 'SALTO KS Connect API, REST + JSON; OAuth 2.0 client credentials from the local business unit (Immer AG)',
     fallback: 'Retry with backoff; failed grants visible on the Integrations page',
-    verify: ['endpoints for users, access groups, time schedules'], open: ['dispenser process, failure, night support (Tristan)'] },
+    verify: ['endpoints for users, access groups, time schedules'], open: ['dispenser process, failure, night support'] },
   { name: 'Postmark', icon: 'mail', role: 'Transactional email, templates rendered by us in DE / FR / EN',
     out: 'Guest invites, owner magic links, confirmations, reminders, alerts',
     inn: 'Delivery and bounce webhooks → messages.status',
@@ -113,7 +113,7 @@ const p2: [string, string][] = [
     <article><span class="pn">Reconciliation</span><p>Nightly jobs compare our data with the master (Lodgify bookings, Stripe payments) and fix or flag differences.</p></article>
     <article><span class="pn">Status + secrets</span><p>Per system: last success, last error, pending, failed, retry. Keys in Secret Manager, one per environment.</p></article>
   </div>
-  <p class="decided">Picobello provides all API keys and access when needed (decided 29 Oct). <Pill kind="verify" /> marks items taken from third-party descriptions or assumptions, to check in vendor docs once we have access.</p>
+  <p class="decided">Picobello provides all API keys and access when needed. <Pill kind="verify" /> marks items taken from third-party descriptions or assumptions, to check in vendor docs once we have access.</p>
 </div>
 
 <div class="block">
@@ -242,7 +242,7 @@ const p2: [string, string][] = [
     </div>
     <div>
       <h3 class="block-title">Listing sync matrix</h3>
-      <p class="block-sub">Decided (Seva, 29 Oct): the platform is the single source of truth for listing content. Example values until Picobello fills in the real ones.</p>
+      <p class="block-sub">The platform is the single source of truth for listing content. Example values until Picobello fills in the real ones.</p>
       <div class="table-wrap">
         <table class="data matrix">
           <thead><tr><th>Field</th><th>Website</th><th>Booking</th><th>Airbnb</th><th>Vrbo</th></tr></thead>

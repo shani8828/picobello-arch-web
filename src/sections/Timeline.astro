@@ -12,9 +12,9 @@ const milestones: [string, string, string][] = [
   ['M2', '29 Nov', 'A real booking in Lodgify (test property) appears in the Back Office within a minute; an owner reservation appears as a block in Lodgify'],
   ['M3', '13 Dec', 'Every booking and owner charge is in the ledger; a Feratel test registration works'],
   ['M4', '20 Dec', 'Apartments tab works, Archipex trial import done, production infrastructure ready'],
-  ['M5', '5 Jan', 'Dress rehearsal (bookings) passed, security self-check signed off, sign-off from Seva'],
+  ['M5', '5 Jan', 'Dress rehearsal (bookings) passed, security self-check signed off, sign-off from Picobello'],
   ['M6', '10 Jan', 'Phase 1a live: bookings work in production'],
-  ['M7', '15 Apr', 'Phase 1b ready: guest journey incl. badges, tested on Tristan\'s apartments'],
+  ['M7', '15 Apr', 'Phase 1b ready: guest journey incl. badges, tested on the existing holiday apartments'],
 ];
 
 // Needed-by dates from the file. The file gives no delivery status, so the
@@ -45,8 +45,8 @@ const regional: [string, string][] = [
 
 const weeks: { w: string; d: string; m?: string; groups: [string, string[]][] }[] = [
   { w: 'Week 0', d: '5 Nov (Thu) · architecture review', m: 'M0', groups: [
-    ['Review meeting with Seva', ['Walk through the architecture (this web page, screen share)', 'Decide the database host (Cloud SQL vs Supabase); until then plan and develop locally', 'Confirm the go-live list with Seva and Tristan']],
-    ['After the meeting', ['Record each decision with its date and update the affected parts of the architecture', 'Send the final PDF to Seva', 'Request access from Picobello: Lodgify, Stripe, Feratel/LST, SALTO/Immer AG, domain/DNS, Archipex data access, dataCycle test access (by 10 Nov), image rights']],
+    ['Review meeting with Picobello', ['Walk through the architecture (this web page, screen share)', 'Decide the database host (Cloud SQL vs Supabase); until then plan and develop locally', 'Confirm the go-live list']],
+    ['After the meeting', ['Build each answer into the architecture and remove it from the open questions', 'Send the final PDF to Picobello', 'Request access from Picobello: Lodgify, Stripe, Feratel/LST, SALTO/Immer AG, domain/DNS, Archipex data access, dataCycle test access (by 10 Nov), image rights']],
   ] },
   { w: 'Week 1', d: '6-15 Nov · foundation', m: 'M1', groups: [
     ['Repository and tooling', ['Monorepo (pnpm + Turborepo), apps/ and packages/', 'TypeScript strict, ESLint, Prettier, dependency-cruiser', 'Commit conventions, PR template, CODEOWNERS', 'Security tools in CI: gitleaks, npm audit / OSV, Semgrep, Renovate']],
@@ -82,8 +82,8 @@ const weeks: { w: string; d: string; m?: string; groups: [string, string[]][] }[
   { w: 'Phase 1b', d: '11 Jan-15 Apr · guest journey (first guests ~May)', m: 'M7', groups: [
     ['Guest App (11 Jan-14 Feb)', ['PWA, personal link, locked page after departure; home, arrival info, DE/FR/EN', 'Invitations 3 days before arrival; online check-in; guest cards from Feratel']],
     ['Payments in the app (15 Feb-7 Mar)', ['Stripe: friends pay, extra persons, refunds; all into the ledger', 'Extensions (same apartment, else the one empty the longest), guest edits, date changes, late check-in / check-out']],
-    ['SALTO badges (8-28 Mar)', ['Access 16:00 → 10:00, doors per unit, extend / move / revoke; access screen', 'Dispenser process from Tristan (guests enter a code)']],
-    ['Test on Tristan\'s apartments (29 Mar-15 Apr)', ['Real bookings, full journey: invite → check-in → payment → guest card → badge → extension → ledger', 'Security self-check Phase 1b items ticked']],
+    ['SALTO badges (8-28 Mar)', ['Access 16:00 → 10:00, doors per unit, extend / move / revoke; access screen', 'Dispenser process agreed with Picobello (guests enter a code)']],
+    ['Test on the existing holiday apartments (29 Mar-15 Apr)', ['Real bookings, full journey: invite → check-in → payment → guest card → badge → extension → ledger', 'Security self-check Phase 1b items ticked']],
   ] },
 ];
 
@@ -111,7 +111,7 @@ const golive: { t: string; d: string; tone: string; items: string[] }[] = [
     'Extensions with room choice, guest detail edits, late check-in / check-out',
     'SALTO badges and the dispenser process',
     '"Today" regional feed for guests',
-    'Full test on Tristan\'s holiday apartments with real bookings',
+    'Full test on existing holiday apartments with real bookings',
   ] },
   { t: 'Later', d: 'Phase 2 · from April 2027', tone: 'later', items: [
     'Accounting settlement: owner statements, payouts, bank import, Bexio, VAT, tourist-tax reconciliation, ZWG report',
@@ -144,7 +144,7 @@ const urgLabel = ['', 'by mid-Nov', 'by early Dec', 'mid-Dec or later'];
 </div>
 
 <div class="block">
-  <h3 class="block-title">What goes live when <Pill kind="verify" text="Seva + Tristan to confirm" /></h3>
+  <h3 class="block-title">What goes live when <Pill kind="verify" text="To confirm" /></h3>
   <div class="golive">
     {golive.map((g) => (
       <section class={`gl gl-${g.tone}`}>
@@ -186,7 +186,7 @@ const urgLabel = ['', 'by mid-Nov', 'by early Dec', 'mid-Dec or later'];
       <h3 class="block-title after">After go-live · 11 Jan onwards</h3>
       <ul class="list">
         <li><b>Hypercare, 2 weeks:</b> daily check of integrations, failed jobs and ledger balance; fast fixes.</li>
-        <li><b>Phase 1b</b> (11 Jan to 15 Apr): the guest journey, tested on Tristan's holiday apartments before the first guests (~May).</li>
+        <li><b>Phase 1b</b> (11 Jan to 15 Apr): the guest journey, tested on existing holiday apartments before the first guests (~May).</li>
         <li><b>Phase 2</b> (from April 2027): accounting settlement (statements, bank, Bexio, VAT, tourist-tax reconciliation, ZWG report), WhatsApp, cleaning (PicobelloAI), repairs + DocuSign, partner offers (ski pass, half board).</li>
       </ul>
     </div>

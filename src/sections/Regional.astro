@@ -1,6 +1,6 @@
 ---
 // 16 Regional content, AI and agents. Source: arch/16-regional-content-ai-agents.txt
-// (dataCycle vision, Oct 2026, and Seva's MCP / voice requirements, 31 Oct).
+// (dataCycle vision, Oct 2026, and the MCP / voice requirements).
 import Takeaway from '../components/Takeaway.astro';
 import Pill from '../components/Pill.astro';
 import Icon from '../components/Icon.astro';
@@ -195,7 +195,7 @@ const P = { x: 320, y: 40, w: 570, h: 360 };
       </figure>
     ))}
   </div>
-  <p class="note">The vision shows the Guest App in German, English and six more languages, incl. Arabic. Decided on 3 Nov: DE / FR / EN for Phase 1. The other languages are added later from translation files, without code changes; the layout stays ready for right-to-left.</p>
+  <p class="note">The vision shows the Guest App in German, English and six more languages, incl. Arabic. Phase 1 uses DE / FR / EN. The other languages are added later from translation files, without code changes; the layout stays ready for right-to-left.</p>
 </div>
 
 <div class="block">
@@ -221,7 +221,7 @@ const P = { x: 320, y: 40, w: 570, h: 360 };
 
 <div class="block">
   <h3 class="block-title">MCP and agents · one set of actions</h3>
-  <p class="block-sub">Requirement (Seva, 31 Oct): it must be possible to connect the platform to MCP. An agent is just another client, like the Guest App: same actions, same rules, same permissions, no back door into the database.</p>
+  <p class="block-sub">Requirement: it must be possible to connect the platform to MCP. An agent is just another client, like the Guest App: same actions, same rules, same permissions, no back door into the database.</p>
   <Figure label="One set of actions: apps use REST, AI agents use MCP, both go through the same tool registry and permission check" minWidth={940}>
     <svg viewBox="0 0 1200 470" xmlns="http://www.w3.org/2000/svg">
       <text x="20" y="28" class="grp-label muted">Clients</text>
