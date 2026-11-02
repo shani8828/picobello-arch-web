@@ -34,7 +34,7 @@ const cards: Card[] = [
     fallback: 'Retry with backoff; then staff registers in Deskline and marks it "done manually"',
     verify: ['everything in this section'] },
   { name: 'SALTO KS', icon: 'key-round', role: 'Time-limited badge access: the badge is the key. Collected at the SALTO dispenser, no staff needed; via Immer AG',
-    out: 'Person (external id = our person id), doors (unit + entrance + ski room), arrival 16:00 to departure 10:00; change (extension in another apartment = new door); revoke',
+    out: 'Person (external id = our person id), doors (unit + entrance + ski room), arrival 16:00 to departure 10:00; change (extension in another apartment = new door from 10:00 on the move day, old door ends then); revoke',
     inn: 'Confirmation id (salto_access_ref); daily access events for support',
     trigger: 'After check-in, or at reservation for own use with yearly-flat tourist tax',
     auth: 'SALTO KS Connect API, REST + JSON; OAuth 2.0 client credentials from the local business unit (Immer AG)',
