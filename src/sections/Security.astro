@@ -63,7 +63,7 @@ const cellText = (p: P) => (p === 'Y' ? 'Yes' : p === 'R' ? 'Read' : p === '-' ?
 <Takeaway>Permissions are enforced in the API, in every request and every repository query, never only hidden in the UI. Every row of the permission matrix has an automated test.</Takeaway>
 
 <div class="block">
-  <h3 class="block-title">How each user logs in · decided</h3>
+  <h3 class="block-title">How each user logs in</h3>
   <div class="logins">
     {logins.map((l) => (
       <article class="login">
@@ -108,7 +108,7 @@ const cellText = (p: P) => (p === 'Y' ? 'Yes' : p === 'R' ? 'Read' : p === '-' ?
       <rect x="20" y="20" width="660" height="290" rx="16" class="grp" />
       <text x="44" y="52" class="grp-label">Switzerland · Google Cloud Zurich</text>
       <text x="44" y="78" class="svg-note">All personal data: database, files, logs</text>
-      <Box x={44} y={112} w={196} h={78} title="Database" sub={['Cloud SQL', 'encrypted at rest']} icon="database" variant="app" />
+      <Box x={44} y={112} w={196} h={78} title="Database" sub={['PostgreSQL, Zurich', 'encrypted at rest']} icon="database" variant="app" />
       <Box x={262} y={112} w={196} h={78} title="Files" sub={['Cloud Storage', 'signed URLs']} icon="hard-drive" variant="app" />
       <Box x={480} y={112} w={176} h={78} title="Logs" sub={['Zurich log bucket', 'no PII (redacted)']} icon="scroll-text" variant="app" />
       <Box x={44} y={212} w={612} h={70} title="API + worker · Cloud Run" sub="the only code that reads or writes personal data" icon="server" />
@@ -127,7 +127,7 @@ const cellText = (p: P) => (p === 'Y' ? 'Yes' : p === 'R' ? 'Read' : p === '-' ?
   </Figure>
   <div class="processors">
     <span class="eyebrow">Processors with data processing agreements</span>
-    <div class="chips">{['Google Cloud', 'Cloudflare', 'Stripe', 'Postmark', 'Sentry (EU region)', 'Lodgify', 'Feratel', 'SALTO / Immer AG'].map((p) => <span class="chip">{p}</span>)}<span class="chip chip-soft">AI provider <Pill kind="open" /></span></div>
+    <div class="chips">{['Google Cloud', 'Cloudflare', 'Stripe', 'Postmark', 'Supabase (Zurich)', 'Sentry (EU region)', 'Lodgify', 'Feratel', 'SALTO / Immer AG'].map((p) => <span class="chip">{p}</span>)}<span class="chip chip-soft">Anthropic (AI ranking)</span></div>
     <p class="proc-note">dataCycle and the weather source receive no personal data.</p>
   </div>
 </div>
@@ -149,7 +149,7 @@ const cellText = (p: P) => (p === 'Y' ? 'Yes' : p === 'R' ? 'Read' : p === '-' ?
     <div>
       <h3 class="block-title">Data protection · revDSG</h3>
       <ul class="list">
-        <li>Data minimisation: ID document number only if legally required; deleted by the nightly retention job after 30 days <Pill kind="open" text="Open: confirm period" />. Picobello wants as little personal data stored as possible.</li>
+        <li>Data minimisation: ID document number only if legally required; kept 2 years from arrival (legal period), then deleted by the nightly retention job. Picobello wants as little personal data stored as possible.</li>
         <li>Marketing consent: separate, optional, with timestamp and revocation.</li>
         <li>Guest links expire after the stay. Owners never see guests' personal data.</li>
         <li>Right of access / deletion: export per person; deletion anonymises personal fields but keeps ledger amounts (legal retention).</li>
@@ -160,11 +160,11 @@ const cellText = (p: P) => (p === 'Y' ? 'Yes' : p === 'R' ? 'Read' : p === '-' ?
       <h3 class="block-title">Application security</h3>
       <ul class="list">
         <li>HTTPS only (HSTS), TLS 1.2+; CSP (Stripe domains allowed), X-Frame-Options, Referrer-Policy; CORS only for our three app domains.</li>
-        <li>Zod validation on every endpoint; parameterised SQL only (Drizzle). Rate limits on login, magic link, guest link and quote endpoints.</li>
+        <li>Zod validation on every endpoint; parameterised SQL only (Drizzle). Rate limits on login, magic link, guest link and quote endpoints; the client IP comes from the load balancer, never from a client header. Staff lockout: 10 failed logins in 15 minutes lock the account for 30 minutes. Personal data is removed from logs and Sentry.</li>
         <li>Uploads via signed URLs with type and size checks; images re-encoded by sharp.</li>
         <li>Secrets in Secret Manager, none in Git (gitleaks in CI); Renovate + dependency audit in CI. Card data never touches our servers.</li>
         <li>Least privilege: separate DB users (API has no ledger UPDATE/DELETE); one service account per Cloud Run service. Audit log for every write.</li>
-        <li>OWASP ASVS level 1 as our own <a href="#selfcheck">security self-check</a>: 72 checks, all ticked by the dress rehearsal (5 Jan). Outside expert review optional before Phase 2 <Pill kind="open" text="Open: budget" /></li>
+        <li>OWASP ASVS level 1 as our own <a href="#selfcheck">security self-check</a>: 72 checks, all ticked by the dress rehearsal (5 Jan). An outside expert review is not part of Phase 1; it can be added with the Phase 2 budget.</li>
       </ul>
     </div>
   </div>

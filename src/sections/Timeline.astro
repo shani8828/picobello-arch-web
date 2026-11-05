@@ -1,5 +1,5 @@
 ---
-// 15 Phase 1 timeline. Source: arch/15-phase1-timeline.txt
+// 15 Phase 1 timeline. Source: arch/15-phase1-timeline.txt (summary of Architektur/nextsteps.md)
 import Takeaway from '../components/Takeaway.astro';
 import Icon from '../components/Icon.astro';
 import Pill from '../components/Pill.astro';
@@ -7,98 +7,111 @@ import Figure from '../components/diagram/Figure.astro';
 import Gantt from '../components/diagram/Gantt.astro';
 
 const milestones: [string, string, string][] = [
-  ['M0', '5 Nov', 'Architecture approved; database host decided'],
-  ['M1', '15 Nov', 'Staff can log in and see both houses and all units'],
-  ['M2', '29 Nov', 'A real booking in Lodgify (test property) appears in the Back Office within a minute; an owner reservation appears as a block in Lodgify'],
-  ['M3', '13 Dec', 'Every booking and owner charge is in the ledger; a Feratel test registration works'],
+  ['M0', '5 Nov', 'Architecture review'],
+  ['M1', '15 Nov', 'On localhost: staff log in with 2FA and see both houses and all 22 units'],
+  ['M2', '29 Nov', 'A Lodgify test booking appears in the Back Office within a minute; an owner reservation reaches Lodgify as a block; staging online'],
+  ['M3', '13 Dec', 'Every booking and owner charge is in the ledger; a Feratel test registration works (or the agreed manual fallback)'],
   ['M4', '20 Dec', 'Apartments tab works, Archipex trial import done, production infrastructure ready'],
-  ['M5', '5 Jan', 'Dress rehearsal (bookings) passed, security self-check signed off, sign-off from Picobello'],
-  ['M6', '10 Jan', 'Phase 1a live: bookings work in production'],
+  ['M5', '5 Jan', 'Dress rehearsal passed on production, security self-check signed off, sign-off from Picobello'],
+  ['M6', '10 Jan', 'Phase 1a live: bookings work in production; hypercare until 24 Jan'],
   ['M7', '15 Apr', 'Phase 1b ready: guest journey incl. badges, tested on the existing holiday apartments'],
 ];
 
-// Needed-by dates from the file. The file gives no delivery status, so the
-// colour shows urgency by date only.
+// Needed-by dates (arch/15). No delivery status yet, so the colour shows
+// urgency by date only.
 const deps: [string, string, number][] = [
+  ['Tourist-tax mode per owner', '9 Nov', 1],
   ['dataCycle test access + API docs', '10 Nov', 1],
   ['Domain / DNS access (picobello.ch)', '15 Nov', 1],
   ['Lodgify API key + test property', '16 Nov', 1],
-  ['Real fee values and texts for emails', '30 Nov', 2],
-  ['AI provider account / decision', '30 Nov', 2],
+  ['Google Cloud project and billing; Supabase project (Zurich, Pro + PITR)', '~20 Nov', 1],
+  ['Worked contract examples (own-use rules)', '20 Nov', 1],
   ['Feratel API access (Picobello sets it up)', '30 Nov', 2],
-  ['Archipex data access (we export ourselves)', '1 Dec', 2],
-  ['Listing content (photos, texts) to migrate', '14 Dec', 3],
+  ['Production Google Cloud project', '30 Nov', 2],
+  ['Real fee values and texts for emails', '30 Nov', 2],
+  ['AI provider account (Anthropic)', '30 Nov', 2],
+  ['Archipex sample export; list of writable Lodgify fields', '14 Dec', 3],
   ['Image usage rights (both tourism offices)', '14 Dec', 3],
   ['Production keys for all systems', '28 Dec', 3],
+  ['Final settings values', '4 Jan', 3],
   ['Staff available for training', '6-8 Jan', 3],
-  ['Stripe restricted key (test + live)', '15 Jan', 3],
-  ['SALTO / Immer AG API access + test site', '1 Mar', 3],
+  ['Stripe keys (test + live), TWINT activation', '15 Jan', 3],
+  ['SALTO / Immer AG API access + test site; emergency phone number and key-box codes', '1 Mar', 3],
 ];
 const regional: [string, string][] = [
-  ['6-10 Nov', 'dataCycle test access, API study, list of categories (vision step 1)'],
-  ['16-29 Nov', 'RegionalContentPort, fake adapter with the vision\'s sample data, regional.sync, regional_items cache'],
-  ['30 Nov-13 Dec', 'Weather port, signals, candidate filter, AI ranking + fallback, "Today" feed in the Guest App (flag off)'],
-  ['14 Dec-5 Jan', 'Test at the Lenk in Picobello\'s apartments (vision step 2): rain, Gulf family, fresh snow; insights events'],
+  ['by 10 Nov', 'dataCycle test access, API study, list of categories (vision step 1)'],
+  ['23-29 Nov (W4)', 'Real dataCycle adapter, cache, candidate filter, fallback score, feed and Back Office preview (flag off)'],
+  ['14-20 Dec (W7)', 'Weather and AI ranking (flag off)'],
+  ['14 Dec-5 Jan', 'Test at the Lenk in Picobello\'s apartments (vision step 2): rain, Gulf family, fresh snow; insights events. Fallback score first, weather and AI from ~21 Dec'],
   ['10 Jan', 'Phase 1a live; the feed is still behind the flag'],
-  ['15-31 Jan', 'Regional go-live for all guests (vision step 3), then evaluation and Saanenland'],
+  ['15-31 Jan (P1)', 'Feed in the Guest App for all guests (vision step 3), then evaluation and Saanenland'],
 ];
 
 const weeks: { w: string; d: string; m?: string; groups: [string, string[]][] }[] = [
-  { w: 'Week 0', d: '5 Nov (Thu) · architecture review', m: 'M0', groups: [
-    ['Review meeting with Picobello', ['Walk through the architecture (this web page, screen share)', 'Decide the database host (Cloud SQL vs Supabase); until then plan and develop locally', 'Confirm the go-live list']],
-    ['After the meeting', ['Build each answer into the architecture and remove it from the open questions', 'Send the final PDF to Picobello', 'Request access from Picobello: Lodgify, Stripe, Feratel/LST, SALTO/Immer AG, domain/DNS, Archipex data access, dataCycle test access (by 10 Nov), image rights']],
+  { w: 'W0', d: '5-7 Nov · baseline and local setup', groups: [
+    ['Baseline', ['Week-1 foundation and review fixes committed; CI green including the database tests', 'Branch protection: every existing CI and security job required']],
+    ['Local development', ['Setup script: local Postgres 16, roles, migrations, seed', 'ADR drafts: module actions, async conventions, database host with both options']],
   ] },
-  { w: 'Week 1', d: '6-15 Nov · foundation', m: 'M1', groups: [
-    ['Repository and tooling', ['Monorepo (pnpm + Turborepo), apps/ and packages/', 'TypeScript strict, ESLint, Prettier, dependency-cruiser', 'Commit conventions, PR template, CODEOWNERS', 'Security tools in CI: gitleaks, npm audit / OSV, Semgrep, Renovate']],
-    ['CI/CD and environments', ['GitHub Actions on every PR', 'Terraform: GCP staging project, Cloudflare Pages projects', 'Workload Identity Federation; auto-deploy main → staging; preview URLs']],
-    ['Database, backend, auth', ['Drizzle + first migrations; seed: 2 houses, 22 units, demo owners', 'Hono API with OpenAPI, errors, pipeline, logging, Sentry; worker with pg-boss', 'Better Auth: staff login + 2FA, owner magic link; guest stay-token design']],
-    ['Design system and Back Office basics', ['Tokens, self-hosted fonts, base components, app shells', 'Houses, units, owners, ownerships, settings, audit log screens']],
+  { w: 'W2a', d: '9-13 Nov · module pattern, M1 on localhost', m: 'M1', groups: [
+    ['Module action pattern', ['One registered action: name, input (Zod), permission, run(ctx, input)', 'Core runs on it; error model, i18n namespaces, route manifest, money building blocks']],
+    ['M1 demo', ['Staff log in with 2FA on localhost and see 2 houses and 22 units', 'CI checks for the pattern and for migrations']],
   ] },
-  { w: 'Weeks 2-3', d: '16-29 Nov · Lodgify + Owner Portal', m: 'M2', groups: [
-    ['Integrations backbone', ['inbox_events, outbox, integration_status', 'Integrations page; port + fake adapter pattern; recorded payloads']],
-    ['Lodgify read + stays', ['Map 22 units; webhook + re-fetch; booking → stay mapping; nightly reconciliation', 'Ledger: booking_amounts; stays list, detail, calendar; exclusion constraint']],
-    ['Rule engine + Owner Portal', ['Checks C1-C8, quota, costs; 100 % unit tests with contract examples', 'Magic link, overview, quota bars, calendar, reserve flow, my reservations, balance']],
-    ['Lodgify write + ledger', ['Own-use block and friends booking within 5 minutes; failure → retry + alert', 'accounts, transactions, entries; append-only triggers; owner_charge transactions']],
+  { w: 'W2b', d: '12-16 Nov · async backbone, request protection, mail', groups: [
+    ['Async backbone', ['Inbox, integration status, retry up to 6 h, dead letter', 'Cron calls only enqueue jobs; idempotency store']],
+    ['Protection and mail', ['Global rate limit, account lockout, audit redaction', 'Postmark through the worker (magic links too); webhook capture endpoint behind a tunnel']],
   ] },
-  { w: 'Weeks 4-5', d: '30 Nov-13 Dec · ledger, Feratel, Back Office', m: 'M3', groups: [
-    ['Ledger complete for bookings', ['booking_amounts for every channel booking; owner charges (cleaning, laundry, friends, cancellation fee)', 'Nightly balance check; reconciliation list']],
-    ['Feratel adapter', ['Picobello sets up the API; registration, update, cancel; category codes', 'Test registration; manual fallback "registered in Deskline"']],
-    ['Emails + Back Office', ['Owner magic links, confirmations, reminders (Postmark, DE/EN)', 'Today view, stays list + detail, calendar; channel cancellations free the nights']],
+  { w: 'W3', d: '16-22 Nov · stays, Lodgify read, ledger core', groups: [
+    ['Lodgify read', ['16 Nov recording day: test property, webhook to the tunnel, payloads recorded', 'Booking → stay mapping; stays list, detail, calendar']],
+    ['Ledger core + Owner Portal shell', ['Ledger tables: append-only, entries sum to zero', 'Owner magic-link login, my units']],
   ] },
-  { w: 'Week 6', d: '14-20 Dec · Apartments, Archipex, production', m: 'M4', groups: [
-    ['Apartments tab', ['Listing editor, photo pipeline, sync rules + per-field states', 'Push to Lodgify or copy + confirm; "What\'s missing"']],
-    ['Archipex + production infrastructure', ['Import screen, validation report, trial import on staging', 'Terraform prod, database HA, load balancer, domains, certificates, alerts, backups']],
-    ['Security', ['First OWASP ZAP scan of staging', 'Self-check items for M2-M4 ticked']],
+  { w: 'W4', d: '23-29 Nov · rules, owner reservations, Lodgify write', m: 'M2', groups: [
+    ['Rule engine + Owner Portal', ['Own-use checks with reasons, quota, costs; 100 % tests with contract examples', 'Quota, calendar, reserve, my reservations, change / cancel with fee, balance, friends link']],
+    ['Lodgify write + regional', ['Own-use block in the test property within 5 minutes; failure → retry + alert', 'Regional feed on real dataCycle data (flag off)']],
   ] },
-  { w: 'Weeks 7-8', d: '21 Dec-5 Jan · hardening + dress rehearsal (also the buffer)', m: 'M5', groups: [
-    ['Quality', ['Playwright E2E for the Phase 1a flows (channel booking → ledger, owner and friends reservations, cancellation, listing edit); permission-matrix tests', 'Accessibility, performance (API p95)', 'Security self-check: walk through the Phase 1a items, fix; ZAP, headers and TLS on production']],
-    ['Polish and data', ['All empty / loading / error states; copy review DE/FR/EN by a native speaker', 'Final settings confirmed; units mapped to Lodgify in production; Archipex final import on 31.12']],
-    ['Go-live preparation + dress rehearsal', ['Production keys, webhooks, backups + restore test, alerts, runbooks', 'Real booking via Lodgify → stay → Feratel → ledger; channel cancellation frees the nights; owner reservation → block; friends booking; change / cancel with fee']],
+  { w: 'WD', d: '23-27 Nov · first deploy: staging (in parallel to W4)', groups: [
+    ['Before', ['Database host chosen (~20 Nov); Google Cloud staging project, Cloudflare token, GitHub environments, Sentry']],
+    ['Deploy', ['One Dockerfile, one image: api, worker, migrate job; Workload Identity Federation', 'Merge to main deploys to staging; every first-deploy problem fixed here']],
   ] },
-  { w: 'Week 9', d: '6-10 Jan · delivery', m: 'M6', groups: [
-    ['Training and go-live', ['Back Office walkthrough (recorded), short user guides DE/EN', 'Send owner portal invitations, monitor bookings and integrations closely']],
-    ['Delivery package (10 Jan)', ['Live URLs: guest / owner / admin / api', 'Architecture docs v2 (as built), ADRs, runbooks', 'Access handed to Picobello / Bernis: GitHub, GCP, Cloudflare, Stripe webhooks, Postmark, Sentry', 'Known limitations + Phase 2 plan']],
+  { w: 'W5', d: '30 Nov-11 Dec · ledger, Feratel, messaging, Today', m: 'M3', groups: [
+    ['Ledger complete', ['Every channel booking and owner charge posts balanced entries', 'Nightly balance check; reconciliation list']],
+    ['Feratel, emails, Back Office', ['Registrations or the agreed "registered in Deskline" fallback', 'Emails DE/EN through messaging; Today view; owner check-in if in Phase 1a']],
+  ] },
+  { w: 'W6', d: '30 Nov-16 Dec · production platform (in parallel to W5)', groups: [
+    ['Production infrastructure', ['Database HA, load balancer, Cloud Armor, certificates', 'Production deploy with approval; ZAP workflow; staging applied 7-9 Dec, production 14-16 Dec']],
+  ] },
+  { w: 'W7', d: '14-20 Dec · Apartments, Archipex, regional AI', m: 'M4', groups: [
+    ['Apartments + Archipex', ['Listing editor, photo pipeline, per-field sync; copy + confirm', 'Archipex trial import on staging']],
+    ['Platform + regional', ['Production checks; first ZAP scan (Back Office, Owner Portal)', 'Weather and AI ranking (flag off)']],
+  ] },
+  { w: 'W8', d: '14 Dec-4 Jan · hardening and go-live readiness', m: 'M5', groups: [
+    ['Quality', ['Playwright E2E with accessibility checks and a phone viewport for every Phase 1a flow; permission matrix', 'API speed, UI states, headers and TLS; runbooks; delivery package']],
+    ['Production (28 Dec-4 Jan)', ['All build work merged by 23 Dec', 'Production keys, webhooks, unit mapping; ZAP and TLS on production']],
+  ] },
+  { w: 'G', d: '5-10 Jan · go-live', m: 'M6', groups: [
+    ['Go-live', ['Final settings, dress rehearsal, Archipex final import (cutoff 31.12)', 'Owner invitations on 8 Jan; live on 10 Jan; hypercare until 24 Jan']],
+    ['Delivery package', ['Live URLs; architecture docs (as built), ADRs, runbooks', 'Access handed to Picobello / Bernis; known limitations + Phase 2 plan']],
   ] },
   { w: 'Phase 1b', d: '11 Jan-15 Apr · guest journey (first guests ~May)', m: 'M7', groups: [
-    ['Guest App (11 Jan-14 Feb)', ['PWA, personal link, locked page after departure; home, arrival info, DE/FR/EN', 'Invitations 3 days before arrival; online check-in; guest cards from Feratel']],
-    ['Payments in the app (15 Feb-7 Mar)', ['Stripe: friends pay, extra persons, refunds; all into the ledger', 'Extensions (same apartment, else the one empty the longest), guest edits, date changes, late check-in / check-out']],
-    ['SALTO badges (8-28 Mar)', ['Access 16:00 → 10:00, doors per unit, extend / move / revoke; access screen', 'Dispenser process agreed with Picobello (guests enter a code)']],
-    ['Test on the existing holiday apartments (29 Mar-15 Apr)', ['Real bookings, full journey: invite → check-in → payment → guest card → badge → extension → ledger', 'Security self-check Phase 1b items ticked']],
+    ['P1 Guest App (11-31 Jan)', ['PWA on the existing stay link; home, arrival info, DE/FR/EN', 'Invitations 3 days before arrival; "Today" feed on 15-31 Jan']],
+    ['P2 Check-in + guest cards (1-14 Feb)', ['Online check-in, companions, consents; guest cards from Feratel', 'ID deletion job; owner check-in here if not in 1a; second ZAP scan']],
+    ['P3 Payments + changes (15 Feb-7 Mar)', ['Stripe: friends pay, extra persons, refunds; all into the ledger', 'Night holds, extensions, date changes, late check-in / check-out']],
+    ['P4 SALTO + full test (8 Mar-15 Apr)', ['Badges and dispenser (8-28 Mar)', 'Full journey on existing apartments with real bookings; M7 sign-off']],
   ] },
 ];
 
 const dod = [
-  'Code reviewed and merged, all checks green',
-  'Unit / integration tests written (rules and money: 100 %)',
+  'Merged through a pull request with CODEOWNERS review, all checks green',
+  'Until the first deploy: runs locally; then deployed to staging with a green smoke test',
+  'Rules and money: 100 % test coverage',
   'Works in DE / FR / EN where user-facing',
-  'Deployed to staging and tested there',
   'Audit log and error handling in place',
   'Matches the design system, incl. loading, empty, error states and mobile layout',
 ];
 const golive: { t: string; d: string; tone: string; items: string[] }[] = [
-  { t: 'January', d: '~10 Jan 2027 · everything for bookings', tone: 'now', items: [
+  { t: 'January', d: '10 Jan 2027 · everything for bookings', tone: 'now', items: [
     'Bookings from Airbnb, Booking, website etc. via Lodgify; cancellations free the dates',
     'Owner Portal: login, calendar, quota, own-use and friends reservations with the contract rules, change / cancel with fee, account balance',
+    'Owner check-in in the portal; friends\' costs charged to the owner account until in-app payment',
     'Back Office: Today, stays, calendar, owners, settings, users, integrations, audit log',
     'Apartments tab: listing content per channel, sync to Lodgify',
     'Feratel connection (Picobello\'s API)',
@@ -120,21 +133,31 @@ const golive: { t: string; d: string; tone: string; items: string[] }[] = [
     'MCP server and "Ask me" chat (architecture ready now)',
   ] },
 ];
+const slips = [
+  'Regional feed (dataCycle, weather, AI)',
+  'M2 demo on staging → demo from localhost instead',
+  'Owner check-in → by hand in Deskline until P2',
+  'Back Office polish and the Today view → into W8',
+  'Account lockout → before M5 at the latest',
+  'Apartments push → "copy and confirm" only',
+  'Real Feratel adapter → M3 through the fallback, adapter finished before 28 Dec',
+  'Archipex trial → W8 (final import on 31 Dec stays fixed)',
+];
 const urg = ['', 'urgent', 'soon', 'later'];
 const urgLabel = ['', 'by mid-Nov', 'by early Dec', 'mid-Dec or later'];
 ---
-<Takeaway>Bookings go live on Sunday 10 January 2027, built in seven blocks that each end in a milestone Picobello can see working. The guest journey follows by 15 April, tested on real bookings before the first guests arrive around May.</Takeaway>
+<Takeaway>Bookings go live on Sunday 10 January 2027, built locally first and in waves that each end in something Picobello can see working; staging is online by the end of November. The guest journey follows by 15 April, tested on real bookings before the first guests arrive around May.</Takeaway>
 
 <div class="block">
-  <h3 class="block-title">Gantt · 6 Nov to 10 Jan, then Phase 1b</h3>
-  <Figure label="Gantt chart of the seven work blocks from 5 Nov 2026 to the bookings go-live on 10 Jan 2027, then Phase 1b to 15 Apr" minWidth={960}>
+  <h3 class="block-title">Gantt · waves from 5 Nov to 10 Jan, then Phase 1b</h3>
+  <Figure label="Gantt chart of the build waves from 5 Nov 2026 to the bookings go-live on 10 Jan 2027, then Phase 1b to 15 Apr" minWidth={960}>
     <Gantt label="Phase 1 timeline" />
   </Figure>
 </div>
 
 <div class="block">
   <h3 class="block-title">Regional content track (dataCycle) · in parallel</h3>
-  <p class="block-sub">From the dataCycle vision. Milestones: R1 10 Nov test access · R2 13 Dec feed works in staging with real data · R3 31 Jan regional content ready; guests see it from their arrival (~May). Agents / MCP: tool-registry discipline now, built after go-live.</p>
+  <p class="block-sub">From the dataCycle vision, run as lanes inside the waves. It never gates Phase 1a and is the first thing to move if a wave runs late. Agents / MCP: tool-registry discipline now (module actions), built after go-live.</p>
   <div class="table-wrap">
     <table class="data">
       <thead><tr><th>Weeks</th><th>Work</th></tr></thead>
@@ -178,23 +201,36 @@ const urgLabel = ['', 'by mid-Nov', 'by early Dec', 'mid-Dec or later'];
           <tbody>{deps.map(([a, b, u]) => <tr><td>{a}</td><td class="tnum nowrap">{b}</td><td><span class={`light l-${urg[u]}`}>{urgLabel[u]}</span></td></tr>)}</tbody>
         </table>
       </div>
-      <p class="note">Colour shows urgency by the date needed. The file does not record delivery status yet; track it after 5 Nov.</p>
+      <p class="note">Colour shows urgency by the date needed. A wave whose input is missing does not start; it moves, or starts on the fake path.</p>
     </div>
     <div>
       <h3 class="block-title">Definition of done · every task</h3>
       <ul class="dod">{dod.map((d) => <li><Icon name="check" size={16} />{d}</li>)}</ul>
       <h3 class="block-title after">After go-live · 11 Jan onwards</h3>
       <ul class="list">
-        <li><b>Hypercare, 2 weeks:</b> daily check of integrations, failed jobs and ledger balance; fast fixes.</li>
+        <li><b>Hypercare until 24 Jan:</b> daily check of integrations, failed jobs and ledger balance; fast fixes. Phase 1b starts with less capacity meanwhile.</li>
         <li><b>Phase 1b</b> (11 Jan to 15 Apr): the guest journey, tested on existing holiday apartments before the first guests (~May).</li>
         <li><b>Phase 2</b> (from April 2027): accounting settlement (statements, bank, Bexio, VAT, tourist-tax reconciliation, ZWG report), WhatsApp, cleaning (PicobelloAI), repairs + DocuSign, partner offers (ski pass, half board).</li>
       </ul>
+      <h3 class="block-title after">If a wave runs late, this moves first</h3>
+      <ol class="list">{slips.map((t) => <li>{t}</li>)}</ol>
     </div>
   </div>
 </div>
 
 <div class="block">
-  <h3 class="block-title">Week by week</h3>
+  <h3 class="block-title">How a wave runs</h3>
+  <p class="block-sub">Local first: API, worker and Back Office run on localhost against a local Postgres; vendor webhooks reach it through a tunnel. One dedicated wave (WD) puts staging on the chosen host.</p>
+  <ol class="list">
+    <li><b>Prerequisites:</b> decisions recorded as ADRs, keys stored, Picobello input committed. A wave with open items does not start.</li>
+    <li><b>Build:</b> shared contracts first, then 3-6 parallel lanes on separate files, one integrator, 2-3 reviewers, one fix round.</li>
+    <li><b>Gates:</b> every CI and security check green, plus the wave's acceptance tests.</li>
+    <li><b>Merge:</b> pull request with CODEOWNERS review. At most one new outside system and three new-table modules per wave.</li>
+  </ol>
+</div>
+
+<div class="block">
+  <h3 class="block-title">Wave by wave</h3>
   {weeks.map((w) => (
     <details class="disclose wk">
       <summary><span class="wk-w">{w.w}</span><span class="count">{w.d}</span>{w.m && <span class="wk-m mono">→ {w.m}</span>}<Icon name="chevron-right" size={18} class="chev" /></summary>

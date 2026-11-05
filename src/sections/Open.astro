@@ -1,24 +1,32 @@
 ---
-// Appendix: every question still open (file 12 part F) and every
-// [Open] and [Verify] item.
+// Appendix: decisions from the review (file 12 part F), inputs still to
+// deliver (file 15) and every [Verify] item.
 import Pill from '../components/Pill.astro';
 
-const decide: [string, string, string, string?][] = [
-  ['Database host: Cloud SQL (one cloud, failover) or Supabase Zurich (lower cost, faster setup)? Until decided, development runs locally.', 'Why this over that', '#d8', 'Cloud SQL'],
-  ['Refund rules for direct bookings (website) and shortened stays', 'Business logic', '#logic'],
-  ['Owner cancellation fee: about CHF 50 if less than 90 days before, to confirm', 'Business logic', '#logic'],
-  ['ID document retention: about 30 days, then deleted; to confirm', 'Database', '#database', '30 days, store as little as possible'],
-  ['Badge dispenser: guests enter a code; exact process, what happens if it fails, night support', 'Integrations', '#integrations'],
-  ['Rounding to 5 Rappen where shown as cash amounts', 'Business logic', '#logic', 'yes'],
+const decided: [string, string, string][] = [
+  ['Database', 'Supabase (Zurich), plain Postgres only', '#d8'],
+  ['Rounding', 'to 5 Rappen at charge level, as a setting', '#logic'],
+  ['Co-owned units', 'costs split by share, last Rappen by largest remainder', '#money'],
+  ['High-season weeks', 'max 3 weeks, counted per high-season period', '#logic'],
+  ['Owner check-in', 'in the Owner Portal from Phase 1a', '#scope'],
+  ['"Friends pay" in Phase 1a', 'charged to the owner account until in-app payment (Phase 1b)', '#scope'],
+  ['Settings date', 'fees and cancellation by booking date; high season and tourist tax by stay date', '#logic'],
+  ['Owner / friends cancellation', '< 90 days before arrival: CHF 50; paid costs go back to the payer minus CHF 50', '#logic'],
+  ['Shortened stays', 'on site: no refund; in advance: handled by the booking platform (Airbnb, Booking.com, Lodgify for website bookings)', '#logic'],
+  ['ID numbers', 'kept 2 years from arrival, then deleted', '#database'],
+  ['Night help', 'emergency key box; the code is shown in the app to checked-in guests during their stay', '#integrations'],
+  ['Domains', 'admin. / owner. / guest. / api.picobello.ch', '#infrastructure'],
+  ['Weather and AI', 'MeteoSwiss open data; Anthropic Claude (Haiku)', '#regional'],
+  ['Insights export', 'monthly CSV per tourism office', '#regional'],
+  ['MCP and "Ask me" chat', 'after go-live, for staff first', '#regional'],
+  ['Outside security review', 'not in Phase 1; possible with the Phase 2 budget', '#selfcheck'],
 ];
 
-const open: [string, string, string][] = [
-  ['High-season weeks rule: per period (Christmas, Feb/Mar, summer) or per winter/summer?', 'Business logic', '#logic'],
-  ['Domains (picobello.ch subdomains)', 'Infrastructure', '#infrastructure'],
-  ['AI provider / model and weather source', 'Regional content', '#regional'],
-  ['Outside expert security review before Phase 2 (optional, starts from the self-check): budget', 'Security self-check', '#selfcheck'],
-  ['dataCycle: image usage rights in writing from both tourism offices; test access by 10 Nov', 'Regional content', '#regional'],
-  ['Insights export for the tourism offices: format and frequency', 'Regional content', '#regional'],
+const inputs: [string, string, string][] = [
+  ['Tourist-tax mode for every owner (yearly flat or per stay)', '9 Nov', '#database'],
+  ['Worked contract examples for the own-use rules', '20 Nov', '#logic'],
+  ['Image usage rights in writing from both tourism offices', '14 Dec', '#regional'],
+  ['Emergency phone number and the key-box code per house', '1 Mar', '#integrations'],
 ];
 
 const verify: { file: string; href: string; items: string[] }[] = [
@@ -41,31 +49,33 @@ const verify: { file: string; href: string; items: string[] }[] = [
     'AI provider: region, retention, no training on our data',
     'MCP remote-server auth (OAuth) in the current spec',
   ] },
-  { file: 'Comparisons', href: '#d8', items: ['Supabase Zurich region', 'Neon data location (EU, not CH)', 'Supabase high-availability plan', 'Supabase Storage data location'] },
+  { file: 'Comparisons', href: '#d8', items: ['Supabase Zurich region', 'Neon data location (EU, not CH)', 'Supabase backup location (Zurich)', 'Supabase session pooler / IPv4 add-on for the pg-boss connection'] },
+  { file: 'Integrations · SALTO dispenser', href: '#integrations', items: ['Exact dispenser process with Immer AG'] },
 ];
 const verifyCount = verify.reduce((n, g) => n + g.items.length, 0);
 ---
 <div class="block">
   <div class="counts">
-    <div><span class="v tnum">{decide.length}</span><span class="l">questions still open</span></div>
-    <div><span class="v tnum">{open.length}</span><span class="l">further open points</span></div>
+    <div><span class="v tnum">0</span><span class="l">questions still open</span></div>
+    <div><span class="v tnum">{inputs.length}</span><span class="l">inputs still to deliver</span></div>
     <div><span class="v tnum">{verifyCount}</span><span class="l">items to verify with vendors</span></div>
   </div>
 </div>
 
 <div class="block">
-  <h3 class="block-title">Questions still open</h3>
-  <ol class="qs">
-    {decide.map(([q, src, href, prop], i) => (
-      <li><span class="i tnum">{i + 1}</span><div><p>{q}</p>{prop && <p class="prop">Proposed: {prop}</p>}<a href={href} class="src">{src}</a></div><span class="ans" aria-hidden="true"></span></li>
-    ))}
-  </ol>
-  <p class="note">Each answer is built into the architecture and the question is removed from this list.</p>
+  <h3 class="block-title">Decided in the review</h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Topic</th><th>Decision</th></tr></thead>
+      <tbody>{decided.map(([t, d, href]) => <tr><td><a href={href}>{t}</a></td><td>{d}</td></tr>)}</tbody>
+    </table>
+  </div>
 </div>
 
 <div class="block">
-  <h3 class="block-title">Further open points <Pill kind="open" /></h3>
-  <ul class="items">{open.map(([t, src, href]) => <li><p>{t}</p><a href={href} class="src">{src}</a></li>)}</ul>
+  <h3 class="block-title">Inputs still to deliver</h3>
+  <p class="block-sub">Data from Picobello and the tourism offices, not decisions. Each is needed by the date shown.</p>
+  <ul class="items">{inputs.map(([t, d, href]) => <li><p>{t} · <b class="tnum">{d}</b></p><a href={href} class="src">details</a></li>)}</ul>
 </div>
 
 <div class="block">

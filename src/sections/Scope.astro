@@ -43,18 +43,18 @@ const stories: { group: string; items: [string, string][] }[] = [
     ['G-3', 'I see pre-arrival info: address with a Google Maps link, parking, check-in from 16:00, Wi-Fi, house rules.'],
     ['G-4', 'I do the online check-in once: my data is prefilled from the booking, I add companions with birth dates, arrival time, and optional marketing consent (separate checkbox).'],
     ['G-5', 'After check-in I get one digital guest card per person (Simmental Card: free bus/train, discounts).'],
-    ['G-6', 'After check-in my badge access is ready (arrival 16:00 to departure 10:00); I collect the badge at the SALTO dispenser.'],
+    ['G-6', 'After check-in my badge access is ready (arrival 16:00 to departure 10:00); I collect the badge at the SALTO dispenser. Support is reachable 07:00-22:00; at night, if the badge or the dispenser fails, I use the emergency key box outside (the code is shown in the app while I am checked in) or call the emergency number.'],
     ['G-7', 'If I report more people than booked, check-in still works and I get a payment link for the difference (direct bookings).'],
     ['G-8', 'I can extend my stay in the app. If my apartment is taken, the free one that has been empty the longest is offered. I see where and the price, confirm, pay, done. No approval. If I move, I can enter the new apartment at 10:00, when the old one ends.'],
     ['G-8b', 'I can edit the guest details myself. Extra people are checked against the apartment maximum and added once I pay for them.'],
-    ['G-9', 'I can shorten or change my dates if availability fits. No approval.'],
+    ['G-9', 'I can shorten or change my dates if availability fits. No approval. Already on site and leaving early: no refund (shown before I confirm). Shortened in advance: the platform where I booked handles any refund (Airbnb, Booking.com, or Lodgify for website bookings).'],
     ['G-10', 'I can request a late check-in or late check-out; Picobello answers in the app (needs approval because of cleaning).'],
     ['G-11', 'My link stops working after departure (data protection).'],
     ['G-12', 'On the home screen I see "Today · picked for you": regional offers chosen for my situation (weather, day of stay, family / couple), in my language. From dataCycle, live 15–31 Jan 2027.'],
   ] },
   { group: 'Friend of owner', items: [
     ['F-1', 'I get the same personal link and Guest App as a guest.'],
-    ['F-2', 'If the owner chose "friends pay": the check-in shows the costs (cleaning, laundry, tourist tax) and I must pay by card/TWINT before the check-in is completed.'],
+    ['F-2', 'If the owner chose "friends pay": the check-in shows the costs (cleaning, laundry, tourist tax) and I must pay by card/TWINT before the check-in is completed. Paying in the app comes with Phase 1b; until then these costs go to the owner\'s account.'],
     ['F-3', 'If the owner chose "I cover it": I just do the check-in.'],
     ['F-4', 'After check-in: guest card and badge like a guest.'],
   ] },
@@ -63,9 +63,9 @@ const stories: { group: string; items: [string, string][] }[] = [
     ['O-2', 'I see the calendar of my unit: guests, own use, friends, free.'],
     ['O-3', 'I see my own-use quota: days used / 120 per year, high season days used / 40, weeks per high season used / 3.'],
     ['O-4', 'I reserve own use for myself/family: the app checks the rules instantly and explains any rejection; a confirmed reservation blocks the apartment in Lodgify within 5 minutes.'],
-    ['O-5', 'If my tourist-tax mode is "per stay", I do the check-in in the portal and receive the guest card there; its cost is charged to my account. If my mode is "yearly flat", nothing else happens.'],
-    ['O-6', 'I book for friends: I enter their name and contact and choose "I cover the costs" or "friends pay".'],
-    ['O-7', 'I can cancel or change my reservations (CHF 50 fee if less than 90 days before arrival).'],
+    ['O-5', 'If my tourist-tax mode is "per stay", I do the check-in in the portal (link by email 3 days before arrival) and receive the guest card there, under "More"; owners never use the Guest App (live from January). Its cost is charged to my account. If my mode is "yearly flat", nothing else happens.'],
+    ['O-6', 'I book for friends: I enter their name and contact and choose "I cover the costs" or "friends pay". I copy the Guest App link for them and share it; a new link switches the old one off.'],
+    ['O-7', 'I can cancel or change my reservations (CHF 50 fee if less than 90 days before arrival). Costs already paid for friends (tourist tax, cleaning, linen) go back to whoever paid them, minus the CHF 50.'],
     ['O-8', 'I see my running account balance (charges and, later, income).'],
   ] },
   { group: 'Back office', items: [
@@ -224,7 +224,7 @@ const months = [
         <li>High season: week of 24.12 to week of 1.1; week of 1.2 to week of 15.3; week of 1.7 to week of 15.8</li>
         <li>High season only in full weeks, Saturday to Saturday</li>
         <li>Short notice (only if free, no guarantee): min 4 nights. Every night = 1 day of quota</li>
-        <li>Reserved ≥ 366 days ahead = guaranteed. Cancellation &lt; 90 days before: CHF 50</li>
+        <li>Reserved ≥ 366 days ahead = guaranteed. Cancellation &lt; 90 days before: CHF 50; costs already paid go back to the payer minus the CHF 50</li>
         <li>Check-in from 16:00, check-out until 10:00</li>
       </ul>
     </article>

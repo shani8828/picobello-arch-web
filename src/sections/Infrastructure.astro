@@ -13,7 +13,7 @@ const setup: [string, string, string][] = [
   ['API', 'Cloud Run "api"', 'min 1 instance (no cold start), max 10, 1 vCPU, 512 MB'],
   ['Worker', 'Cloud Run "worker"', 'min 1, max 3, always-on CPU'],
   ['Load balancer', 'Global external Application LB + serverless NEG', 'api.picobello.ch, managed TLS, Cloud Armor (WAF, rate limits)'],
-  ['Database', 'Cloud SQL PostgreSQL 16', '2 vCPU / 8 GB, 20 GB SSD auto-grow, HA (regional) from go-live, private IP'],
+  ['Database', 'Supabase PostgreSQL 16 (Zurich)', 'small compute, grows with need; TLS, session pooler, our own roles; point-in-time restore add-on; only the backend\'s fixed IP may connect'],
   ['Files', 'Cloud Storage (Zurich)', 'buckets: listing-photos, documents (private), backups'],
   ['Secrets', 'Secret Manager', 'per environment'],
   ['Cron', 'Cloud Scheduler (Zurich)', 'calls /internal/cron/*'],
@@ -33,7 +33,7 @@ const stages = [
 ];
 
 const envs = [
-  { n: 'local', d: 'docker compose: Postgres 16 + fake adapters; pnpm dev with hot reload; seed = prototype demo data (two houses, 22 units)' },
+  { n: 'local', d: 'local first: Postgres 16 on the developer machine (Homebrew on Mac, Docker on Windows), fake adapters, webhooks through a cloudflared tunnel; pnpm dev with hot reload; seed = two houses, 22 units, demo owners; images only built in CI' },
   { n: 'preview', d: 'each pull request: frontend preview URL on Cloudflare Pages (fake API mode)' },
   { n: 'staging', d: 'full copy of production on GCP, smaller, no HA; vendor test keys; auto-deploy on every merge to main' },
   { n: 'production', d: 'real keys, real data; deploy only by release tag + manual approval' },
@@ -68,7 +68,7 @@ const checklist1b = [
 ];
 
 const costs: [string, string][] = [
-  ['Cloud SQL (HA, 2 vCPU / 8 GB)', '150–200'],
+  ['Supabase Pro + compute + point-in-time restore', '60–150'],
   ['Cloud Run api + worker (min 1)', '40–80'],
   ['Load balancer + Cloud Armor', '25–40'],
   ['Storage, logging, scheduler', '10–20'],
@@ -82,13 +82,13 @@ const costs: [string, string][] = [
 
 <div class="block">
   <h3 class="block-title">Deployment</h3>
-  <Figure label="Deployment: users reach Cloudflare for app code and the Google Cloud load balancer for the API; inside Zurich, Cloud Run api and worker, Cloud SQL, storage, scheduler and secrets" minWidth={960}>
+  <Figure label="Deployment: users reach Cloudflare for app code and the Google Cloud load balancer for the API; inside Google Cloud Zurich, Cloud Run api and worker, storage, scheduler and secrets; the database on Supabase in Zurich" minWidth={960}>
     <svg viewBox="0 0 1200 560" xmlns="http://www.w3.org/2000/svg">
       <Box x={20} y={40} w={270} h={90} title="Cloudflare CDN + Pages" sub={['3 frontends, static', 'admin / owner / guest']} icon="cloud" variant="ext" />
       <Box x={20} y={240} w={170} h={90} title="Users" sub={['guests, owners,', 'staff']} icon="users" variant="ext" />
       <Arrow d="M95 240 V130" label="app code" lx={105} ly={190} anchor="start" />
 
-      <rect x="320" y="20" width="700" height="520" rx="16" class="grp" />
+      <rect x="320" y="20" width="700" height="410" rx="16" class="grp" />
       <text x="342" y="50" class="grp-label">Google Cloud · Zurich (europe-west6)</text>
       <Box x={340} y={70} w={196} h={60} title="Cloud Scheduler" icon="clock" />
       <Box x={552} y={70} w={150} h={60} title="Storage" icon="hard-drive" />
@@ -98,13 +98,15 @@ const costs: [string, string][] = [
       <Box x={345} y={240} w={195} h={90} title="Load balancer" sub={['+ Cloud Armor', 'api.picobello.ch']} icon="shield" variant="app" />
       <Box x={580} y={240} w={180} h={90} title="Cloud Run: api" sub={['min 1 · max 10', '1 vCPU, 512 MB']} icon="server" variant="app" />
       <Box x={800} y={240} w={212} h={90} title="Cloud Run: worker" sub={['min 1 · max 3', 'always-on CPU']} icon="workflow" variant="app" />
-      <Box x={345} y={410} w={150} h={70} title="Logging" sub="+ Monitoring" icon="activity" />
-      <Box x={600} y={410} w={260} h={90} title="Cloud SQL Postgres 16" sub={['HA (regional) · private IP', '2 vCPU / 8 GB']} icon="database" />
+      <Box x={345} y={344} w={150} h={66} title="Logging" sub="+ Monitoring" icon="activity" />
+      <rect x="580" y="440" width="300" height="108" rx="16" class="grp" />
+      <text x="600" y="462" class="grp-label">Supabase · Zurich</text>
+      <Box x={600} y={472} w={260} h={66} title="Postgres 16" sub={['TLS · session pooler · PITR']} icon="database" />
 
       <Arrow d="M190 285 H345" label="HTTPS" lx={268} ly={275} />
       <Arrow d="M540 285 H580" />
-      <Arrow d="M670 330 V410" />
-      <Arrow d="M840 330 V410" />
+      <Arrow d="M670 330 V472" />
+      <Arrow d="M840 330 V472" />
       <Arrow d="M640 240 V130" label="signed URLs" lx={632} ly={190} anchor="end" />
       <Arrow d="M440 130 V240" label="/internal/cron" lx={432} ly={190} anchor="end" />
       <Arrow d="M770 130 V200 H700 V240" dashed={true} muted={true} />
@@ -112,7 +114,7 @@ const costs: [string, string][] = [
 
       <Box x={1050} y={240} w={140} h={150} title="Outside" sub={['Lodgify', 'Stripe', 'Feratel', 'SALTO', 'Postmark']} variant="ext" />
       <Arrow d="M1012 285 H1050" />
-      <Arrow d="M1120 390 V522 H520 V330" label="webhooks" lx={800} ly={516} />
+      <Arrow d="M1120 390 V420 H520 V330" label="webhooks" lx={960} ly={414} />
     </svg>
   </Figure>
 </div>
@@ -158,9 +160,9 @@ const costs: [string, string][] = [
         <div><span class="tv">99.9<small>%</small></span><span class="tl">monthly target</span></div>
       </div>
       <ul class="list compact">
-        <li>Cloud SQL daily backups kept 30 days + point-in-time recovery 7 days.</li>
+        <li>Supabase daily backups + point-in-time restore add-on.</li>
         <li>Monthly pg_dump to a locked bucket, kept 10 years (accounting records).</li>
-        <li>Restore test every quarter on staging. HA Cloud SQL + Cloud Run across zones in Zurich.</li>
+        <li>Restore test every quarter on staging. Cloud Run across zones in Zurich; Supabase Pro has no automatic database failover, so an outage is solved by Supabase or a restore (RTO 4 h).</li>
         <li>Runbooks: integration down, failed payment applied, restore database, rotate a key, lock a guest link.</li>
       </ul>
     </div>
@@ -182,7 +184,7 @@ const costs: [string, string][] = [
           <thead><tr><th>Item</th><th class="num">CHF / month</th></tr></thead>
           <tbody>
             {costs.map(([a, b]) => <tr><td>{a}</td><td class="num">{b}</td></tr>)}
-            <tr class="total"><td>Total</td><td class="num">~ 300–460</td></tr>
+            <tr class="total"><td>Total</td><td class="num">~ 210–410</td></tr>
           </tbody>
         </table>
       </div>
@@ -201,7 +203,7 @@ const costs: [string, string][] = [
           <tbody>{setup.map(([a, b, c]) => <tr><td><strong>{a}</strong></td><td>{b}</td><td class="muted">{c}</td></tr>)}</tbody>
         </table>
       </div>
-      <p class="note"><Pill kind="open" text="Open" /> Confirm picobello.ch subdomains with Picobello. Alternatives considered: AWS Zurich, Azure Switzerland North, Infomaniak / Exoscale, Cloudflare-only (see <a href="#d9">Why this over that</a>).</p>
+      <p class="note">Domains: admin. / owner. / guest. / api.picobello.ch; staging on the run.app and pages.dev addresses until DNS is set. Alternatives considered: AWS Zurich, Azure Switzerland North, Infomaniak / Exoscale, Cloudflare-only (see <a href="#d9">Why this over that</a>).</p>
     </div>
   </details>
 </div>

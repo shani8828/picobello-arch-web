@@ -40,7 +40,7 @@ const guestItems = [
     chain: [{ title: '1 Main guest', sub: 'prefilled' }, { title: '2 Companions', sub: 'name, birth date' }, { title: '3 Arrival time', sub: '+ parking' },
             { title: '4 Consent', sub: 'optional, separate' }, { title: '5 Costs + pay', sub: 'Stripe' }, { title: '6 Done', sub: 'card + access' }], optional: [4] },
   { title: 'Guest cards', sub: 'one per person, as Feratel sends it' },
-  { title: 'Access', sub: 'badge status, dispenser, help' },
+  { title: 'Access', sub: 'badge, dispenser, night key box' },
   { title: 'Apartment', sub: 'Wi-Fi, rules · works offline' },
   { title: 'My booking', sub: 'change the stay',
     chain: [{ title: 'Extend stay', sub: 'same or other flat, pay' }, { title: 'Edit guests', sub: 'extra people pay' }, { title: 'Change dates', sub: 'pay or refund' }, { title: 'Late in / out', sub: 'pending → answer' }] },
@@ -52,7 +52,7 @@ const ownerItems = [
     chain: [{ title: '1 Pick dates', sub: 'on calendar' }, { title: '2 Type', sub: 'family or friends' }, { title: '3 Persons', sub: 'friends: who pays?' },
             { title: '4 Rule check', sub: '+ cost preview' }, { title: '5 Confirm', sub: 'or needs Picobello' }] },
   { title: 'My reservations', sub: 'change, cancel (fee preview)' },
-  { title: 'Owner check-in', sub: 'only if tax mode = per stay' },
+  { title: 'Owner check-in', sub: 'only if tax mode = per stay; guest cards under More' },
   { title: 'Account', sub: 'balance, charges' },
   { title: 'Profile', sub: 'contact, language, tax mode' },
 ];
@@ -65,7 +65,7 @@ const boItems = [
   { title: 'Owners', sub: 'units, tax mode, balance', chain: [{ title: 'Owner detail', sub: 'units, reservations' }] },
   { title: 'Money', sub: 'ledger, balances (read-only)' },
   { title: 'Settings', sub: 'valid_from + scope, fees' },
-  { title: 'Integrations', sub: 'status, inbox/outbox, retry' },
+  { title: 'Integrations', sub: 'status, events and jobs, retry' },
   { title: 'Users · Audit · Import', sub: 'roles · search · Archipex' },
 ];
 const homeStates = ['invited', 'check-in open', 'payment needed', 'checked in', 'card ready', 'access ready', 'in stay', 'ended (link locked)'];
@@ -120,7 +120,7 @@ const homeStates = ['invited', 'check-in open', 'payment needed', 'checked in', 
       </figure>
     ))}
   </div>
-  <p class="note-line"><Pill kind="open" /> Subdomains of picobello.ch still to be confirmed with Picobello.</p>
+  <p class="note-line">Domains: admin.picobello.ch, owner.picobello.ch, guest.picobello.ch; the API on api.picobello.ch.</p>
   <ul class="list why-three">
     <li>Very different users and devices.</li>
     <li>The Guest App must be tiny and fast on mobile data.</li>
@@ -159,7 +159,7 @@ const homeStates = ['invited', 'check-in open', 'payment needed', 'checked in', 
 </div>
 
 <div class="block">
-  <h3 class="block-title">Tech stack · decided</h3>
+  <h3 class="block-title">Tech stack</h3>
   <ul class="stack-strip">{strip.map((s) => <li>{s}</li>)}</ul>
   <details class="disclose">
     <summary>Choice and reason per purpose<span class="count">16 rows</span><Icon name="chevron-right" size={18} class="chev" /></summary>

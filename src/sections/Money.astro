@@ -40,6 +40,9 @@ const examples: { t: string; d: string; type: string; rows: [string, string, str
     note: 'Yearly-flat owner: only cleaning + laundry (250.00).' },
   { t: 'D', d: 'Guest extension, 2 nights, direct booking', type: 'extension',
     rows: [['stripe_clearing', '+380.00'], ['revenue_lodging:A3', '−360.00', 'VAT 3.8 %'], ['tourist_tax_payable', '−20.00']] },
+  { t: 'E2', d: 'Friends cancel 30 days before arrival (paid 390.00)', type: 'friends_cancellation',
+    rows: [['stripe_clearing', '−340.00', 'refund 390.00 − 50.00'], ['revenue_cleaning', '+180.00'], ['revenue_laundry', '+105.00'], ['tourist_tax_payable', '+105.00'], ['revenue_cancellation_fee', '−50.00']],
+    note: 'If the owner covered the costs (example B), the same reversal goes to owner_balance and the CHF 50 fee stays on it.' },
   { t: 'E', d: 'Refund of a wrong payment', type: 'stripe_refund',
     rows: [], note: 'A new transaction with the opposite entries, reverses_transaction_id = original. The original stays untouched.' },
 ];
@@ -68,7 +71,7 @@ const readers: [string, string, string][] = [
         <text x="220" y="150" text-anchor="middle" class="pot-name">owner_rental</text>
         <text x="220" y="174" text-anchor="middle" class="pot-sub">owners' rental money</text>
         <rect x="120" y="200" width="200" height="34" rx="8" class="acct" /><text x="132" y="222" class="acct-t">unit_management:&lt;unit&gt;</text>
-        <rect x="120" y="242" width="200" height="34" rx="8" class="acct" /><text x="132" y="264" class="acct-t">owner_balance:&lt;owner&gt;</text>
+        <rect x="120" y="242" width="200" height="34" rx="8" class="acct" /><text x="132" y="264" class="acct-t">owner_balance:&lt;owner&gt;:&lt;house&gt;</text>
         <text x="220" y="306" text-anchor="middle" class="pot-sub">Phase 1 accounts</text>
       </g>
       <g class="pot pot-stweg">
@@ -139,7 +142,7 @@ const readers: [string, string, string][] = [
 </div>
 
 <div class="block">
-  <h3 class="block-title">Principles · decided</h3>
+  <h3 class="block-title">Principles</h3>
   <ol class="principles">
     {principles.map(([n, t, d]) => <li><span class="pn mono">{n}</span><div><b>{t}</b><span>{d}</span></div></li>)}
   </ol>
@@ -168,12 +171,12 @@ const readers: [string, string, string][] = [
       <h3 class="block-title">Accounts · Phase 1</h3>
       <dl class="accts">
         <div><dt>Per unit</dt><dd><code>unit_management:&lt;unit&gt;</code> the unit's management account ("Bewirtschaftungskonto") · <code>owner_balance:&lt;owner&gt;</code> what Picobello owes the owner (+) or the owner owes (−)</dd></div>
-        <div><dt>Picobello-wide</dt><dd><code>stripe_clearing</code> · <code>platform_clearing</code> · <code>tourist_tax_payable</code> · <code>revenue_cleaning</code> · <code>revenue_laundry</code> · <code>revenue_lodging:&lt;unit&gt;</code> · <code>refunds_payable</code></dd></div>
+        <div><dt>Picobello-wide</dt><dd><code>stripe_clearing</code> · <code>platform_clearing</code> · <code>tourist_tax_payable</code> · <code>revenue_cleaning</code> · <code>revenue_laundry</code> · <code>revenue_cancellation_fee</code> · <code>revenue_lodging:&lt;unit&gt;</code> · <code>refunds_payable</code></dd></div>
         <div><dt>Phase 2 adds</dt><dd><code>bank:&lt;account&gt;</code> · <code>commission_picobello</code> · <code>base_fee</code> · <code>contractor_payable</code> · <code>vat_payable</code> · stweg accounts</dd></div>
       </dl>
       <h3 class="block-title ob">Owner balance</h3>
       <ul class="list">
-        <li>balance(owner, date) = sum of entries on <code>owner_balance:&lt;owner&gt;</code></li>
+        <li>balance(owner, date) = sum of entries on the owner's <code>owner_balance</code> accounts (one per house). Co-owned units: costs split by share, the last Rappen by largest remainder.</li>
         <li>Phase 1 shows charges only.</li>
         <li>Phase 2 half-year statement: owner share 81.5 % of net lodging revenue, commission 18.5 %, base fee CHF 800, charges. Positive → payout within 60 days; negative → invoice.</li>
       </ul>

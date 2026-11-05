@@ -11,10 +11,10 @@ const adrs: { n: string; t: string; d: string; alt?: string; c: string; ref?: nu
   { n: '001', t: 'Modular monolith', d: 'One backend codebase, one DB, modules with strict boundaries, API + worker processes.', alt: 'microservices (too much overhead), plain monolith (hard to extend)', c: 'Simple deploys, one transaction for money; modules can be split out later.', ref: [1] },
   { n: '002', t: 'TypeScript end-to-end', d: 'TypeScript for frontends, backend and shared domain.', alt: 'Python/Django, Java/Kotlin, PHP/Laravel', c: 'One language, shared Zod schemas and rule engine, prototype reusable; huge talent pool.', ref: [2] },
   { n: '003', t: 'PostgreSQL 16', d: 'The only database: data + job queue.', alt: 'MySQL, MongoDB, Cloudflare D1', c: 'ACID, exclusion constraints for overlapping stays, JSONB, open source and portable.', ref: [7] },
-  { n: '004', t: 'GCP Zurich + Cloudflare', d: 'Cloud Run + Cloud SQL + Cloud Storage in europe-west6; frontends on Cloudflare.', alt: 'AWS eu-central-2, Azure Switzerland North, Infomaniak / Exoscale, Cloudflare-only', c: 'Swiss data location, no servers, Docker = portable. Two providers to manage.', ref: [8, 9, 10], open: 'Database host still open: Supabase (Zurich) as plain Postgres is the documented alternative' },
+  { n: '004', t: 'GCP Zurich + Cloudflare', d: 'Cloud Run + Cloud Storage in europe-west6; database on Supabase (Zurich), plain Postgres only; frontends on Cloudflare.', alt: 'AWS eu-central-2, Azure Switzerland North, Infomaniak / Exoscale, Cloudflare-only', c: 'Swiss data location, no servers, Docker = portable. Three providers (GCP, Cloudflare, Supabase); database over TLS instead of a private network.', ref: [8, 9, 10] },
   { n: '005', t: 'Hono + OpenAPI + Zod', d: 'REST/JSON with an OpenAPI contract generated from Zod.', alt: 'NestJS, Express, tRPC, GraphQL', c: 'Typed client for our apps, documented API for future partners.', ref: [5, 6] },
   { n: '006', t: 'Drizzle ORM', d: 'Drizzle with SQL migrations.', alt: 'Prisma, Kysely, raw SQL', c: 'Typed queries close to SQL, reviewable migrations.', ref: [12] },
-  { n: '007', t: 'pg-boss + outbox', d: 'Job queue in the same database.', alt: 'Pub/Sub or Cloud Tasks, Redis/BullMQ', c: 'Data change and job saved atomically; no extra infrastructure. Revisit above ~100 jobs/s.', ref: [13] },
+  { n: '007', t: 'pg-boss + outbox', d: 'Job queue in the same database; pg-boss jobs written in the same transaction are the outbox (no separate outbox table).', alt: 'Pub/Sub or Cloud Tasks, Redis/BullMQ', c: 'Data change and job saved atomically; no extra infrastructure. Revisit above ~100 jobs/s.', ref: [13] },
   { n: '008', t: 'Ports & adapters', d: 'Interface + real + fake implementation per outside system.', c: 'Build before keys arrive; tests without vendors; a vendor swap touches one adapter.', ref: [19] },
   { n: '009', t: 'Double-entry ledger from Phase 1', d: 'Record all money events from the first live booking.', c: 'April features only read data; corrections via reversals; full audit.', ref: [20] },
   { n: '010', t: 'Settings as scoped, dated data', d: 'settings_sets with scope (global / house / unit) and valid_from.', c: 'Per house / unit prices later = new rows, no code change.' },
@@ -23,6 +23,11 @@ const adrs: { n: string; t: string; d: string; alt?: string; c: string; ref?: nu
   { n: '013', t: 'Better Auth + stay tokens', d: 'No passwords for guests and owners; staff with 2FA.', alt: 'Auth0 / Clerk, Firebase Auth', c: 'User data stays in our Swiss DB; no per-user fees.', ref: [14] },
   { n: '014', t: 'Stripe Embedded Checkout', d: 'Stripe-hosted payment form embedded in the Guest App.', c: 'TWINT, Apple / Google Pay, cards; minimal PCI scope.', ref: [15] },
   { n: '015', t: 'dataCycle into our cache', d: 'Worker syncs dataCycle read-only into regional_items; the Guest App reads only our API. Filter in code, AI ranking, fallback without AI.', alt: 'live calls from the app, copying content by hand', c: 'Fast feed, works during outages, one place for translations and insights; data ownership stays with the tourism offices.', ref: [22, 23] },
+  { n: '017', t: 'Owners only in the Owner Portal', d: 'Owner check-in, owner guest cards and owner reservations live in the Owner Portal; owners never use the Guest App. Friends get a Guest App link the owner copies and shares.', c: 'One place for owners; /owner/* endpoints with their own lean responses.' },
+  { n: '018', t: 'Migrations forward only', d: 'No down migrations; expand → migrate → contract; applied migrations are never changed.', c: 'Rollback = previous Cloud Run revision; data errors via a point-in-time clone.' },
+  { n: '019', t: 'Module actions', d: 'Every action = name, input (Zod), permission, run(ctx, input); ctx carries the transaction and enqueue; a rule rejection is a 422 with reasons.', c: 'The tool registry exists from the first module; validation and permission never live only in HTTP.' },
+  { n: '020', t: 'Async conventions', d: 'Retry curve 30 s → 6 h, a dead-letter queue per queue, completed jobs kept 14 days and failed 30; Idempotency-Key per caller + method + path for 24 h; rate-limit counters in Postgres, Cloud Armor in production.', c: 'Every integration handler builds on the same rules.' },
+  { n: '021', t: 'Local first, one first-deploy wave', d: 'Build and demo on localhost until staging exists; staging on the target host in one dedicated wave (23-27 Nov).', c: 'The database host is decided on evidence (~20 Nov); first-deploy problems are found in one place before December.' },
   { n: '016', t: 'One set of actions (MCP-ready)', d: 'Every action a named service function with a Zod schema in a tool registry; REST for apps and MCP for agents are two doors on it. Agents act as the person; writes need human confirmation.', alt: 'separate AI backend with own DB access, no agent layer now', c: 'Almost no extra Phase 1 cost; MCP, chat and voice plug in later without new business rules.', ref: [24] },
 ];
 
@@ -71,9 +76,9 @@ const quality: [string, string, string][] = [
 ];
 
 const milestones: [string, string, string][] = [
-  ['M1', '15 Nov', 'staging online, login works, units visible'],
-  ['M2', '29 Nov', 'real Lodgify bookings appear; owner can reserve'],
-  ['M3', '13 Dec', 'every booking and owner charge in the ledger; Feratel test registration'],
+  ['M1', '15 Nov', 'on localhost: login with 2FA works, both houses and 22 units visible'],
+  ['M2', '29 Nov', 'real Lodgify bookings appear; owner can reserve; staging online'],
+  ['M3', '13 Dec', 'every booking and owner charge in the ledger; Feratel test registration (or the agreed fallback)'],
   ['M4', '20 Dec', 'Apartments tab, Archipex trial import, production ready'],
   ['M5', '5 Jan', 'dress rehearsal (bookings) passed, security self-check signed off'],
   ['M6', '10 Jan', 'Phase 1a live: bookings'],
@@ -87,9 +92,10 @@ const risks: [string, string, boolean?][] = [
   ['Extension paid outside Airbnb/Booking (platform payment rules)', 'Picobello\'s decision; extra nights kept as a separate segment'],
   ['Two guests buy the same night', 'Night holds + live re-check'],
   ['Money data lost or inconsistent', 'Ledger, raw events, nightly reconciliation, backups'],
-  ['Personal data breach', 'Swiss hosting, least privilege, 2FA, encryption, retention job'],
-  ['Tight timeline over the holidays', 'Clear milestones, scope fixed at 5 Nov, buffer 21 Dec-5 Jan'],
-  ['Team capacity (one developer)', 'Fixed scope, fake adapters, buffer 21 Dec-5 Jan; Phase 2 after go-live'],
+  ['Personal data breach', 'Swiss hosting, least privilege, 2FA, encryption, database reachable only from the backend, retention job'],
+  ['Tight timeline over the holidays', 'All build work merged by 23 Dec; production applied by 16 Dec; the holiday window is for production checks only'],
+  ['First deploy surfaces new problems', 'One dedicated first-deploy wave (23-27 Nov), at the latest 30 Nov'],
+  ['Team capacity (one developer)', 'Fixed scope, fake adapters, scripted build waves with reviews; Phase 2 after go-live'],
   ['dataCycle access or docs late', 'Fake adapter with the vision\'s sample data; feed behind a flag, Phase 1 not blocked'],
   ['AI ranking poor, slow or costly', 'Filter in code, fallback score, cache per day part (3–4 calls per stay per day)'],
   ['An agent does something unwanted', 'Same permissions as the person, quote → confirm, audit log, rate limits'],
@@ -99,7 +105,7 @@ const risks: [string, string, boolean?][] = [
 
 <div class="block">
   <h3 class="block-title">Architecture decision records</h3>
-  <p class="block-sub">Context, decision, alternatives, consequences. The full comparison for each one is in <a href="#comparisons">Why this over that</a>.</p>
+  <p class="block-sub">Context, decision, alternatives, consequences. The full comparison for each one is in <a href="#comparisons">Why this over that</a>. The decisions are also kept as ADRs in the repository (docs/adr).</p>
   <div class="adrs">
     {adrs.map((a) => (
       <article class="adr">
@@ -155,7 +161,7 @@ const risks: [string, string, boolean?][] = [
 </div>
 
 <div class="block">
-  <h3 class="block-title">Build plan · after the 5 Nov review</h3>
+  <h3 class="block-title">Build plan · waves after the 5 Nov review</h3>
   <Figure label="Gantt chart from 5 Nov 2026 to the bookings go-live on 10 Jan 2027 with milestones M0 to M6, then Phase 1b to 15 Apr" minWidth={960}>
     <Gantt label="Build plan" />
   </Figure>

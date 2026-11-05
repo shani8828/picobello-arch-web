@@ -17,7 +17,7 @@ export const plan: [string, string, string][] = [
   [
     "M4",
     "14-20 Dec",
-    "First OWASP ZAP scan of staging (full guest journey is there by then)."
+    "First OWASP ZAP scan of staging (Back Office and Owner Portal; the guest journey gets its own scan in Phase 1b)."
   ],
   [
     "M5",
@@ -314,8 +314,8 @@ export const groups: CheckGroup[] = [
       {
         "id": "F4",
         "check": "ID numbers are deleted by the nightly job after the legal period",
-        "how": "Job test with the clock moved past the period (period still to confirm)",
-        "by": "M4"
+        "how": "Job test with the clock moved past 2 years from arrival; ID numbers only exist from check-in (Phase 1b)",
+        "by": "M7"
       },
       {
         "id": "F5",
@@ -434,8 +434,8 @@ export const groups: CheckGroup[] = [
       {
         "id": "I4",
         "check": "GitHub deploys to Google Cloud without stored keys",
-        "how": "Workload Identity Federation; no JSON key files exist",
-        "by": "M1"
+        "how": "Workload Identity Federation; no JSON key files exist; set up in the first-deploy wave (23-27 Nov)",
+        "by": "M2"
       },
       {
         "id": "I5",
@@ -452,7 +452,7 @@ export const groups: CheckGroup[] = [
       {
         "id": "I7",
         "check": "Database not reachable from the internet",
-        "how": "Cloud SQL private IP only; a connection from outside fails",
+        "how": "Supabase network restrictions allow only the backend's fixed outgoing IP; TLS required; a connection from elsewhere fails",
         "by": "M4"
       },
       {

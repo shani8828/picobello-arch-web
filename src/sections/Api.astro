@@ -10,12 +10,12 @@ import Arrow from '../components/diagram/Arrow.astro';
 const pipeline = [
   ['Request id', 'and logging'],
   ['Security headers', 'CORS: our 3 app domains'],
-  ['Rate limit', 'per IP and token'],
+  ['Rate limit', 'per IP (from the load balancer) and token'],
   ['Authentication', 'session cookie or stay token'],
   ['Tenant + scope', 'which houses, units, stay'],
   ['Validation', 'Zod'],
   ['Permission check', 'see Security, roles, privacy'],
-  ['Handler', 'service → DB tx + outbox'],
+  ['Handler', 'action → DB tx + jobs (outbox)'],
   ['Audit log', 'every write'],
   ['Response', 'or problem+json'],
 ];
@@ -84,7 +84,7 @@ const groups: { key: string; name: string; auth: string; eps: Ep[] }[] = [
     ['GET', '/settings, POST /settings', 'settings sets (new version with valid_from, never edit old ones)'],
     ['GET', '/ledger?filters, /owners/{id}/balance', ''],
     ['GET', '/integrations', 'status per system'],
-    ['GET', '/integrations/{system}/inbox|outbox', 'events/jobs with errors'],
+    ['GET', '/integrations/{system}/inbox|jobs', 'events / jobs with errors'],
     ['POST', '/integrations/jobs/{id}/retry', ''],
     ['GET', '/audit?object=&user=&from=', ''],
     ['POST', '/imports/archipex', 'upload → validation report'],
@@ -130,7 +130,7 @@ const style: [string, string][] = [
   ['Money', 'integer Rappen + currency: {"amount": 18450, "currency": "CHF"}'],
   ['Dates', 'ISO 8601 stay days ("2027-01-08"); timestamps UTC with offset; shown in Europe/Zurich'],
   ['Pagination', 'cursor based: ?cursor=…&limit=50'],
-  ['Idempotency', 'every POST that creates money or outside effects accepts Idempotency-Key'],
+  ['Idempotency', 'every POST that creates money or outside effects accepts Idempotency-Key; scoped to caller + method + path, kept 24 h'],
   ['Locking', 'updates send the row "version"; mismatch → 409 Conflict'],
   ['Versioning', 'breaking changes → /api/v2 alongside /api/v1'],
 ];
@@ -219,7 +219,7 @@ const backoff = ['30 s', '2 min', '10 min', '30 min', '1 h', '3 h', '6 h'];
 <div class="block">
   <div class="grid grid-2 api-split">
     <div>
-      <h3 class="block-title">API style · decided</h3>
+      <h3 class="block-title">API style</h3>
       <dl class="style">
         {style.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}
       </dl>
@@ -293,7 +293,7 @@ const backoff = ['30 s', '2 min', '10 min', '30 min', '1 h', '3 h', '6 h'];
       </div>
     </div>
     <div>
-      <h3 class="block-title">Backend stack · decided</h3>
+      <h3 class="block-title">Backend stack</h3>
       <div class="table-wrap">
         <table class="data">
           <thead><tr><th>Purpose</th><th>Choice</th></tr></thead>

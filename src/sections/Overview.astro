@@ -14,12 +14,10 @@ const delivers = [
 ];
 
 const decide = [
-  'Database host: Cloud SQL (one cloud, failover) or Supabase (lower cost, faster setup)?',
-  'Refund rules for direct bookings and shortened stays',
-  'Owner cancellation fee: about CHF 50, to confirm',
-  'ID document retention: about 30 days, to confirm',
-  'Badge dispenser: exact process, failure, night support',
-  'Rounding to 5 Rappen: settle together',
+  'Database on Supabase (Zurich); backend on Google Cloud Run; files on Cloud Storage',
+  'Owner check-in in the Owner Portal from January; friends\' costs on the owner account until in-app payment',
+  'Cancellation < 90 days: CHF 50, paid costs back to the payer minus CHF 50; early departure: no refund',
+  'ID numbers kept 2 years from arrival; night help through the emergency key box',
 ];
 ---
 <Takeaway>Phase 1 records every franc from the first live booking. The April features (statements, Bexio, VAT, bank) only read that data, so no Phase 1 table has to change.</Takeaway>
@@ -66,11 +64,11 @@ const decide = [
 </div>
 
 <div class="block">
-  <h3 class="block-title">Still open</h3>
-  <p class="block-sub">Every other open point is listed under <a href="#open">Open questions</a>.</p>
+  <h3 class="block-title">Decided in the review</h3>
+  <p class="block-sub">No questions are open. The full list, the inputs still to deliver and the vendor checks are under <a href="#open">Decisions and inputs</a>.</p>
   <ol class="decide">
     {decide.map((q, i) => (
-      <li><span class="i tnum">{i + 1}</span><span>{q}</span><Pill kind="open" /></li>
+      <li><span class="i tnum">{i + 1}</span><span>{q}</span></li>
     ))}
   </ol>
 </div>

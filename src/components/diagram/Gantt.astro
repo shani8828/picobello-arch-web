@@ -1,7 +1,7 @@
 ---
 // Phase 1 Gantt: 2 Nov 2026 -> 17 Jan 2027 to scale, plus a compressed
-// tail for Phase 1b (guest journey, to 15 Apr). Blocks and milestones from arch/12 part D
-// and arch/15.
+// tail for Phase 1b (guest journey, to 15 Apr). Waves and milestones from arch/15
+// (summary of Architektur/nextsteps.md).
 interface Props { label: string; showBuffer?: boolean }
 const { showBuffer = true } = Astro.props;
 
@@ -12,13 +12,18 @@ const day = (m: number, d: number) => Date.UTC(m >= 10 ? 2026 : 2027, m, d);
 const x = (m: number, d: number) => LX + ((day(m, d) - start) / (end - start)) * (X1 - LX);
 
 const rows: { label: string; sub: string; a: [number, number]; b: [number, number]; ms?: string; tone?: string }[] = [
-  { label: 'Architecture review', sub: 'Week 0 · 5 Nov', a: [10, 5], b: [10, 6], ms: 'M0', tone: 'review' },
-  { label: 'Foundation', sub: 'Week 1 · 6-15 Nov', a: [10, 6], b: [10, 16], ms: 'M1' },
-  { label: 'Lodgify + Owner Portal', sub: 'Weeks 2-3 · 16-29 Nov', a: [10, 16], b: [10, 30], ms: 'M2' },
-  { label: 'Ledger, Feratel, Back Office', sub: 'Weeks 4-5 · 30 Nov-13 Dec', a: [10, 30], b: [11, 14], ms: 'M3' },
-  { label: 'Apartments, Archipex, production', sub: 'Week 6 · 14-20 Dec', a: [11, 14], b: [11, 21], ms: 'M4' },
-  { label: 'Hardening + dress rehearsal', sub: 'Weeks 7-8 · 21 Dec-5 Jan', a: [11, 21], b: [0, 6], ms: 'M5' },
-  { label: 'Delivery: bookings live', sub: 'Week 9 · 6-10 Jan', a: [0, 6], b: [0, 11], ms: 'M6', tone: 'go' },
+  { label: 'Architecture review', sub: 'M0 · 5 Nov', a: [10, 5], b: [10, 6], ms: 'M0', tone: 'review' },
+  { label: 'W0 Baseline, local setup', sub: '5-7 Nov', a: [10, 5], b: [10, 8] },
+  { label: 'W2a Module pattern, M1', sub: '9-13 Nov · on localhost', a: [10, 9], b: [10, 16], ms: 'M1' },
+  { label: 'W2b Async backbone, mail', sub: '12-16 Nov', a: [10, 12], b: [10, 17] },
+  { label: 'W3 Stays, Lodgify read, ledger', sub: '16-22 Nov', a: [10, 16], b: [10, 23] },
+  { label: 'W4 Owner reservations', sub: '23-29 Nov · rules, Lodgify write', a: [10, 23], b: [10, 30], ms: 'M2' },
+  { label: 'WD First deploy: staging', sub: '23-27 Nov · limit 30 Nov', a: [10, 23], b: [10, 28], tone: 'review' },
+  { label: 'W5 Ledger, Feratel, Today', sub: '30 Nov-11 Dec', a: [10, 30], b: [11, 14], ms: 'M3' },
+  { label: 'W6 Production platform', sub: '30 Nov-16 Dec · infra only', a: [10, 30], b: [11, 17] },
+  { label: 'W7 Apartments, Archipex', sub: '14-20 Dec', a: [11, 14], b: [11, 21], ms: 'M4' },
+  { label: 'W8 Hardening, readiness', sub: '14 Dec-4 Jan', a: [11, 14], b: [0, 5], ms: 'M5' },
+  { label: 'G Go-live: bookings live', sub: '5-10 Jan · hypercare to 24 Jan', a: [0, 5], b: [0, 11], ms: 'M6', tone: 'go' },
 ];
 const ms: { id: string; m: number; d: number; t: string }[] = [
   { id: 'M0', m: 10, d: 5, t: '5 Nov' }, { id: 'M1', m: 10, d: 15, t: '15 Nov' }, { id: 'M2', m: 10, d: 29, t: '29 Nov' },
@@ -34,8 +39,8 @@ const mx = (m: number, d: number) => x(m, d + 1); // milestones mark the end of 
   data-start={start} data-end={end} data-x0={LX} data-x1={X1} data-top={TOP} data-bottom={TOP + rows.length * RH}>
   {showBuffer && (
     <g>
-      <rect x={x(11, 21)} y={TOP - 30} width={x(0, 6) - x(11, 21)} height={rows.length * RH + 30} fill="url(#hatch)" opacity="0.55" />
-      <text x={(x(11, 21) + x(0, 6)) / 2} y={TOP + rows.length * RH + 22} text-anchor="middle" class="g-buffer">Christmas / New Year: reduced days, buffer</text>
+      <rect x={x(11, 24)} y={TOP - 30} width={x(0, 5) - x(11, 24)} height={rows.length * RH + 30} fill="url(#hatch)" opacity="0.55" />
+      <text x={(x(11, 24) + x(0, 5)) / 2} y={TOP + rows.length * RH + 22} text-anchor="middle" class="g-buffer">Holidays: production checks only, all build work merged by 23 Dec</text>
     </g>
   )}
   {mondays.map(([m, d]) => (

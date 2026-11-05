@@ -58,7 +58,7 @@ export const decisions: Decision[] = [
     ['Concurrency / scale', '+++', '+++', '+++', '- (single writer)'],
     ['Portability / open', '+++', '+++', '++', '++'],
   ], choice: 'PostgreSQL 16', why: 'Money and bookings need hard guarantees. Postgres can refuse an overlapping stay or an unbalanced ledger transaction at database level, and can hold the job queue in the same transaction as the data.' },
-  { n: 8, title: 'Where Postgres runs', options: ['Cloud SQL (GCP Zurich)', 'Supabase (Pro)', 'Neon', 'AWS RDS Zurich'], winner: 0, open: true, rows: [
+  { n: 8, title: 'Where Postgres runs', options: ['Cloud SQL (GCP Zurich)', 'Supabase (Pro)', 'Neon', 'AWS RDS Zurich'], winner: 1, rows: [
     ['Data in Switzerland', '+++', '++ (Zurich region [Verify])', '- (EU, not CH [Verify])', '+++'],
     ['Private network to API', '+++ (same cloud)', '- (internet + TLS)', '- (internet)', '+ (other cloud)'],
     ['High availability', '+++ one switch', '- [Verify plan]', '++', '+++'],
@@ -66,7 +66,7 @@ export const decisions: Decision[] = [
     ['Setup speed', '+', '+++', '+++', '+'],
     ['Monthly cost (prod)', '~CHF 150-200', '~USD 50-110', '~USD 20-70', '~CHF 150+'],
     ['Lock-in', 'low', 'low if plain Postgres only', 'low', 'low'],
-  ], choice: 'Cloud SQL Zurich · documented alternative: Supabase (Zurich), used only as plain Postgres (no Supabase Auth, RLS or Functions)', why: 'For a system holding owners\' money, private networking, one-switch failover and included point-in-time restore matter more than the lower price. Because we only use standard Postgres, switching is a dump and restore. Open decision: lower cost and faster setup (Supabase) vs one cloud with failover (Cloud SQL).' },
+  ], choice: 'Supabase (Zurich), used only as plain Postgres (no Supabase Auth, RLS or Functions) · alternative: Cloud SQL Zurich', why: 'The team knows Supabase well, it is quick to set up and costs less. We add point-in-time restore (add-on), TLS, our own roles, access only from the backend\'s fixed IP and a monthly export to a locked Google bucket; we accept no automatic failover on Pro (RTO 4 h still holds). Because we only use standard Postgres, moving to Cloud SQL later is a dump and restore.' },
   { n: 9, title: 'Cloud for backend', options: ['GCP Zurich', 'AWS Zurich', 'Azure CH North', 'Swiss hosters (Infomaniak, Exoscale)', 'Cloudflare only'], winner: 0, rows: [
     ['Data in Switzerland', '+++', '+++', '+++', '+++', '- (no CH Postgres)'],
     ['Managed containers', '+++ Cloud Run', '++ (App Runner/ECS)', '++', '+ (more DIY)', '++ Workers'],

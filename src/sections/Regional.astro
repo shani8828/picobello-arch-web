@@ -17,12 +17,12 @@ const modules: [string, string][] = [
 ];
 
 const signals: { icon: string; name: string; text: string; open?: boolean }[] = [
-  { icon: 'cloud-sun', name: 'Weather', text: 'today and tomorrow at the house', open: true },
+  { icon: 'cloud-sun', name: 'Weather', text: 'today and tomorrow at the house (MeteoSwiss open data)' },
   { icon: 'calendar-days', name: 'Stay', text: 'arrival, departure, "day 3 of 7"' },
   { icon: 'users', name: 'Guest profile', text: 'family, couple, group; children age bands' },
   { icon: 'languages', name: 'Origin + language', text: 'Switzerland, Europe, Gulf states, USA' },
   { icon: 'clock', name: 'Season + time', text: 'winter / summer, morning / evening' },
-  { icon: 'ticket', name: 'Booking extras', text: 'ski pass, half board, packages', open: true },
+  { icon: 'ticket', name: 'Booking extras', text: 'ski pass, half board, packages (partner offers, Phase 2)' },
 ];
 
 const steps: [string, string][] = [
@@ -69,7 +69,7 @@ const needs: { icon: string; name: string; text: string; open?: boolean }[] = [
   { icon: 'database', name: 'Data access', text: 'All categories: POIs, opening hours, events, tours, bad-weather programme, gastronomy, mountain railways, images. We don\'t pre-filter; the AI picks per guest.' },
   { icon: 'plug', name: 'Interface', text: 'Read access through the dataCycle API, structured and continuously updated. No double maintenance.' },
   { icon: 'languages', name: 'Languages', text: 'Content in all available languages; missing languages are translated by the AI.' },
-  { icon: 'image', name: 'Images', text: 'Usage rights for display in the Guest App.', open: true },
+  { icon: 'image', name: 'Images', text: 'Written usage rights for display in the Guest App (input from both tourism offices).' },
 ];
 
 const tools: { role: string; list: string[] }[] = [
@@ -87,16 +87,14 @@ const rules: [string, string][] = [
 
 const timeline: [string, string, string][] = [
   ['by 10 Nov 2026', 'Clarify access', 'Which data categories exist, how the API works. Test access for Picobello.'],
-  ['Nov 2026 – Jan 2027', 'Test phase at the Lenk', 'Connection in Picobello\'s apartments at the Lenk. Rain, sun, events tested in real operation.'],
+  ['23 – 29 Nov 2026', 'Build: adapter and feed', 'Real dataCycle adapter, cache, candidate filter, fallback score, feed and Back Office preview (flag off).'],
+  ['14 – 20 Dec 2026', 'Build: weather and AI', 'Weather and AI ranking (flag off).'],
+  ['14 Dec 2026 – 5 Jan 2027', 'Test phase at the Lenk', 'Connection in Picobello\'s apartments at the Lenk. Rain, sun, events tested in real operation; fallback score first, weather and AI from ~21 Dec.'],
   ['15 – 31 Jan 2027', 'Go-live', 'Regional data live for all guests. Then evaluation and extension to Saanenland.'],
 ];
 
 const open: [string, 'open' | 'verify'][] = [
-  ['AI provider and model (data location, retention, cost)', 'open'],
-  ['Weather source: MeteoSwiss open data or a weather API', 'open'],
-  ['Image usage rights, in writing, from both tourism offices', 'open'],
-  ['MCP server and "Ask me" chat: first audience (staff?); built after go-live', 'open'],
-  ['Insights export for the tourism offices: format, frequency', 'open'],
+  ['AI provider region and retention (Anthropic Claude, Haiku)', 'verify'],
   ['dataCycle API: auth, endpoints, format, rate limits, change webhooks, live railway status', 'verify'],
   ['MCP remote-server auth (OAuth) in the current spec', 'verify'],
 ];
@@ -265,7 +263,7 @@ const P = { x: 320, y: 40, w: 570, h: 360 };
       <div><span class="role">{g.role}</span><div class="chips">{g.list.map((t) => <code class={t.endsWith('*') ? 'w' : ''}>{t}</code>)}</div></div>
     ))}
   </div>
-  <p class="note"><b>What is built when.</b> Phase 1: every action a named service function with a schema. We do this for the REST API anyway, so it costs almost nothing. Later: the MCP server on <code>/mcp</code>, an AI chat and voice. <Pill kind="open" /> When, and is read-only staff MCP the first step?</p>
+  <p class="note"><b>What is built when.</b> Phase 1: every action a named service function with a schema. We do this for the REST API anyway, so it costs almost nothing. Later: the MCP server on <code>/mcp</code>, an AI chat and voice. Decided: after go-live, starting with read-only tools for staff.</p>
 </div>
 
 <div class="block">
@@ -315,7 +313,8 @@ const P = { x: 320, y: 40, w: 570, h: 360 };
 </div>
 
 <div class="block">
-  <h3 class="block-title">Open points</h3>
+  <h3 class="block-title">Decided, and still to verify</h3>
+  <p class="block-sub">Decided: AI is Anthropic Claude (Haiku); weather from MeteoSwiss open data; insights as a monthly CSV per tourism office; MCP and "Ask me" chat after go-live, for staff first.</p>
   <ul class="openl">
     {open.map(([t, k]) => <li><Pill kind={k} /><span>{t}</span></li>)}
   </ul>

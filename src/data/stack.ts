@@ -30,7 +30,7 @@ export const stack: StackGroup[] = [
   ] },
   { group: 'Hosting', items: [
     { layer: 'Backend cloud', choice: 'Google Cloud Zurich', d: 9 },
-    { layer: 'Postgres host', choice: 'Cloud SQL Zurich', d: 8, open: true },
+    { layer: 'Postgres host', choice: 'Supabase Zurich', d: 8 },
     { layer: 'Files', choice: 'Cloud Storage Zurich', d: 11 },
     { layer: 'Frontends', choice: 'Cloudflare Pages', d: 10 },
   ] },

@@ -13,7 +13,7 @@ const containers: [string, string, string, string][] = [
   ['3', 'Guest App', 'React PWA (static files)', 'Cloudflare Pages'],
   ['4', 'API', 'Node.js 22 + Hono', 'Google Cloud Run (Zurich)'],
   ['5', 'Worker', 'Node.js 22 (same code)', 'Google Cloud Run (Zurich)'],
-  ['6', 'Database', 'PostgreSQL 16', 'Google Cloud SQL (Zurich)'],
+  ['6', 'Database', 'PostgreSQL 16', 'Supabase (Zurich), plain Postgres only'],
   ['7', 'File storage', 'Object storage', 'Google Cloud Storage (Zurich)'],
   ['8', 'Job queue', 'pg-boss (tables in Postgres)', 'inside the Database'],
   ['9', 'Scheduler', 'Cloud Scheduler', 'GCP (Zurich) → calls API'],
@@ -35,7 +35,7 @@ const rowB = [
   { n: 'access', s: ['SALTO grants'], ev: true },
   { n: 'messaging', s: ['email DE/FR/EN,', 'sending log'], ev: true },
   { n: 'migration', s: ['Archipex import,', 'one-time'], ev: false },
-  { n: 'integrations', s: ['inbox, outbox,', 'adapters'], ev: true },
+  { n: 'integrations', s: ['inbox, jobs,', 'adapters'], ev: true },
 ];
 const rowC = [
   { n: 'operations', s: 'cleaning, repairs' },
@@ -72,7 +72,7 @@ const events: [string, string, string][] = [
 <div class="block">
   <div class="grid grid-3">
     <article class="card why">
-      <h4 class="eyebrow">Style · decided</h4>
+      <h4 class="eyebrow">Style</h4>
       <p class="why-title">Modular monolith</p>
       <p>One backend codebase, one database, deployed as two processes (API and worker). Inside, modules with strict boundaries.</p>
     </article>
@@ -116,7 +116,7 @@ const events: [string, string, string][] = [
       </g>
       <Icon name="database" size={22} x={456} y={426} class="bx-icon" />
       <text x="488" y="443" class="bx-title">Database</text>
-      <text x="488" y="463" class="bx-sub">PostgreSQL 16 · Cloud SQL</text>
+      <text x="488" y="463" class="bx-sub">PostgreSQL 16 · Supabase Zurich</text>
       <rect x="456" y="490" width="288" height="60" rx="8" fill="var(--sun-50)" stroke="var(--sun-500)" />
       <text x="472" y="515" class="bx-title small">Job queue · pg-boss</text>
       <text x="472" y="536" class="bx-sub">tables inside the database</text>
@@ -193,7 +193,7 @@ const events: [string, string, string][] = [
       <!-- event bus -->
       <rect x="30" y={BUS_Y} width={mx(4) + MW - 30} height="44" rx="10" fill="var(--primary-50)" stroke="var(--primary-500)" stroke-dasharray="6 5" />
       <text x="48" y={BUS_Y + 28} class="bus-title">Domain events</text>
-      <text x="186" y={BUS_Y + 28} class="bus-sub">outbox, same DB transaction as the change · handlers run in the worker</text>
+      <text x="186" y={BUS_Y + 28} class="bus-sub">pg-boss jobs in the same DB transaction (the outbox) · handlers run in the worker</text>
       {rowA.map((m, i) => m.ev && <path d={`M${mx(i) + 120} ${A_Y + MH} V${BUS_Y}`} class="stub" />)}
       {rowB.map((m, i) => m.ev && <path d={`M${mx(i) + 120} ${BUS_Y + 44} V${B_Y}`} class="stub" />)}
 
@@ -266,12 +266,14 @@ const events: [string, string, string][] = [
         <li><span class="r mono">R2</span><span>Each table belongs to exactly one module.</span></li>
         <li><span class="r mono">R3</span><span>The rules module has no I/O: data in, decisions with reasons out. Runs on the server (final check) and in the Owner Portal (instant feedback).</span></li>
         <li><span class="r mono">R4</span><span>Outside systems only through adapters in <code>integrations/</code>, each with a port and two implementations: real and fake. Building can start before API keys arrive.</span></li>
-        <li><span class="r mono">R5</span><span>dependency-cruiser in CI fails the build if a module imports another module's internals.</span></li>
+        <li><span class="r mono">R5</span><span>dependency-cruiser in CI fails the build if a module imports another module's internals, if packages/domain uses the database, network, clock or randomness, or if a vendor SDK is used outside integrations/.</span></li>
+        <li><span class="r mono">R6</span><span>Every action is registered once: name, input (Zod), permission, run(ctx, input). Validation and permission live with the action, so REST and later MCP use the same door; a rule rejection is a 422 with reasons.</span></li>
+        <li><span class="r mono">Owners</span><span>Owners only use the Owner Portal (check-in, guest cards, reservations under /owner/*). The Guest App is for guests and friends.</span></li>
       </ol>
     </div>
     <div>
       <h3 class="block-title">Repository layout</h3>
-      <pre class="code"><span class="k">picobello-platform/</span>
+      <pre class="code"><span class="k">picobello-plattform/Architektur/</span>
   apps/
     backoffice/      <span class="c">React SPA</span>
     owner/           <span class="c">React SPA</span>
